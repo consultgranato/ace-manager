@@ -22,8 +22,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const path = window.location.pathname;
     const isHome = path.endsWith('index.html') || path.endsWith('/ace-manager/') || path.endsWith('/ace-manager');
+    const isProfile = path.endsWith('student-profile.html');
+
     if (isHome && window.aceHomepage) {
       await window.aceHomepage.render();
+    }
+
+    if (isProfile && window.aceProfile) {
+      await window.aceProfile.render();
     }
   }
 });
