@@ -1460,3 +1460,302 @@ body {
   background: #cbd5e1;
   cursor: not-allowed;
 }
+
+/* ============================================================
+   Phase 2.0a — Modal, Drawer, Toast, Status Pills
+   ============================================================ */
+
+/* ----- Right-slide Drawer ----- */
+.ace-drawer-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  pointer-events: none;
+}
+
+.ace-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.ace-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 460px;
+  max-width: 95vw;
+  height: 100vh;
+  background: white;
+  border-top-left-radius: 18px;
+  border-bottom-left-radius: 18px;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.ace-drawer-wrap.open .ace-drawer-backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.ace-drawer-wrap.open .ace-drawer {
+  transform: translateX(0);
+}
+
+.ace-drawer-header {
+  background: linear-gradient(135deg, var(--purple-primary) 0%, var(--purple-deep) 100%);
+  color: white;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top-left-radius: 18px;
+}
+
+.ace-drawer-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ace-drawer-close {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.ace-drawer-close:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.ace-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px;
+}
+
+.ace-drawer-footer {
+  border-top: 1px solid var(--border);
+  padding: 14px 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ----- Centered Modal ----- */
+.ace-modal-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+
+.ace-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.ace-modal {
+  position: relative;
+  background: white;
+  border-radius: 18px;
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  transform: scale(0.96) translateY(8px);
+  opacity: 0;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.ace-modal-wrap.open .ace-modal-backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.ace-modal-wrap.open .ace-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.ace-modal h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.ace-modal-message {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.ace-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ----- Shared button styles for modal/drawer ----- */
+.ace-btn-primary, .ace-btn-secondary, .ace-btn-danger {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid transparent;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ace-btn-primary {
+  background: var(--purple-primary);
+  color: white;
+}
+
+.ace-btn-primary:hover:not(:disabled) {
+  background: #3a2160;
+}
+
+.ace-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ace-btn-secondary {
+  background: white;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.ace-btn-secondary:hover {
+  background: #f5f5f5;
+}
+
+.ace-btn-danger {
+  background: #dc2626;
+  color: white;
+}
+
+.ace-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+/* ----- Toast Notifications ----- */
+.ace-toast-host {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.ace-toast {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: 380px;
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  font-size: 14px;
+  border: 1px solid var(--border);
+}
+
+.ace-toast.open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.ace-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 13px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.ace-toast-success .ace-toast-icon { background: var(--success); }
+.ace-toast-error   .ace-toast-icon { background: #dc2626; }
+.ace-toast-info    .ace-toast-icon { background: var(--purple-primary); }
+
+.ace-toast-msg {
+  color: var(--text);
+}
+
+/* ----- Status Pills (used in Phase 2.6+) ----- */
+.ace-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ace-pill-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ace-pill-warning {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.ace-pill-critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ace-pill-neutral {
+  background: #f4f4f5;
+  color: #525252;
+}
+
+.ace-pill-purple {
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+}
