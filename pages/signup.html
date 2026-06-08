@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — Ace Manager</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <header class="ace-header">
+    <div class="ace-header-inner">
+      <h1 class="ace-logo">ACE MANAGER</h1>
+    </div>
+  </header>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h2>Create Your Account</h2>
+      <form id="signupForm">
+        <label>Full Name
+          <input type="text" id="fullName" required />
+        </label>
+        <label>School Name
+          <input type="text" id="schoolName" required placeholder="e.g., Niles North High School" />
+        </label>
+        <label>Email
+          <input type="email" id="email" required autocomplete="email" />
+        </label>
+        <label>Password
+          <input type="password" id="password" required minlength="8" autocomplete="new-password" />
+        </label>
+        <div id="errorMsg" class="error-msg" style="display:none;"></div>
+        <div id="successMsg" class="success-msg" style="display:none;"></div>
+        <button type="submit" class="btn-primary">Create Account</button>
+      </form>
+      <div class="auth-links">
+        <span>Already have an account?</span>
+        <a href="login.html">Log in</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="ace-footer">
+    Created by Consult Granato Education LLC · v0.3
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/router.js"></script>
+  <script src="../js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('signupForm');
+      const errorMsg = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMsg.style.display = 'none';
+        successMsg.style.display = 'none';
+        const fullName = document.getElementById('fullName').value;
+        const schoolName = document.getElementById('schoolName').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await window.aceAuth.signUp(email, password, fullName, schoolName);
+        if (error) {
+          errorMsg.textContent = error.message;
+          errorMsg.style.display = 'block';
+        } else {
+          successMsg.textContent = 'Account created! Check your email to verify, then log in.';
+          successMsg.style.display = 'block';
+          form.reset();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
