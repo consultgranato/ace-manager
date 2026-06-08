@@ -55,7 +55,7 @@ const aceHomepage = {
     if (!students || students.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">✨</div>
+          <div class="empty-state-icon">${window.aceIcons.usersRound(28)}</div>
           <div><strong>You're all set up</strong></div>
           <div class="muted" style="margin-top:6px;">Add your first student to get started.</div>
         </div>
@@ -73,7 +73,7 @@ const aceHomepage = {
     if (flagged.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">✓</div>
+          <div class="empty-state-icon">${window.aceIcons.check(28)}</div>
           <div><strong>You're all caught up — nice work.</strong></div>
         </div>
       `;
@@ -131,7 +131,7 @@ const aceHomepage = {
         <ul class="attention-reasons">
           ${reasons.map(r => `<li class="reason-${r.urgency}">${window.aceUtils.escapeHtml(r.text)}</li>`).join('')}
         </ul>
-        <div class="attention-action">Open profile →</div>
+        <div class="attention-action">Open profile</div>
       </a>
     `;
   },

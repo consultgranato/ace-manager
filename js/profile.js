@@ -43,7 +43,7 @@ const aceProfile = {
     const basePath = this.basePath();
 
     host.innerHTML = `
-      <a href="${basePath}pages/caseload.html" class="back-link">← Back to Caseload</a>
+      <a href="${basePath}pages/caseload.html" class="back-link">${window.aceIcons.arrowLeft(15)} Back to Caseload</a>
       <div class="profile-identity">
         <h1 class="profile-name">${window.aceUtils.escapeHtml(s.first_name)} ${window.aceUtils.escapeHtml(s.last_initial)}.</h1>
         <div class="profile-meta">
@@ -100,7 +100,7 @@ const aceProfile = {
     const cards = [
       {
         id: 'iep',
-        icon: '📋',
+        icon: window.aceIcons.fileText(18),
         title: 'IEP Builder',
         status: 'Never started',
         statusDot: 'gray',
@@ -110,7 +110,7 @@ const aceProfile = {
       },
       {
         id: 'transition',
-        icon: '🧭',
+        icon: window.aceIcons.compass(18),
         title: 'Transition Assessment',
         status: 'Not yet administered',
         statusDot: 'gray',
@@ -120,7 +120,7 @@ const aceProfile = {
       },
       {
         id: 'teacher-feedback',
-        icon: '👩‍🏫',
+        icon: window.aceIcons.graduationCap(18),
         title: 'Teacher Feedback',
         status: 'No links sent',
         statusDot: 'gray',
@@ -130,7 +130,7 @@ const aceProfile = {
       },
       {
         id: 'parent-feedback',
-        icon: '👨‍👩‍👧',
+        icon: window.aceIcons.usersRound(18),
         title: 'Parent Feedback',
         status: 'Not sent',
         statusDot: 'gray',
@@ -140,7 +140,7 @@ const aceProfile = {
       },
       {
         id: 'data',
-        icon: '📊',
+        icon: window.aceIcons.barChart(18),
         title: 'Data Collection',
         status: 'No trackers active',
         statusDot: 'gray',
@@ -150,7 +150,7 @@ const aceProfile = {
       },
       {
         id: 'meetings',
-        icon: '📅',
+        icon: window.aceIcons.calendar(18),
         title: 'Meeting Notes',
         status: 'No meeting scheduled',
         statusDot: 'gray',
@@ -183,11 +183,11 @@ const aceProfile = {
     const notesHost = document.createElement('div');
     notesHost.id = 'notesDrawerHost';
     notesHost.innerHTML = `
-      <button class="notes-fab" id="notesFab" aria-label="Open notes">📝</button>
+      <button class="notes-fab" id="notesFab" aria-label="Open notes">${window.aceIcons.pencilLine(24)}</button>
       <div class="notes-drawer" id="notesDrawer">
         <div class="notes-drawer-header">
           <h3>Notes</h3>
-          <button class="notes-close" id="notesClose" aria-label="Close">×</button>
+          <button class="notes-close" id="notesClose" aria-label="Close">${window.aceIcons.x(18)}</button>
         </div>
         <div class="notes-drawer-body">
           <p class="muted" style="font-size:13px;">

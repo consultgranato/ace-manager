@@ -29,11 +29,11 @@ const aceSidebar = {
 
         <nav class="sidebar-nav">
           <a href="${this.basePath()}index.html" class="nav-item ${isHome ? 'active' : ''}">
-            <span class="nav-icon">🏠</span>
+            <span class="nav-icon">${window.aceIcons.home(17)}</span>
             <span class="nav-label">Home</span>
           </a>
           <a href="${this.basePath()}pages/caseload.html" class="nav-item ${isCaseload ? 'active' : ''}">
-            <span class="nav-icon">👥</span>
+            <span class="nav-icon">${window.aceIcons.users(17)}</span>
             <span class="nav-label">My Caseload</span>
           </a>
         </nav>
@@ -43,18 +43,23 @@ const aceSidebar = {
           <div class="sidebar-empty">No students yet.</div>
         </div>
 
-        <button class="sidebar-add-btn" id="sidebarAddStudent">+ New Student</button>
+        <button class="sidebar-add-btn" id="sidebarAddStudent">
+          ${window.aceIcons.plus(15)} New Student
+        </button>
 
         <div class="sidebar-footer">
           <a href="${this.basePath()}pages/settings.html" class="nav-item ${isSettings ? 'active' : ''}">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon">${window.aceIcons.settings(17)}</span>
             <span class="nav-label">Settings</span>
           </a>
-          <button class="sidebar-logout" id="sidebarLogout">↪ Sign Out</button>
+          <button class="sidebar-logout" id="sidebarLogout">
+            <span class="nav-icon">${window.aceIcons.logOut(15)}</span>
+            Sign Out
+          </button>
         </div>
       </aside>
 
-      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">${window.aceIcons.menu(18)}</button>
     `;
 
     this.attachListeners();

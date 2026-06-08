@@ -53,7 +53,11 @@ const aceToast = {
   info(message)    { this._show(message, 'info'); },
 
   _iconFor(type) {
-    return { success: '✓', error: '✕', info: 'i' }[type] || '';
+    return {
+      success: window.aceIcons.check(13),
+      error:   window.aceIcons.x(13),
+      info:    window.aceIcons.fileText(13)
+    }[type] || '';
   },
 
   _esc(s) {

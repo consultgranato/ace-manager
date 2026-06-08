@@ -95,9 +95,9 @@ const aceCalendar = {
     return `
       <div class="calendar-header">
         <div class="calendar-nav">
-          <button class="cal-nav-btn" data-action="prev" aria-label="Previous">‹</button>
+          <button class="cal-nav-btn" data-action="prev" aria-label="Previous">${window.aceIcons.chevronLeft(16)}</button>
           <button class="cal-today-btn" data-action="today">Today</button>
-          <button class="cal-nav-btn" data-action="next" aria-label="Next">›</button>
+          <button class="cal-nav-btn" data-action="next" aria-label="Next">${window.aceIcons.chevronRight(16)}</button>
         </div>
         <div class="calendar-title">${label}</div>
         <div class="calendar-view-toggle">

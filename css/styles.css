@@ -1821,3 +1821,52 @@ h3 { font-size: 18px; }
   background: var(--purple-tint);
   color: var(--purple-primary);
 }
+
+/* ============================================================
+   Phase 2.0c — Icon system
+   ============================================================ */
+
+.ace-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.nav-item .ace-icon,
+.sidebar-add-btn .ace-icon,
+.sidebar-logout .ace-icon {
+  margin-right: 2px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+  font-size: 0;
+}
+
+.card-icon .ace-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.ace-toast-icon .ace-icon {
+  stroke-width: 3;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
