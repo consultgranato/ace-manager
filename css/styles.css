@@ -900,3 +900,100 @@ body {
     order: -1;
   }
 }
+
+/* ============================================================
+   Phase 1.5.1 — Logo styling
+   ============================================================ */
+
+/* Sidebar brand block — logo + text side by side */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: white;
+  padding: 3px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.brand-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.brand-text .brand-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: white;
+}
+
+.brand-text .brand-school {
+  font-size: 11px;
+  opacity: 0.9;
+  color: white;
+  margin-top: 2px;
+}
+
+.brand-text .brand-user {
+  font-size: 11px;
+  opacity: 0.75;
+  color: white;
+  margin-top: 1px;
+}
+
+/* Auth header — small logo next to ACE MANAGER text */
+.ace-header-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  background: white;
+  padding: 2px;
+  object-fit: contain;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+/* Auth main — centered large logo above the card */
+.auth-main {
+  flex-direction: column;
+}
+
+.auth-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 24px auto 12px;
+}
+
+.auth-page-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: white;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(76, 44, 123, 0.15);
+  object-fit: contain;
+}
+
+/* Style select elements like inputs */
+.auth-card select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: white;
+  appearance: auto;
+}
+
+.auth-card select:focus {
+  outline: none;
+  border-color: var(--purple-primary);
+  box-shadow: 0 0 0 3px rgba(76,44,123,0.1);
+}

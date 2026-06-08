@@ -9,19 +9,27 @@
 <body>
   <header class="ace-header">
     <div class="ace-header-inner">
+      <img src="../assets/vikings-logo.jpg" alt="Niles North Vikings" class="ace-header-logo" />
       <h1 class="ace-logo">ACE MANAGER</h1>
     </div>
   </header>
 
   <main class="auth-main">
+    <div class="auth-logo-wrap">
+      <img src="../assets/vikings-logo.jpg" alt="Niles North Vikings" class="auth-page-logo" />
+    </div>
     <div class="auth-card">
       <h2>Create Your Account</h2>
       <form id="signupForm">
         <label>Full Name
           <input type="text" id="fullName" required />
         </label>
-        <label>School Name
-          <input type="text" id="schoolName" required placeholder="e.g., Niles North High School" />
+        <label>School
+          <select id="schoolName" required>
+            <option value="" disabled selected>Select school...</option>
+            <option value="Niles North High School">Niles North High School</option>
+            <option value="Niles West High School">Niles West High School</option>
+          </select>
         </label>
         <label>Email
           <input type="email" id="email" required autocomplete="email" />

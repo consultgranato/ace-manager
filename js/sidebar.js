@@ -19,9 +19,12 @@ const aceSidebar = {
     targetEl.innerHTML = `
       <aside class="ace-sidebar" id="aceSidebar">
         <div class="sidebar-brand">
-          <div class="brand-name">ACE MANAGER</div>
-          <div class="brand-school">${this.escapeHtml(schoolName)}</div>
-          <div class="brand-user">${this.escapeHtml(fullName)}</div>
+          <img src="${this.basePath()}assets/vikings-logo.jpg" alt="Niles North Vikings" class="brand-logo" />
+          <div class="brand-text">
+            <div class="brand-name">ACE MANAGER</div>
+            <div class="brand-school">${this.escapeHtml(schoolName)}</div>
+            <div class="brand-user">${this.escapeHtml(fullName)}</div>
+          </div>
         </div>
 
         <nav class="sidebar-nav">
