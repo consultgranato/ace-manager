@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname;
     const isHome = path.endsWith('index.html') || path.endsWith('/ace-manager/') || path.endsWith('/ace-manager');
     const isProfile = path.endsWith('student-profile.html');
+    const isAddStudent = path.endsWith('add-student.html');
 
     if (isHome && window.aceHomepage) {
       await window.aceHomepage.render();
@@ -30,6 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (isProfile && window.aceProfile) {
       await window.aceProfile.render();
+    }
+
+    if (isAddStudent && window.aceAddStudent) {
+      await window.aceAddStudent.render();
     }
   }
 });
