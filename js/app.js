@@ -20,12 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       await window.aceSidebar.render(sidebarHost);
     }
 
-    const greeting = document.getElementById('greeting');
-    if (greeting) {
-      const profile = await window.aceAuth.getProfile();
-      if (profile?.full_name) {
-        greeting.textContent = `Welcome back, ${profile.full_name}!`;
-      }
+    const path = window.location.pathname;
+    const isHome = path.endsWith('index.html') || path.endsWith('/ace-manager/') || path.endsWith('/ace-manager');
+    if (isHome && window.aceHomepage) {
+      await window.aceHomepage.render();
     }
   }
 });
