@@ -15,12 +15,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!allowed) return;
 
   if (window.aceRouter.isProtectedPage()) {
-    const profile = await window.aceAuth.getProfile();
-    if (profile) {
-      console.log(`✓ Welcome ${profile.full_name || 'case manager'}`);
-      const greeting = document.getElementById('greeting');
-      if (greeting) {
-        greeting.textContent = `Welcome back, ${profile.full_name || 'case manager'}!`;
+    const sidebarHost = document.getElementById('sidebarHost');
+    if (sidebarHost && window.aceSidebar) {
+      await window.aceSidebar.render(sidebarHost);
+    }
+
+    const greeting = document.getElementById('greeting');
+    if (greeting) {
+      const profile = await window.aceAuth.getProfile();
+      if (profile?.full_name) {
+        greeting.textContent = `Welcome back, ${profile.full_name}!`;
       }
     }
   }

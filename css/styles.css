@@ -240,3 +240,249 @@ body {
   margin: 32px auto;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
+
+/* ============================================================
+   Phase 1.4 — App layout + Sidebar
+   ============================================================ */
+
+/* App layout: sidebar fixed on left, main content scrolls */
+.ace-app-main {
+  margin-left: 260px;
+  min-height: 100vh;
+  transition: margin-left 0.2s ease;
+}
+
+.page-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Sidebar */
+.ace-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 100;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-brand {
+  background: linear-gradient(135deg, var(--purple-primary) 0%, var(--purple-deep) 100%);
+  color: white;
+  padding: 18px 18px 16px;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.brand-school {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-bottom: 2px;
+}
+
+.brand-user {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.sidebar-nav {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background: var(--purple-tint);
+}
+
+.nav-item.active {
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-section-title {
+  padding: 14px 18px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.sidebar-students {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  min-height: 80px;
+}
+
+.sidebar-student {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.sidebar-student:hover {
+  background: var(--purple-tint);
+}
+
+.student-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-grade {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-green  { background: var(--success); }
+.dot-yellow { background: var(--warning); }
+.dot-red    { background: var(--critical); }
+
+.sidebar-empty {
+  padding: 12px 18px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sidebar-add-btn {
+  margin: 8px 12px;
+  background: var(--purple-primary);
+  color: white;
+  border: none;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sidebar-add-btn:hover {
+  background: #3a2160;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-logout {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.sidebar-logout:hover {
+  background: #fef2f2;
+  color: var(--critical);
+}
+
+/* Mobile toggle button */
+.sidebar-toggle {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 101;
+  background: white;
+  border: 1px solid var(--border);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  display: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Override the old footer position */
+.ace-footer {
+  margin-left: 260px;
+  padding: 20px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 900px) {
+  .ace-sidebar {
+    transform: translateX(-100%);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  }
+
+  .ace-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .ace-app-main {
+    margin-left: 0;
+    padding-top: 60px;
+  }
+
+  .ace-footer {
+    margin-left: 0;
+  }
+
+  .sidebar-toggle {
+    display: block;
+  }
+}
