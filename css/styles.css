@@ -11,8 +11,9 @@
   --bg-subtle: #f7f6f3;
 
   /* Borders */
-  --border: #ececec;
-  --border-strong: #d9d9d9;
+  --border: #d1d5db;
+  --border-strong: #b3b3b3;
+  --border-input: #b3b3b3;
 
   /* Text */
   --text: #1a1a1a;
@@ -2428,4 +2429,187 @@ h3 { font-size: 18px; }
 
 .meeting-preview ul {
   font-size: 12.5px;
+}
+
+/* ============================================================
+   Phase 2.3.1 — Border Polish
+   Stronger, more pronounced borders on inputs and cards
+   ============================================================ */
+
+/* All fillable form elements get a thicker, darker border */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+select,
+textarea {
+  border: 1.5px solid var(--border-input) !important;
+  background: white !important;
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease) !important;
+}
+
+/* Hover on inputs darkens border slightly */
+input[type="text"]:hover:not(:focus),
+input[type="email"]:hover:not(:focus),
+input[type="password"]:hover:not(:focus),
+input[type="number"]:hover:not(:focus),
+input[type="date"]:hover:not(:focus),
+input[type="time"]:hover:not(:focus),
+input[type="search"]:hover:not(:focus),
+input[type="tel"]:hover:not(:focus),
+input[type="url"]:hover:not(:focus),
+select:hover:not(:focus),
+textarea:hover:not(:focus) {
+  border-color: #8a8a8a !important;
+}
+
+/* Focus state remains purple ring + purple border */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--purple-primary) !important;
+  box-shadow: 0 0 0 4px rgba(76, 44, 123, 0.12) !important;
+  outline: none !important;
+}
+
+/* Cards: keep shadows but add a real border */
+.ace-card,
+.profile-identity,
+.profile-card,
+.attention-card,
+.caseload-card,
+.empty-state,
+.empty-state-small,
+.calendar-widget,
+.auth-card,
+.student-form fieldset {
+  border: 1px solid var(--border) !important;
+}
+
+/* Calendar cells get a stronger border for grid definition */
+.cal-cell:not(.cal-blank),
+.cal-week-cell {
+  border: 1px solid var(--border) !important;
+}
+
+/* Caseload filter pill container */
+.caseload-filter {
+  border: 1px solid var(--border) !important;
+}
+
+/* Modal + drawer panels — clear edge */
+.ace-drawer,
+.ace-modal,
+.notes-drawer,
+.profile-menu,
+.cal-popover {
+  border: 1px solid var(--border) !important;
+}
+
+/* Sidebar boundary slightly stronger */
+.ace-sidebar {
+  border-right: 1px solid var(--border) !important;
+}
+
+/* Toasts get a defined edge so they sit cleanly */
+.ace-toast {
+  border: 1px solid var(--border) !important;
+}
+
+/* Profile menu button + caseload tab inactive state visibility */
+.profile-menu-btn {
+  border: 1px solid var(--border-input) !important;
+}
+
+.profile-menu-btn:hover {
+  border-color: #8a8a8a !important;
+}
+
+/* Calendar nav buttons + view toggle border definition */
+.cal-nav-btn,
+.cal-today-btn,
+.calendar-view-toggle {
+  border: 1px solid var(--border-input) !important;
+}
+
+.cal-view-btn.active {
+  border-color: var(--purple-primary) !important;
+}
+
+/* Secondary buttons (cancel, edit) get a clearer outline */
+.btn-secondary,
+.ace-btn-secondary {
+  border: 1.5px solid var(--border-input) !important;
+}
+
+.btn-secondary:hover,
+.ace-btn-secondary:hover {
+  border-color: #8a8a8a !important;
+}
+
+/* Override the "border: none" rule from Phase 2.0b on auth card */
+.auth-card {
+  border: 1px solid var(--border) !important;
+}
+
+/* Override "border: none" on student form fieldsets from Phase 2.0b */
+.student-form fieldset {
+  border: 1px solid var(--border) !important;
+}
+
+/* Override "border: none" on profile cards */
+.profile-card {
+  border: 1px solid var(--border) !important;
+}
+
+/* Override "border: none" on caseload cards */
+.caseload-card {
+  border: 1px solid var(--border) !important;
+}
+
+/* Override "border: none" on attention cards (but preserve left-border accent) */
+.attention-card {
+  border: 1px solid var(--border) !important;
+  border-left: 4px solid transparent !important;
+}
+
+.attention-approaching {
+  border-left-color: var(--warning) !important;
+}
+
+.attention-critical,
+.attention-overdue {
+  border-left-color: var(--critical) !important;
+}
+
+/* Override "border: none" on empty states */
+.empty-state,
+.empty-state-small {
+  border: 1px solid var(--border) !important;
+}
+
+/* Override "border: none" on calendar widget */
+.calendar-widget {
+  border: 1px solid var(--border) !important;
+}
+
+/* Make checkbox container outlines visible on hover */
+.checkbox-label:hover,
+.prep-item label:hover {
+  outline: 1px solid var(--border) !important;
+  outline-offset: -1px;
+  border-radius: var(--radius-sm);
 }
