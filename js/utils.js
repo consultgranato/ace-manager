@@ -4,27 +4,41 @@
 
 const aceUtils = {
 
+  // Safely parse a date input as a LOCAL date.
+  // Bare ISO strings like "2026-06-12" are parsed by `new Date()` as UTC
+  // midnight, which causes off-by-one display bugs in any timezone west of UTC.
+  // This helper detects that shape and constructs a local-midnight Date.
+  parseLocalDate(dateInput) {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date) return new Date(dateInput);
+    if (typeof dateInput === 'string') {
+      const m = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+      }
+    }
+    const d = new Date(dateInput);
+    return isNaN(d) ? null : d;
+  },
+
   // Format a date string (YYYY-MM-DD or Date object) to "Mon, Jun 9"
   formatShortDate(dateInput) {
-    if (!dateInput) return '';
-    const d = new Date(dateInput);
-    if (isNaN(d)) return '';
+    const d = this.parseLocalDate(dateInput);
+    if (!d) return '';
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   },
 
   // Format full date "June 9, 2026"
   formatLongDate(dateInput) {
-    if (!dateInput) return '';
-    const d = new Date(dateInput);
-    if (isNaN(d)) return '';
+    const d = this.parseLocalDate(dateInput);
+    if (!d) return '';
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   },
 
   // Days between today and a target date (negative = past)
   daysUntil(dateInput) {
-    if (!dateInput) return null;
-    const d = new Date(dateInput);
-    if (isNaN(d)) return null;
+    const d = this.parseLocalDate(dateInput);
+    if (!d) return null;
     const today = new Date();
     today.setHours(0,0,0,0);
     d.setHours(0,0,0,0);

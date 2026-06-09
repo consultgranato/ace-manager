@@ -66,6 +66,7 @@ const aceCalendar = {
             date: s.annual_review_date,
             type: 'annual',
             title: `Annual: ${s.first_name} ${s.last_initial}.`,
+            studentName: `${s.first_name} ${s.last_initial}.`,
             studentId: s.id
           });
         }
@@ -83,6 +84,7 @@ const aceCalendar = {
             date: s.reeval_due_date,
             type: 'reeval',
             title: `Re-eval: ${s.first_name} ${s.last_initial}.`,
+            studentName: `${s.first_name} ${s.last_initial}.`,
             studentId: s.id
           });
         }
@@ -96,7 +98,9 @@ const aceCalendar = {
       this.state.events.push({
         date: m.scheduled_date,
         type: 'meeting',
+        meetingType: m.meeting_type,
         title: `${this.capitalizeFirst(m.meeting_type)} meeting: ${name}`,
+        studentName: name,
         studentId: m.student_id
       });
     });
@@ -172,16 +176,19 @@ const aceCalendar = {
       if (isToday) classes += ' cal-today';
       if (urgency) classes += ' cal-' + urgency;
 
-      const eventDots = events.slice(0, 3).map(e =>
-        `<span class="cal-event-dot dot-${e.type}" title="${window.aceUtils.escapeHtml(e.title)}"></span>`
-      ).join('');
+      const labelChips = events.slice(0, 2).map(e => {
+        const label = this.shortLabelFor(e);
+        return `<div class="cal-event-chip chip-${e.type}" title="${window.aceUtils.escapeHtml(e.title)}">${window.aceUtils.escapeHtml(label)}</div>`;
+      }).join('');
 
-      const overflow = events.length > 3 ? `<span class="cal-overflow">+${events.length - 3}</span>` : '';
+      const overflow = events.length > 2
+        ? `<div class="cal-overflow">+${events.length - 2} more</div>`
+        : '';
 
       html += `
         <div class="${classes}" data-date="${iso}">
           <div class="cal-daynum">${day}</div>
-          <div class="cal-events">${eventDots}${overflow}</div>
+          <div class="cal-events-stack">${labelChips}${overflow}</div>
         </div>
       `;
     }
@@ -365,6 +372,26 @@ const aceCalendar = {
       ? saturday.getDate()
       : saturday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return `${start} – ${end}, ${saturday.getFullYear()}`;
+  },
+
+  // Compact label for month-view event chips. Examples:
+  //   { type: 'annual', studentName: 'Tony G.' }       → "Annual: Tony G."
+  //   { type: 'reeval', studentName: 'Tony G.' }       → "Re-eval: Tony G."
+  //   { type: 'meeting', meetingType: 'annual', ... }  → "Annual mtg: Tony G."
+  shortLabelFor(event) {
+    if (event.type === 'annual') return `Annual: ${event.studentName || ''}`;
+    if (event.type === 'reeval') return `Re-eval: ${event.studentName || ''}`;
+    if (event.type === 'meeting') {
+      const typeLabel = {
+        annual: 'Annual mtg',
+        reeval: 'Re-eval mtg',
+        initial: 'Initial mtg',
+        amendment: 'Amendment',
+        transition: 'Transition'
+      }[event.meetingType] || 'Meeting';
+      return `${typeLabel}: ${event.studentName || ''}`;
+    }
+    return event.title || '';
   },
 
   capitalizeFirst(s) {
