@@ -1911,3 +1911,175 @@ h3 { font-size: 18px; }
   align-items: center;
   gap: 6px;
 }
+
+/* ============================================================
+   Phase 2.1 — Caseload Grid Page
+   ============================================================ */
+
+.caseload-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.caseload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.caseload-header h1 {
+  font-size: 28px;
+  margin: 0 0 4px;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.caseload-header .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.caseload-filter {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  width: fit-content;
+}
+
+.caseload-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--t-fast) var(--ease);
+}
+
+.caseload-tab:hover:not(.active) {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.caseload-tab.active {
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+}
+
+.caseload-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.caseload-tab.active .caseload-tab-count {
+  background: var(--purple-primary);
+  color: white;
+}
+
+.caseload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.caseload-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: none;
+}
+
+.caseload-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.caseload-card.archived {
+  opacity: 0.7;
+}
+
+.caseload-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.caseload-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.caseload-card-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.caseload-card-meta .dot-sep {
+  opacity: 0.4;
+}
+
+.caseload-card-pill {
+  margin-top: 4px;
+}
+
+.caseload-card-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--purple-primary);
+  background: var(--purple-tint);
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.caseload-card-footer {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.caseload-card-open {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--purple-primary);
+}
