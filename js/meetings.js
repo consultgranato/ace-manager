@@ -208,6 +208,48 @@ const aceMeetings = {
     return null;
   },
 
+  // Same logic as getActiveMeeting, but operates on a pre-fetched array.
+  // Used by sidebar and caseload to avoid N+1 queries — they fetch ALL meetings
+  // once, group by student, then call this per student.
+  computeActiveFromMeetings(meetings) {
+    if (!meetings || meetings.length === 0) return null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    // 1. Upcoming non-completed meeting (today or future)
+    const upcoming = meetings
+      .filter(m => !m.completed && m.scheduled_date >= today)
+      .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date));
+    if (upcoming.length > 0) {
+      return { meeting: upcoming[0], state: 'upcoming' };
+    }
+
+    // 2. Past non-completed meeting (overdue for marking complete)
+    const overdue = meetings
+      .filter(m => !m.completed && m.scheduled_date < today)
+      .sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date));
+    if (overdue.length > 0) {
+      return { meeting: overdue[0], state: 'past_not_completed' };
+    }
+
+    // 3. Recently completed (last 30 days) with incomplete follow-ups
+    const completed = meetings
+      .filter(m => m.completed && m.scheduled_date >= thirtyDaysAgoStr)
+      .sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date));
+    if (completed.length > 0) {
+      const followups = completed[0].followup_checklist || [];
+      const allDone = followups.length > 0 && followups.every(f => f.completed);
+      if (!allDone) {
+        return { meeting: completed[0], state: 'completed_followups_pending' };
+      }
+    }
+
+    return null;
+  },
+
   // Kept as alias for any callers that haven't been refactored
   async getUpcomingMeeting(studentId) {
     const active = await this.getActiveMeeting(studentId);

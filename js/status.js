@@ -66,7 +66,7 @@ const aceStatus = {
   // or null. Shape: { meeting, state: 'upcoming' | 'past_not_completed' | 'completed_followups_pending' }
   fullState(student, meetingActive) {
     if (!student) {
-      return { stateKind: 'clear', dot: 'gray', urgency: 'none', headline: '', subline: '', needsAttention: false };
+      return { stateKind: 'clear', dot: 'gray', urgency: 'none', headline: '', subline: '', pillLabel: '', needsAttention: false };
     }
 
     // No active meeting at all — fall back to deadline urgency
@@ -74,7 +74,7 @@ const aceStatus = {
       const base = this.forStudent(student);
       const top = base.reasons[0];
       if (!top) {
-        return { stateKind: 'clear', dot: 'green', urgency: 'clear', headline: 'On track', subline: '', needsAttention: false };
+        return { stateKind: 'clear', dot: 'green', urgency: 'clear', headline: 'On track', subline: '', pillLabel: 'On track', needsAttention: false };
       }
       const onlyApproachingOrWorse = ['approaching', 'critical', 'overdue'].includes(top.urgency);
       return {
@@ -83,6 +83,7 @@ const aceStatus = {
         urgency: base.urgency,
         headline: top.text,
         subline: 'No meeting scheduled — coordinate with secretary',
+        pillLabel: top.text,
         needsAttention: onlyApproachingOrWorse
       };
     }
@@ -114,7 +115,14 @@ const aceStatus = {
       if (days <= 2) { urgency = 'critical'; dot = 'red'; }
       else if (days <= 7) { urgency = 'approaching'; dot = 'amber'; }
 
-      return { stateKind: 'meeting_upcoming', dot, urgency, headline, subline, needsAttention };
+      // Compact pill label
+      let pillLabel;
+      if (days === 0) pillLabel = 'Meeting today';
+      else if (days === 1) pillLabel = 'Meeting tomorrow';
+      else if (days < 0) pillLabel = 'Meeting passed';
+      else pillLabel = `Meeting in ${days} days`;
+
+      return { stateKind: 'meeting_upcoming', dot, urgency, headline, subline, pillLabel, needsAttention };
     }
 
     if (state === 'past_not_completed') {
@@ -128,6 +136,7 @@ const aceStatus = {
         urgency: 'overdue',
         headline: `${typeLabel} on ${dateStr} — needs to be marked complete`,
         subline: `Meeting was ${days} day${days === 1 ? '' : 's'} ago`,
+        pillLabel: 'Mark meeting complete',
         needsAttention: true
       };
     }
@@ -149,11 +158,12 @@ const aceStatus = {
         urgency: overdueFollowups ? 'approaching' : 'clear',
         headline: `Follow-up pending since ${dateStr}`,
         subline: `${fDone} of ${fTotal} follow-up items complete`,
+        pillLabel: overdueFollowups ? 'Follow-up overdue' : 'Follow-up pending',
         needsAttention: overdueFollowups
       };
     }
 
-    return { stateKind: 'clear', dot: 'green', urgency: 'clear', headline: 'On track', subline: '', needsAttention: false };
+    return { stateKind: 'clear', dot: 'green', urgency: 'clear', headline: 'On track', subline: '', pillLabel: 'On track', needsAttention: false };
   }
 };
 

@@ -121,8 +121,29 @@ const aceSidebar = {
       return;
     }
 
+    // Bulk fetch all meetings for these students in one query
+    const studentIds = students.map(s => s.id);
+    let meetingsByStudent = {};
+    if (window.aceMeetings && studentIds.length > 0) {
+      const { data: meetings } = await window.aceSupabase
+        .from('meetings')
+        .select('*')
+        .in('student_id', studentIds);
+      (meetings || []).forEach(m => {
+        if (!meetingsByStudent[m.student_id]) meetingsByStudent[m.student_id] = [];
+        meetingsByStudent[m.student_id].push(m);
+      });
+    }
+
     container.innerHTML = students.map(s => {
-      const dotClass = this.computeStatusDot(s);
+      let dotClass = 'dot-gray';
+      if (window.aceStatus && window.aceMeetings) {
+        const active = window.aceMeetings.computeActiveFromMeetings(meetingsByStudent[s.id] || []);
+        const state = window.aceStatus.fullState(s, active);
+        dotClass = `dot-${state.dot}`;
+      } else {
+        dotClass = this.computeStatusDot(s);
+      }
       return `
         <a href="${this.basePath()}pages/student-profile.html?id=${s.id}" class="sidebar-student">
           <span class="status-dot ${dotClass}"></span>

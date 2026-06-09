@@ -98,16 +98,29 @@ const aceCaseload = {
 
     if (list.length === 0) {
       grid.innerHTML = this.emptyStateHTML();
-      const addBtn = grid.querySelector('[data-action="add"]');
-      if (addBtn) {
-        addBtn.addEventListener('click', () => {
-          window.location.href = this.basePath() + 'pages/add-student.html';
-        });
-      }
       return;
     }
 
-    grid.innerHTML = list.map(s => this.studentCardHTML(s)).join('');
+    // Bulk fetch meetings for the students we're about to render
+    const studentIds = list.map(s => s.id);
+    let meetingsByStudent = {};
+    if (window.aceMeetings && studentIds.length > 0) {
+      const { data: meetings } = await window.aceSupabase
+        .from('meetings')
+        .select('*')
+        .in('student_id', studentIds);
+      (meetings || []).forEach(m => {
+        if (!meetingsByStudent[m.student_id]) meetingsByStudent[m.student_id] = [];
+        meetingsByStudent[m.student_id].push(m);
+      });
+    }
+
+    grid.innerHTML = list.map(s => {
+      const activeMeeting = window.aceMeetings
+        ? window.aceMeetings.computeActiveFromMeetings(meetingsByStudent[s.id] || [])
+        : null;
+      return this.studentCardHTML(s, activeMeeting);
+    }).join('');
 
     grid.querySelectorAll('.caseload-card').forEach(card => {
       card.addEventListener('click', () => {
@@ -117,29 +130,49 @@ const aceCaseload = {
     });
   },
 
-  studentCardHTML(s) {
-    const status = window.aceStatus.forStudent(s);
+  studentCardHTML(s, activeMeeting) {
+    const escapeHtml = window.aceUtils.escapeHtml;
+
+    // Archived students always show neutral pill labeled "Archived"
+    if (s.archived) {
+      return `
+        <div class="caseload-card archived" data-id="${s.id}">
+          <div class="caseload-card-header">
+            <div class="caseload-card-name">${escapeHtml(s.first_name)} ${escapeHtml(s.last_initial)}.</div>
+            <span class="status-dot dot-gray"></span>
+          </div>
+          <div class="caseload-card-meta">
+            <span>${escapeHtml(s.grade)}</span>
+            <span class="dot-sep">·</span>
+            <span>${escapeHtml(s.primary_disability)}</span>
+          </div>
+          <div class="caseload-card-pill">
+            <span class="ace-pill ace-pill-neutral">Archived</span>
+          </div>
+          ${s.has_bip ? `<div class="caseload-card-tag">BIP in place</div>` : ''}
+          <div class="caseload-card-footer">
+            <span class="caseload-card-open">Open profile</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Meeting-aware status for active students
+    const state = window.aceStatus.fullState(s, activeMeeting);
+
     const pillClass = {
       overdue: 'ace-pill-critical',
       critical: 'ace-pill-critical',
       approaching: 'ace-pill-warning',
       clear: 'ace-pill-success',
       none: 'ace-pill-neutral'
-    }[status.urgency] || 'ace-pill-neutral';
-
-    const pillText = status.reasons.length > 0
-      ? status.reasons[0].text
-      : (s.archived ? 'Archived' : 'On track');
-
-    const escapeHtml = window.aceUtils.escapeHtml;
+    }[state.urgency] || 'ace-pill-neutral';
 
     return `
-      <div class="caseload-card ${s.archived ? 'archived' : ''}" data-id="${s.id}">
+      <div class="caseload-card" data-id="${s.id}">
         <div class="caseload-card-header">
-          <div class="caseload-card-name">
-            ${escapeHtml(s.first_name)} ${escapeHtml(s.last_initial)}.
-          </div>
-          <span class="status-dot dot-${status.dot}"></span>
+          <div class="caseload-card-name">${escapeHtml(s.first_name)} ${escapeHtml(s.last_initial)}.</div>
+          <span class="status-dot dot-${state.dot}"></span>
         </div>
         <div class="caseload-card-meta">
           <span>${escapeHtml(s.grade)}</span>
@@ -147,7 +180,7 @@ const aceCaseload = {
           <span>${escapeHtml(s.primary_disability)}</span>
         </div>
         <div class="caseload-card-pill">
-          <span class="ace-pill ${pillClass}">${escapeHtml(pillText)}</span>
+          <span class="ace-pill ${pillClass}">${escapeHtml(state.pillLabel)}</span>
         </div>
         ${s.has_bip ? `<div class="caseload-card-tag">BIP in place</div>` : ''}
         <div class="caseload-card-footer">

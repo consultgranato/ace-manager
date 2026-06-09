@@ -3217,3 +3217,12 @@ textarea:focus {
   align-items: center;
   gap: 6px;
 }
+
+/* ============================================================
+   Phase 2.8.1 — Status dot purple variant
+   ============================================================ */
+
+.status-dot.dot-purple,
+.card-status-dot.dot-purple {
+  background: var(--purple-warm);
+}
