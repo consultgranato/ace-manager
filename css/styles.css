@@ -2931,3 +2931,289 @@ textarea:focus {
   text-decoration: line-through;
   color: var(--text-muted);
 }
+
+/* ============================================================
+   Phase 2.8 — Empty states + Settings page
+   ============================================================ */
+
+/* Welcome screen for 0-students homepage */
+.welcome-screen {
+  max-width: 640px;
+  margin: 24px auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.welcome-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+  margin-bottom: 20px;
+}
+
+.welcome-screen h1 {
+  font-size: 26px;
+  margin: 0 0 12px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.welcome-lead {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin: 0 auto 8px;
+  max-width: 480px;
+  line-height: 1.55;
+}
+
+.welcome-step {
+  font-size: 14px;
+  margin: 14px 0 18px;
+}
+
+.welcome-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  margin-bottom: 32px;
+}
+
+.welcome-features {
+  list-style: none;
+  margin: 0 auto;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  max-width: 460px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.welcome-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welcome-features li strong {
+  color: var(--text);
+  margin-right: 4px;
+}
+
+/* Caseload empty state */
+.caseload-empty {
+  grid-column: 1 / -1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 48px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.caseload-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-lg);
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+  margin-bottom: 16px;
+}
+
+.caseload-empty h3 {
+  font-size: 19px;
+  margin: 0 0 8px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.caseload-empty p {
+  font-size: 14px;
+  max-width: 420px;
+  margin: 0 auto 20px;
+  line-height: 1.55;
+}
+
+.caseload-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 22px;
+}
+
+/* Settings page */
+.settings-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.settings-header {
+  margin-bottom: 28px;
+}
+
+.settings-header h1 {
+  font-size: 28px;
+  margin: 0 0 6px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.settings-section {
+  margin-bottom: 28px;
+}
+
+.settings-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin: 0 0 12px;
+}
+
+.settings-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 6px 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.settings-value {
+  font-size: 14.5px;
+  color: var(--text);
+}
+
+.settings-note {
+  font-size: 12.5px;
+  margin: 10px 4px 0;
+}
+
+.settings-card-disabled {
+  opacity: 0.75;
+}
+
+.settings-coming-soon {
+  list-style: none;
+  margin: 0;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-coming-soon li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.archived-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.archived-info {
+  min-width: 0;
+}
+
+.archived-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.archived-meta {
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.archived-restore-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.settings-empty {
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.settings-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

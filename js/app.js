@@ -41,5 +41,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isCaseload && window.aceCaseload) {
       await window.aceCaseload.render();
     }
+
+    const isSettings = path.endsWith('settings.html');
+    if (isSettings && window.aceSettings) {
+      await window.aceSettings.render();
+    }
   }
 });

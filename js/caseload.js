@@ -158,21 +158,28 @@ const aceCaseload = {
   },
 
   emptyStateHTML() {
+    const basePath = this.basePath();
     if (this.state.filter === 'active') {
       return `
-        <div class="empty-state">
-          <div class="empty-state-icon">${window.aceIcons.usersRound(32)}</div>
-          <div><strong>Your caseload is empty</strong></div>
-          <div class="muted" style="margin:6px 0 16px;">Add your first student to get started.</div>
-          <button class="btn-primary" data-action="add">${window.aceIcons.plus(15)} Add Student</button>
+        <div class="caseload-empty">
+          <div class="caseload-empty-icon">${window.aceIcons.usersRound(36)}</div>
+          <h3>Your caseload is empty</h3>
+          <p class="muted">
+            Add your first student to get started. Ace Manager works best with up to 15 students per case manager.
+          </p>
+          <a href="${basePath}pages/add-student.html" class="btn-primary caseload-empty-cta">
+            ${window.aceIcons.plus(15)} Add Student
+          </a>
         </div>
       `;
     }
     return `
-      <div class="empty-state">
-        <div class="empty-state-icon">${window.aceIcons.archive(32)}</div>
-        <div><strong>Nothing archived yet</strong></div>
-        <div class="muted" style="margin-top:6px;">Archived students will appear here.</div>
+      <div class="caseload-empty">
+        <div class="caseload-empty-icon">${window.aceIcons.archive(36)}</div>
+        <h3>Nothing archived yet</h3>
+        <p class="muted">
+          When you archive a student, they move here. Archived students don't appear on your caseload, calendar, or homepage — but you can restore them anytime.
+        </p>
       </div>
     `;
   },

@@ -4,7 +4,52 @@
 
 const aceHomepage = {
 
+  async maybeRenderFirstRunState() {
+    const { count, error } = await window.aceSupabase
+      .from('students')
+      .select('id', { count: 'exact', head: true });
+
+    if (error) return false;
+    if (count !== 0) return false;
+
+    const main = document.querySelector('.ace-app-main .page-content');
+    if (!main) return false;
+
+    const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
+    const profile = await window.aceAuth.getProfile();
+    const firstName = (profile?.full_name || 'there').split(' ')[0];
+
+    main.innerHTML = `
+      <div class="welcome-screen">
+        <div class="welcome-icon">${window.aceIcons.usersRound(40)}</div>
+        <h1>Welcome to Ace Manager, ${window.aceUtils.escapeHtml(firstName)}.</h1>
+        <p class="welcome-lead">
+          Ace Manager keeps your special education caseload organized — IEPs,
+          meetings, parent and teacher feedback, data collection. All in one place.
+        </p>
+        <p class="welcome-step muted">
+          Start by adding your first student. You can add up to 15.
+        </p>
+        <a href="${basePath}pages/add-student.html" class="btn-primary welcome-cta">
+          ${window.aceIcons.plus(16)} Add Your First Student
+        </a>
+        <ul class="welcome-features">
+          <li>${window.aceIcons.calendar(16)} <strong>Meeting calendar</strong> with auto-deadline tracking</li>
+          <li>${window.aceIcons.fileText(16)} <strong>IEP Builder</strong> with smart narrative generation</li>
+          <li>${window.aceIcons.graduationCap(16)} <strong>Teacher feedback links</strong> that flow back into your IEPs</li>
+          <li>${window.aceIcons.barChart(16)} <strong>Data collection</strong> with shareable entry links</li>
+          <li>${window.aceIcons.usersRound(16)} <strong>Parent feedback</strong> via simple, time-agnostic survey</li>
+        </ul>
+      </div>
+    `;
+
+    return true;
+  },
+
   async render() {
+    const isFirstRun = await this.maybeRenderFirstRunState();
+    if (isFirstRun) return;
+
     await this.renderGreeting();
     await this.renderCalendar();
     await this.renderNeedsAttention();

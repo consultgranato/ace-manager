@@ -40,7 +40,7 @@ const aceSidebar = {
 
         <div class="sidebar-section-title">Students</div>
         <div class="sidebar-students" id="sidebarStudents">
-          <div class="sidebar-empty">No students yet.</div>
+          <div class="sidebar-empty">No students yet. Click <strong>+ New Student</strong> to add one.</div>
         </div>
 
         <button class="sidebar-add-btn" id="sidebarAddStudent">
@@ -117,7 +117,7 @@ const aceSidebar = {
     }
 
     if (!students || students.length === 0) {
-      container.innerHTML = '<div class="sidebar-empty">No students yet.</div>';
+      container.innerHTML = '<div class="sidebar-empty">No students yet. Click <strong>+ New Student</strong> to add one.</div>';
       return;
     }
 
