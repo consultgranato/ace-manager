@@ -41,10 +41,11 @@ const aceCalendar = {
       return;
     }
 
-    // Build a map of student_id -> non-completed meetings for fast lookup
+    // For takeover logic: include all meetings (completed + scheduled).
+    // A completed meeting satisfies the deadline; a scheduled meeting before
+    // the deadline supersedes it. Either way the deadline stays hidden.
     const meetingsByStudent = {};
     (meetings || []).forEach(m => {
-      if (m.completed) return;
       if (!meetingsByStudent[m.student_id]) meetingsByStudent[m.student_id] = [];
       meetingsByStudent[m.student_id].push(m);
     });

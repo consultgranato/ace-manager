@@ -2613,3 +2613,74 @@ textarea:focus {
   outline-offset: -1px;
   border-radius: var(--radius-sm);
 }
+
+/* ============================================================
+   Phase 2.4 — Mark Complete + Follow-up checklist
+   ============================================================ */
+
+.meeting-overdue-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.meeting-completed-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.meeting-mark-btn-prominent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 10px 16px;
+}
+
+.followup-checklist {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.followup-done-cta {
+  margin-top: 16px;
+  padding: 16px 18px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.followup-done-cta p {
+  margin: 0;
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.followup-done-cta .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

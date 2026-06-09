@@ -18,6 +18,18 @@ const aceMeetings = {
     { label: 'Print or compile materials for the meeting', completed: false, auto: false }
   ],
 
+  // Default follow-up checklist items applied when a meeting is marked complete.
+  // All six items are manual per the locked design decision (no auto-check
+  // behavior for post-meeting tasks).
+  FOLLOWUP_CHECKLIST_DEFAULT: [
+    { label: 'Finalize and submit IEP in Embrace', completed: false, auto: false },
+    { label: 'Send signed paperwork to parents', completed: false, auto: false },
+    { label: 'Notify gen ed teachers of accommodation changes', completed: false, auto: false },
+    { label: 'Update student schedule if placement changed', completed: false, auto: false },
+    { label: 'Schedule any required follow-up meetings', completed: false, auto: false },
+    { label: 'Submit any related forms (ESY, transportation, etc.)', completed: false, auto: false }
+  ],
+
   async openScheduleDrawer(student) {
     const today = new Date().toISOString().split('T')[0];
     const bodyHTML = `
@@ -137,9 +149,14 @@ const aceMeetings = {
     return data;
   },
 
-  async getUpcomingMeeting(studentId) {
+  // Returns the meeting currently relevant for this student, with state info:
+  //   { meeting, state: 'upcoming' | 'past_not_completed' | 'completed_followups_pending' }
+  // Returns null when no relevant meeting exists.
+  async getActiveMeeting(studentId) {
     const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await window.aceSupabase
+
+    // 1. Upcoming non-completed meeting (today or future)
+    const { data: upcoming } = await window.aceSupabase
       .from('meetings')
       .select('*')
       .eq('student_id', studentId)
@@ -148,11 +165,55 @@ const aceMeetings = {
       .order('scheduled_date', { ascending: true })
       .limit(1);
 
-    if (error) {
-      console.error('getUpcomingMeeting error:', error);
-      return null;
+    if (upcoming && upcoming.length > 0) {
+      return { meeting: upcoming[0], state: 'upcoming' };
     }
-    return data && data[0] ? data[0] : null;
+
+    // 2. Past non-completed meeting (overdue for marking complete)
+    const { data: overdue } = await window.aceSupabase
+      .from('meetings')
+      .select('*')
+      .eq('student_id', studentId)
+      .eq('completed', false)
+      .lt('scheduled_date', today)
+      .order('scheduled_date', { ascending: false })
+      .limit(1);
+
+    if (overdue && overdue.length > 0) {
+      return { meeting: overdue[0], state: 'past_not_completed' };
+    }
+
+    // 3. Recently completed (last 30 days) with incomplete follow-ups
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    const { data: completed } = await window.aceSupabase
+      .from('meetings')
+      .select('*')
+      .eq('student_id', studentId)
+      .eq('completed', true)
+      .gte('scheduled_date', thirtyDaysAgoStr)
+      .order('scheduled_date', { ascending: false })
+      .limit(1);
+
+    if (completed && completed.length > 0) {
+      const followups = completed[0].followup_checklist || [];
+      const allDone = followups.length > 0 && followups.every(f => f.completed);
+      if (!allDone) {
+        return { meeting: completed[0], state: 'completed_followups_pending' };
+      }
+    }
+
+    return null;
+  },
+
+  // Kept as alias for any callers that haven't been refactored
+  async getUpcomingMeeting(studentId) {
+    const active = await this.getActiveMeeting(studentId);
+    return active && (active.state === 'upcoming' || active.state === 'past_not_completed')
+      ? active.meeting
+      : null;
   },
 
   async togglePrepItem(meetingId, itemIndex, completed) {
@@ -189,12 +250,46 @@ const aceMeetings = {
     return true;
   },
 
+  async toggleFollowupItem(meetingId, itemIndex, completed) {
+    const { data: meeting, error: fetchErr } = await window.aceSupabase
+      .from('meetings')
+      .select('followup_checklist')
+      .eq('id', meetingId)
+      .single();
+
+    if (fetchErr || !meeting) {
+      if (window.aceToast) window.aceToast.error('Could not update checklist');
+      return false;
+    }
+
+    const checklist = (meeting.followup_checklist || []).map((item, i) => {
+      if (i !== itemIndex) return item;
+      return {
+        ...item,
+        completed,
+        completed_at: completed ? new Date().toISOString() : null
+      };
+    });
+
+    const { error: updateErr } = await window.aceSupabase
+      .from('meetings')
+      .update({ followup_checklist: checklist })
+      .eq('id', meetingId);
+
+    if (updateErr) {
+      if (window.aceToast) window.aceToast.error('Could not save change');
+      return false;
+    }
+
+    return true;
+  },
+
   async renderMeetingSection(targetEl, student) {
     if (!targetEl) return;
 
-    const meeting = await this.getUpcomingMeeting(student.id);
+    const active = await this.getActiveMeeting(student.id);
 
-    if (!meeting) {
+    if (!active) {
       targetEl.innerHTML = `
         <div class="meeting-empty">
           <p class="muted">No meeting scheduled.</p>
@@ -215,22 +310,45 @@ const aceMeetings = {
       return;
     }
 
+    const { meeting, state } = active;
+
+    if (state === 'completed_followups_pending') {
+      this.renderCompletedMeeting(targetEl, meeting, student);
+    } else {
+      this.renderScheduledMeeting(targetEl, meeting, student, state);
+    }
+  },
+
+  // State: 'upcoming' or 'past_not_completed'
+  renderScheduledMeeting(targetEl, meeting, student, state) {
     const dateLabel = window.aceUtils.formatLongDate(meeting.scheduled_date);
     const daysUntil = window.aceUtils.daysUntil(meeting.scheduled_date);
-    const dayLabel = daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`;
+    const isPastDue = state === 'past_not_completed';
+    const dayLabel = isPastDue
+      ? `${Math.abs(daysUntil)} days ago`
+      : (daysUntil === 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`);
     const timeLabel = meeting.scheduled_time ? ` at ${this.formatTime(meeting.scheduled_time)}` : '';
 
     const checklist = meeting.prep_checklist || [];
     const completedCount = checklist.filter(i => i.completed).length;
 
+    const markBtnDisabled = !isPastDue && daysUntil > 0;
+    const markBtnClass = isPastDue ? 'btn-primary meeting-mark-btn-prominent' : 'ace-btn-secondary meeting-mark-btn';
+
     targetEl.innerHTML = `
       <div class="meeting-section">
+        ${isPastDue ? `
+          <div class="meeting-overdue-banner">
+            ${window.aceIcons.calendar(14)} Meeting has passed. Ready to mark complete?
+          </div>
+        ` : ''}
+
         <div class="meeting-header">
           <div>
             <div class="meeting-type-pill">${this.meetingTypeLabel(meeting.meeting_type)}</div>
             <div class="meeting-date-line">${dateLabel}${timeLabel} <span class="muted">· ${dayLabel}</span></div>
           </div>
-          <button class="ace-btn-secondary meeting-mark-btn" id="markCompleteBtn" ${daysUntil > 0 ? 'disabled title="Available on or after the meeting date"' : ''}>
+          <button class="${markBtnClass}" id="markCompleteBtn" ${markBtnDisabled ? 'disabled title="Available on or after the meeting date"' : ''}>
             ${window.aceIcons.check(14)} Mark Complete
           </button>
         </div>
@@ -247,7 +365,7 @@ const aceMeetings = {
             ${checklist.map((item, i) => `
               <li class="prep-item ${item.completed ? 'completed' : ''}">
                 <label>
-                  <input type="checkbox" data-index="${i}" ${item.completed ? 'checked' : ''} ${item.auto && !item.completed ? 'data-auto="true"' : ''} />
+                  <input type="checkbox" data-index="${i}" ${item.completed ? 'checked' : ''} />
                   <span class="prep-label">${window.aceUtils.escapeHtml(item.label)}</span>
                   ${item.auto ? `<span class="prep-auto-badge">auto</span>` : ''}
                 </label>
@@ -282,9 +400,78 @@ const aceMeetings = {
           this.renderMeetingSection(targetEl, student);
         }
       });
-    } else if (markBtn) {
-      markBtn.addEventListener('click', () => {
-        if (window.aceToast) window.aceToast.info('Mark Complete will be available after Phase 2.4 deploys.');
+    }
+  },
+
+  // State: 'completed_followups_pending'
+  renderCompletedMeeting(targetEl, meeting, student) {
+    const dateLabel = window.aceUtils.formatLongDate(meeting.scheduled_date);
+    const checklist = meeting.followup_checklist || [];
+    const completedCount = checklist.filter(i => i.completed).length;
+    const allDone = completedCount === checklist.length && checklist.length > 0;
+
+    targetEl.innerHTML = `
+      <div class="meeting-section">
+        <div class="meeting-completed-banner">
+          ${window.aceIcons.check(14)} Completed ${dateLabel} · ${this.meetingTypeLabel(meeting.meeting_type)}
+        </div>
+
+        <div class="followup-checklist">
+          <div class="prep-checklist-header">
+            <h4>Post-meeting follow-up</h4>
+            <span class="prep-count">${completedCount} of ${checklist.length} done</span>
+          </div>
+          <ul class="prep-list">
+            ${checklist.map((item, i) => `
+              <li class="prep-item ${item.completed ? 'completed' : ''}">
+                <label>
+                  <input type="checkbox" data-index="${i}" ${item.completed ? 'checked' : ''} />
+                  <span class="prep-label">${window.aceUtils.escapeHtml(item.label)}</span>
+                </label>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        ${allDone ? `
+          <div class="followup-done-cta">
+            <p class="muted">All follow-up items complete. Ready to schedule the next meeting?</p>
+            <button class="btn-primary" id="scheduleNextBtn">
+              ${window.aceIcons.calendar(15)} Schedule Next Meeting
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    targetEl.querySelectorAll('.prep-list input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        const idx = parseInt(cb.dataset.index, 10);
+        const success = await this.toggleFollowupItem(meeting.id, idx, cb.checked);
+        if (success) {
+          const li = cb.closest('.prep-item');
+          if (li) li.classList.toggle('completed', cb.checked);
+          const newCount = targetEl.querySelectorAll('.prep-list input:checked').length;
+          const countEl = targetEl.querySelector('.prep-count');
+          if (countEl) countEl.textContent = `${newCount} of ${checklist.length} done`;
+
+          // If all are now done, re-render to surface the "Schedule Next Meeting" CTA
+          if (newCount === checklist.length) {
+            this.renderMeetingSection(targetEl, student);
+          }
+        } else {
+          cb.checked = !cb.checked;
+        }
+      });
+    });
+
+    const nextBtn = targetEl.querySelector('#scheduleNextBtn');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', async () => {
+        const result = await this.openScheduleDrawer(student);
+        if (result && result.confirmed) {
+          this.renderMeetingSection(targetEl, student);
+        }
       });
     }
   },
