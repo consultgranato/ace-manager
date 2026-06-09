@@ -2750,3 +2750,184 @@ textarea:focus {
     font-size: 9px;
   }
 }
+
+/* ============================================================
+   Phase 2.6 — Needs Attention enhancements + Recent Meetings
+   ============================================================ */
+
+/* New text rows for richer attention card content */
+.attention-headline {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+.attention-subline {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* Override the older .attention-reasons block — Phase 2.6 doesn't use it */
+.attention-card .attention-reasons {
+  display: none;
+}
+
+/* State-kind specific accents (left border color) */
+.attention-meeting-upcoming {
+  border-left-color: var(--purple-primary) !important;
+}
+
+.attention-meeting-passed {
+  border-left-color: var(--critical) !important;
+}
+
+.attention-followups-pending {
+  border-left-color: var(--warning) !important;
+}
+
+/* ----- Recent Meetings zone ----- */
+.recent-meetings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-meeting {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--t-fast) var(--ease);
+}
+
+.recent-meeting:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.recent-meeting.all-done {
+  opacity: 0.7;
+}
+
+.recent-meeting-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+}
+
+.recent-meeting-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.recent-meeting-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.recent-meeting-name:hover {
+  color: var(--purple-primary);
+}
+
+.recent-meeting-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recent-meeting-type {
+  font-weight: 600;
+  color: var(--purple-primary);
+}
+
+.recent-meeting-meta .dot-sep {
+  opacity: 0.4;
+}
+
+.recent-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--t-fast) var(--ease);
+}
+
+.recent-toggle:hover {
+  background: var(--purple-tint);
+  color: var(--purple-primary);
+  border-color: var(--purple-primary);
+}
+
+.recent-chevron {
+  display: inline-flex;
+  transition: transform var(--t-fast) var(--ease);
+}
+
+.recent-meeting.expanded .recent-chevron {
+  transform: rotate(90deg);
+}
+
+.recent-meeting.all-done .recent-followup-count {
+  color: var(--success);
+}
+
+.recent-followup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px 14px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recent-meeting.expanded .recent-followup-list {
+  display: flex;
+}
+
+.recent-followup-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.recent-followup-item label:hover {
+  background: var(--bg-subtle);
+}
+
+.recent-followup-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--purple-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.recent-followup-item.completed span {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
