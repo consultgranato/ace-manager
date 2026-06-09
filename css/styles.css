@@ -1865,6 +1865,47 @@ h3 { font-size: 18px; }
   stroke-width: 3;
 }
 
+/* ============================================================
+   Phase 2.7 — Notes auto-save indicator
+   ============================================================ */
+
+.notes-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notes-status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notes-status {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+  min-width: 60px;
+  text-align: right;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.notes-status:empty {
+  opacity: 0;
+}
+
+.notes-status-saving {
+  color: rgba(255,255,255,0.7);
+}
+
+.notes-status-saved {
+  color: #a7f3d0;
+}
+
+.notes-status-error {
+  color: #fca5a5;
+}
+
 .back-link {
   display: inline-flex;
   align-items: center;

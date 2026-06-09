@@ -36,5 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isAddStudent && window.aceAddStudent) {
       await window.aceAddStudent.render();
     }
+
+    const isCaseload = path.endsWith('caseload.html');
+    if (isCaseload && window.aceCaseload) {
+      await window.aceCaseload.render();
+    }
   }
 });

@@ -187,11 +187,14 @@ const aceProfile = {
       <div class="notes-drawer" id="notesDrawer">
         <div class="notes-drawer-header">
           <h3>Notes</h3>
-          <button class="notes-close" id="notesClose" aria-label="Close">${window.aceIcons.x(18)}</button>
+          <div class="notes-status-wrap">
+            <span class="notes-status" id="notesStatus"></span>
+            <button class="notes-close" id="notesClose" aria-label="Close">${window.aceIcons.x(18)}</button>
+          </div>
         </div>
         <div class="notes-drawer-body">
-          <p class="muted" style="font-size:13px;">
-            Freeform scratchpad. Auto-save coming in Phase 2.
+          <p class="muted" style="font-size:13px;margin:0 0 4px;">
+            Quick notes for ${window.aceUtils.escapeHtml(this.state.student.first_name)}. Saves automatically.
           </p>
           <textarea
             id="notesTextarea"
@@ -207,6 +210,87 @@ const aceProfile = {
     document.getElementById('notesFab').addEventListener('click', () => this.openNotes());
     document.getElementById('notesClose').addEventListener('click', () => this.closeNotes());
     document.getElementById('notesOverlay').addEventListener('click', () => this.closeNotes());
+
+    // Wire up debounced auto-save
+    this.setupAutoSave();
+  },
+
+  // Debounced save state
+  _saveTimer: null,
+  _saveInFlight: false,
+  _lastSavedValue: null,
+
+  setupAutoSave() {
+    const textarea = document.getElementById('notesTextarea');
+    if (!textarea) return;
+
+    this._lastSavedValue = textarea.value;
+
+    textarea.addEventListener('input', () => {
+      this.setNotesStatus('typing');
+      if (this._saveTimer) clearTimeout(this._saveTimer);
+      this._saveTimer = setTimeout(() => this.saveNotes(textarea.value), 1000);
+    });
+
+    // Also save immediately on drawer close if there's pending content
+    textarea.addEventListener('blur', () => {
+      if (this._saveTimer) {
+        clearTimeout(this._saveTimer);
+        this._saveTimer = null;
+        this.saveNotes(textarea.value);
+      }
+    });
+  },
+
+  async saveNotes(value) {
+    if (!this.state.studentId) return;
+    if (value === this._lastSavedValue) {
+      this.setNotesStatus('saved');
+      return;
+    }
+    if (this._saveInFlight) return;
+
+    this._saveInFlight = true;
+    this.setNotesStatus('saving');
+
+    const { error } = await window.aceSupabase
+      .from('students')
+      .update({ notes: value })
+      .eq('id', this.state.studentId);
+
+    this._saveInFlight = false;
+
+    if (error) {
+      console.error('Notes save error:', error);
+      this.setNotesStatus('error');
+      if (window.aceToast) window.aceToast.error('Could not save notes');
+      return;
+    }
+
+    this._lastSavedValue = value;
+    if (this.state.student) this.state.student.notes = value;
+    this.setNotesStatus('saved');
+  },
+
+  setNotesStatus(state) {
+    const el = document.getElementById('notesStatus');
+    if (!el) return;
+    if (state === 'typing') {
+      el.textContent = '';
+      el.className = 'notes-status';
+    } else if (state === 'saving') {
+      el.textContent = 'Saving…';
+      el.className = 'notes-status notes-status-saving';
+    } else if (state === 'saved') {
+      el.textContent = 'Saved';
+      el.className = 'notes-status notes-status-saved';
+      setTimeout(() => {
+        if (el.textContent === 'Saved') el.textContent = '';
+      }, 2000);
+    } else if (state === 'error') {
+      el.textContent = 'Could not save';
+      el.className = 'notes-status notes-status-error';
+    }
   },
 
   openNotes() {
