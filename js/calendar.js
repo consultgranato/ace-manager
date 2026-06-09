@@ -20,6 +20,7 @@ const aceCalendar = {
   async loadEvents() {
     this.state.events = [];
 
+    // Load students with their deadline dates
     const { data: students, error: stErr } = await window.aceSupabase
       .from('students')
       .select('id, first_name, last_initial, annual_review_date, reeval_due_date')
@@ -30,25 +31,7 @@ const aceCalendar = {
       return;
     }
 
-    students?.forEach(s => {
-      if (s.annual_review_date) {
-        this.state.events.push({
-          date: s.annual_review_date,
-          type: 'annual',
-          title: `Annual: ${s.first_name} ${s.last_initial}.`,
-          studentId: s.id
-        });
-      }
-      if (s.reeval_due_date) {
-        this.state.events.push({
-          date: s.reeval_due_date,
-          type: 'reeval',
-          title: `Re-eval: ${s.first_name} ${s.last_initial}.`,
-          studentId: s.id
-        });
-      }
-    });
-
+    // Load all non-completed meetings
     const { data: meetings, error: mtErr } = await window.aceSupabase
       .from('meetings')
       .select('id, scheduled_date, meeting_type, completed, student_id, students(first_name, last_initial)');
@@ -58,6 +41,54 @@ const aceCalendar = {
       return;
     }
 
+    // Build a map of student_id -> non-completed meetings for fast lookup
+    const meetingsByStudent = {};
+    (meetings || []).forEach(m => {
+      if (m.completed) return;
+      if (!meetingsByStudent[m.student_id]) meetingsByStudent[m.student_id] = [];
+      meetingsByStudent[m.student_id].push(m);
+    });
+
+    // Apply takeover logic per student
+    students?.forEach(s => {
+      const studentMeetings = meetingsByStudent[s.id] || [];
+
+      // Annual review deadline — show only if no scheduled meeting on-or-before it
+      if (s.annual_review_date) {
+        const deadline = new Date(s.annual_review_date);
+        const hasCoveringMeeting = studentMeetings.some(m => {
+          const md = new Date(m.scheduled_date);
+          return md <= deadline;
+        });
+        if (!hasCoveringMeeting) {
+          this.state.events.push({
+            date: s.annual_review_date,
+            type: 'annual',
+            title: `Annual: ${s.first_name} ${s.last_initial}.`,
+            studentId: s.id
+          });
+        }
+      }
+
+      // Re-eval deadline — same takeover rule
+      if (s.reeval_due_date) {
+        const deadline = new Date(s.reeval_due_date);
+        const hasCoveringMeeting = studentMeetings.some(m => {
+          const md = new Date(m.scheduled_date);
+          return md <= deadline;
+        });
+        if (!hasCoveringMeeting) {
+          this.state.events.push({
+            date: s.reeval_due_date,
+            type: 'reeval',
+            title: `Re-eval: ${s.first_name} ${s.last_initial}.`,
+            studentId: s.id
+          });
+        }
+      }
+    });
+
+    // Add scheduled (non-completed) meetings as their own events
     meetings?.forEach(m => {
       if (m.completed) return;
       const name = m.students ? `${m.students.first_name} ${m.students.last_initial}.` : 'Student';
@@ -229,8 +260,17 @@ const aceCalendar = {
         const date = cell.dataset.date;
         const events = this.eventsForDate(date);
         if (events.length === 0) return;
-        const lines = events.map(e => `• ${e.title}`).join('\n');
-        alert(`${window.aceUtils.formatLongDate(date)}\n\n${lines}`);
+
+        const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
+
+        if (events.length === 1) {
+          // Single event — navigate directly to that student's profile
+          window.location.href = `${basePath}pages/student-profile.html?id=${events[0].studentId}`;
+          return;
+        }
+
+        // Multiple events on same date — open a small popover
+        this.showDayPopover(cell, date, events, basePath);
       });
     });
   },
@@ -245,6 +285,48 @@ const aceCalendar = {
       d.setDate(d.getDate() + (direction === 'next' ? 7 : -7));
       this.state.currentDate = d;
     }
+  },
+
+  showDayPopover(cell, date, events, basePath) {
+    // Remove any existing popover
+    document.querySelectorAll('.cal-popover').forEach(p => p.remove());
+
+    const popover = document.createElement('div');
+    popover.className = 'cal-popover';
+
+    const dateLabel = window.aceUtils.formatLongDate(date);
+    popover.innerHTML = `
+      <div class="cal-popover-header">${dateLabel}</div>
+      <div class="cal-popover-list">
+        ${events.map(e => `
+          <a href="${basePath}pages/student-profile.html?id=${e.studentId}" class="cal-popover-item">
+            <span class="cal-popover-dot dot-${e.type}"></span>
+            <span class="cal-popover-title">${window.aceUtils.escapeHtml(e.title)}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+
+    // Position popover near the clicked cell
+    document.body.appendChild(popover);
+    const rect = cell.getBoundingClientRect();
+    const popRect = popover.getBoundingClientRect();
+    let top = rect.bottom + window.scrollY + 6;
+    let left = rect.left + window.scrollX;
+    if (left + popRect.width > window.innerWidth - 16) {
+      left = window.innerWidth - popRect.width - 16;
+    }
+    popover.style.top = `${top}px`;
+    popover.style.left = `${left}px`;
+
+    // Close on outside click
+    const closeHandler = (e) => {
+      if (!popover.contains(e.target)) {
+        popover.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 50);
   },
 
   eventsForDate(isoDate) {
