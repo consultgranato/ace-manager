@@ -41,20 +41,88 @@ const aceProfile = {
     const s = this.state.student;
     const nextDeadline = this.computeNextDeadline(s);
     const basePath = this.basePath();
+    const esc = window.aceUtils.escapeHtml;
 
     host.innerHTML = `
       <a href="${basePath}pages/caseload.html" class="back-link">${window.aceIcons.arrowLeft(15)} Back to Caseload</a>
+
       <div class="profile-identity">
-        <h1 class="profile-name">${window.aceUtils.escapeHtml(s.first_name)} ${window.aceUtils.escapeHtml(s.last_initial)}.</h1>
-        <div class="profile-meta">
-          <span>${window.aceUtils.escapeHtml(s.grade)}</span>
-          <span class="dot-sep">·</span>
-          <span>${window.aceUtils.escapeHtml(s.primary_disability)}</span>
-          ${s.secondary_disability ? `<span class="dot-sep">·</span><span class="muted">${window.aceUtils.escapeHtml(s.secondary_disability)}</span>` : ''}
+        <div class="profile-identity-row">
+          <div class="profile-identity-main">
+            <h1 class="profile-name">${esc(s.first_name)} ${esc(s.last_initial)}.</h1>
+            <div class="profile-meta">
+              <span>${esc(s.grade)}</span>
+              <span class="dot-sep">·</span>
+              <span>${esc(s.primary_disability)}</span>
+              ${s.secondary_disability ? `<span class="dot-sep">·</span><span class="muted">${esc(s.secondary_disability)}</span>` : ''}
+            </div>
+            ${nextDeadline.html}
+          </div>
+
+          <div class="profile-identity-actions">
+            <button class="btn-secondary profile-edit-btn" id="profileEditBtn">
+              ${window.aceIcons.edit(14)} Edit
+            </button>
+            <div class="profile-menu-wrap">
+              <button class="profile-menu-btn" id="profileMenuBtn" aria-label="More options">
+                ${window.aceIcons.moreHorizontal(18)}
+              </button>
+              <div class="profile-menu" id="profileMenu" style="display:none;">
+                ${s.archived
+                  ? `<button class="profile-menu-item" data-action="restore">${window.aceIcons.rotateCcw(14)} Restore Student</button>`
+                  : `<button class="profile-menu-item profile-menu-danger" data-action="archive">${window.aceIcons.archive(14)} Archive Student</button>`
+                }
+              </div>
+            </div>
+          </div>
         </div>
-        ${nextDeadline.html}
       </div>
     `;
+
+    this.attachHeaderListeners();
+  },
+
+  attachHeaderListeners() {
+    const editBtn = document.getElementById('profileEditBtn');
+    if (editBtn) {
+      editBtn.addEventListener('click', async () => {
+        const result = await window.aceEditStudent.open(this.state.student);
+        if (result && result.confirmed && result.result) {
+          this.state.student = result.result;
+          this.renderHeader();
+        }
+      });
+    }
+
+    const menuBtn = document.getElementById('profileMenuBtn');
+    const menu = document.getElementById('profileMenu');
+    if (menuBtn && menu) {
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      });
+      document.addEventListener('click', (e) => {
+        if (!menuBtn.contains(e.target) && !menu.contains(e.target)) {
+          menu.style.display = 'none';
+        }
+      });
+
+      menu.querySelectorAll('.profile-menu-item').forEach(item => {
+        item.addEventListener('click', async () => {
+          menu.style.display = 'none';
+          const action = item.dataset.action;
+          if (action === 'archive') {
+            await window.aceArchiveStudent.confirm(this.state.student);
+          } else if (action === 'restore') {
+            const ok = await window.aceArchiveStudent.restore(this.state.student);
+            if (ok) {
+              this.state.student.archived = false;
+              this.renderHeader();
+            }
+          }
+        });
+      });
+    }
   },
 
   computeNextDeadline(s) {

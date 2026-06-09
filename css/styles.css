@@ -2146,3 +2146,97 @@ h3 { font-size: 18px; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ============================================================
+   Phase 2.2 — Edit / Archive controls on profile
+   ============================================================ */
+
+.profile-identity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profile-identity-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-identity-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.profile-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+}
+
+.profile-menu-wrap {
+  position: relative;
+}
+
+.profile-menu-btn {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--t-fast) var(--ease);
+}
+
+.profile-menu-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 50;
+  min-width: 200px;
+  border: 1px solid var(--border);
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  color: var(--text);
+  transition: all var(--t-fast) var(--ease);
+}
+
+.profile-menu-item:hover {
+  background: var(--bg-subtle);
+}
+
+.profile-menu-danger:hover {
+  background: #fef2f2;
+  color: var(--critical);
+}
