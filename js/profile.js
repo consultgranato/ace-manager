@@ -215,19 +215,10 @@ const aceProfile = {
         actionLabel: 'View Trackers',
         actionDisabled: true,
         comingSoon: 'Phase 4'
-      },
-      {
-        id: 'meetings',
-        icon: window.aceIcons.calendar(18),
-        title: 'Meeting Notes',
-        status: 'No meeting scheduled',
-        statusDot: 'gray',
-        actionLabel: 'Schedule Meeting',
-        actionDisabled: true,
-        comingSoon: 'Phase 2'
       }
     ];
 
+    // Render the standard 5 cards
     host.innerHTML = cards.map(c => `
       <div class="profile-card" data-card="${c.id}">
         <div class="card-header">
@@ -242,6 +233,30 @@ const aceProfile = {
         ${c.comingSoon ? `<div class="card-coming-soon">Coming in ${c.comingSoon}</div>` : ''}
       </div>
     `).join('');
+
+    // Append the Meeting Notes card — it has custom dynamic content
+    const meetingCard = document.createElement('div');
+    meetingCard.className = 'profile-card profile-card-meetings';
+    meetingCard.dataset.card = 'meetings';
+    meetingCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.calendar(18)}</div>
+        <div class="card-title">Meeting Notes</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="meetingSectionHost">
+        <div class="muted" style="font-size:13px;">Loading…</div>
+      </div>
+    `;
+    host.appendChild(meetingCard);
+
+    // Render live meeting content
+    if (window.aceMeetings) {
+      window.aceMeetings.renderMeetingSection(
+        document.getElementById('meetingSectionHost'),
+        this.state.student
+      );
+    }
   },
 
   renderNotesDrawer() {
