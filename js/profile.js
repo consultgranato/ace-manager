@@ -173,8 +173,7 @@ const aceProfile = {
         status: 'Never started',
         statusDot: 'gray',
         actionLabel: 'Open IEP Builder',
-        actionDisabled: true,
-        comingSoon: 'Phase 3'
+        actionDisabled: false
       },
       {
         id: 'data',
@@ -188,7 +187,7 @@ const aceProfile = {
       }
     ];
 
-    // Render the standard 5 cards
+    // Render the standard cards
     host.innerHTML = cards.map(c => `
       <div class="profile-card" data-card="${c.id}">
         <div class="card-header">
@@ -203,6 +202,16 @@ const aceProfile = {
         ${c.comingSoon ? `<div class="card-coming-soon">Coming in ${c.comingSoon}</div>` : ''}
       </div>
     `).join('');
+
+    // Wire IEP Builder card navigation
+    const iepBtn = host.querySelector('[data-card="iep"] .card-action');
+    if (iepBtn) {
+      iepBtn.disabled = false;
+      iepBtn.addEventListener('click', () => {
+        const bp = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
+        window.location.href = `${bp}pages/iep-builder.html?id=${this.state.student.id}`;
+      });
+    }
 
     // Append the Meeting Notes card — it has custom dynamic content
     const meetingCard = document.createElement('div');
