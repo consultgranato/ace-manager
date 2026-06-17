@@ -177,16 +177,6 @@ const aceProfile = {
         comingSoon: 'Phase 3'
       },
       {
-        id: 'transition',
-        icon: window.aceIcons.compass(18),
-        title: 'Transition Assessment',
-        status: 'Not yet administered',
-        statusDot: 'gray',
-        actionLabel: 'Administer Assessment',
-        actionDisabled: true,
-        comingSoon: 'Phase 3'
-      },
-      {
         id: 'data',
         icon: window.aceIcons.barChart(18),
         title: 'Data Collection',
@@ -282,6 +272,24 @@ const aceProfile = {
         document.getElementById('parentFeedbackHost'),
         this.state.student
       );
+    }
+
+    // Append the Transition Assessment card — live, custom content
+    const taCard = document.createElement('div');
+    taCard.className = 'profile-card profile-card-transition';
+    taCard.dataset.card = 'transition';
+    taCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.compass(18)}</div>
+        <div class="card-title">Transition Assessment</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="transitionHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
+    `;
+    host.appendChild(taCard);
+
+    if (window.aceTransition) {
+      window.aceTransition.render(document.getElementById('transitionHost'), this.state.student);
     }
   },
 
