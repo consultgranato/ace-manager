@@ -3732,3 +3732,25 @@ textarea:focus {
 .iep-md-acc-btn.open .iep-md-acc-arrow { transform: rotate(180deg); }
 .iep-md-acc-content { display: none; padding: 16px; background: white; border-top: 1px solid var(--border); }
 .iep-md-acc-content.active { display: block; }
+
+/* ============================================================
+   Phase 3.8c — Academic Performance section
+   ============================================================ */
+
+.iep-acad-block { padding: 16px 18px; background: var(--bg-subtle); border: 1px solid var(--border); border-left: 4px solid var(--purple-tint); border-radius: var(--radius-md); margin-bottom: 14px; }
+.iep-acad-block-title { font-size: 13.5px; font-weight: 700; color: var(--purple-primary); margin-bottom: 14px; }
+
+.iep-acad-assess-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.iep-acad-add-btn { font-size: 12px; font-weight: 700; color: var(--purple-primary); background: white; border: 1px solid var(--purple-tint); border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: inherit; transition: background var(--t-fast) var(--ease); }
+.iep-acad-add-btn:hover { background: var(--purple-tint); }
+
+.iep-assess-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; padding: 10px 12px; background: white; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.iep-assess-name-wrap { flex: 1; min-width: 140px; }
+.iep-assess-score-wrap { display: flex; align-items: center; gap: 6px; }
+.iep-assess-score-input { width: 76px; }
+.iep-assess-interp { font-size: 10px; font-weight: 700; color: var(--purple-primary); white-space: nowrap; }
+.iep-assess-interp.hidden { display: none; }
+.iep-assess-remove-btn { background: none; border: none; cursor: pointer; font-size: 20px; line-height: 1; color: var(--text-faint); padding: 0 4px; font-family: inherit; }
+.iep-assess-remove-btn:hover { color: #dc2626; }
+
+.iep-textarea { resize: vertical; font-family: inherit; }

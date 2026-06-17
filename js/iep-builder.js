@@ -120,10 +120,7 @@ const aceIepBuilder = {
           ${this.contextSectionHTML()}
           ${this.inputsSectionHTML()}
           ${this.strengthsSectionHTML()}
-          <section class="iep-section" id="sec-academic">
-            <h2 class="iep-section-title">Academic Performance</h2>
-            <div class="iep-placeholder muted">Built in the next update (3.8b).</div>
-          </section>
+          ${this.academicSectionHTML()}
           ${this.attendanceSectionHTML()}
           ${this.functionalSectionHTML()}
           ${this.goalsSectionHTML()}
@@ -140,6 +137,7 @@ const aceIepBuilder = {
     this.wireContextToggle(host);
     this.wireFuncCards(host);
     this.wireStudentInfo(host);
+    this.wireAcademic(host);
   },
 
   contextSectionHTML() {
@@ -642,6 +640,145 @@ const aceIepBuilder = {
         }
       });
     });
+  },
+
+  academicSectionHTML() {
+    const esc = window.aceUtils.escapeHtml;
+    const perfOptions = [
+      'Significantly Below Grade Level',
+      'Below Grade Level',
+      'Approaching Grade Level',
+      'At Grade Level',
+      'Above Grade Level'
+    ];
+    const commonBarriers = [
+      { id: 'attention',    label: 'Attention',           value: 'Attention' },
+      { id: 'speed',        label: 'Processing Speed',    value: 'Processing Speed' },
+      { id: 'organization', label: 'Organization',        value: 'Organization' },
+      { id: 'behavior',     label: 'Behavior',            value: 'Behavior' },
+      { id: 'attendance',   label: 'Attendance',          value: 'Attendance' },
+      { id: 'language',     label: 'Language Processing', value: 'Language Processing' }
+    ];
+    const subjects = [
+      {
+        key: 'literacy', label: 'Literacy',
+        specific: [
+          { id: 'decoding',      label: 'Decoding',             value: 'Decoding' },
+          { id: 'fluency',       label: 'Reading Fluency',      value: 'Reading Fluency' },
+          { id: 'comprehension', label: 'Reading Comprehension', value: 'Reading Comprehension' },
+          { id: 'written',       label: 'Written Expression',   value: 'Written Expression' },
+          { id: 'spelling',      label: 'Spelling',             value: 'Spelling' },
+          { id: 'vocab',         label: 'Vocabulary',           value: 'Vocabulary' }
+        ]
+      },
+      {
+        key: 'math', label: 'Math',
+        specific: [
+          { id: 'calculation',    label: 'Calculation',                   value: 'Calculation' },
+          { id: 'problemsolving', label: 'Problem Solving / Application', value: 'Problem Solving / Application' },
+          { id: 'numbersense',    label: 'Number Sense',                  value: 'Number Sense' },
+          { id: 'factfluency',    label: 'Fact Fluency',                  value: 'Fact Fluency' },
+          { id: 'multistep',      label: 'Multi-Step Reasoning',          value: 'Multi-Step Reasoning' }
+        ]
+      },
+      {
+        key: 'science', label: 'Science',
+        specific: [
+          { id: 'vocab',   label: 'Scientific Vocabulary',      value: 'Scientific Vocabulary' },
+          { id: 'lab',     label: 'Lab / Hands-on Application', value: 'Lab / Hands-on Application' },
+          { id: 'reading', label: 'Reading Scientific Text',    value: 'Reading Scientific Text' },
+          { id: 'data',    label: 'Data Interpretation',        value: 'Data Interpretation' }
+        ]
+      },
+      {
+        key: 'socialscience', label: 'Social Science',
+        specific: [
+          { id: 'reading',   label: 'Reading Comprehension of Complex Text', value: 'Reading Comprehension of Complex Text' },
+          { id: 'writing',   label: 'Writing Extended Responses',            value: 'Writing Extended Responses' },
+          { id: 'reasoning', label: 'Historical Reasoning',                  value: 'Historical Reasoning' },
+          { id: 'vocab',     label: 'Vocabulary / Terminology',              value: 'Vocabulary / Terminology' }
+        ]
+      }
+    ];
+
+    const barrierChecks = (key, items) => items.map(b =>
+      `<label class="iep-check"><input type="checkbox" id="bar-${key}-${b.id}" value="${esc(b.value)}" class="acad-barrier" /><span>${esc(b.label)}</span></label>`
+    ).join('');
+
+    const subjectBlock = (s) => `
+      <div class="iep-acad-block">
+        <div class="iep-acad-block-title">${esc(s.label)}</div>
+        ${this.selectField('acad-perf-' + s.key, 'Performance Level', perfOptions)}
+        <div class="iep-field">
+          <label class="iep-label">Common barriers</label>
+          <div class="iep-check-grid">${barrierChecks(s.key, commonBarriers)}</div>
+        </div>
+        <div class="iep-field">
+          <label class="iep-label">Subject-specific barriers</label>
+          <div class="iep-check-grid">${barrierChecks(s.key, s.specific)}</div>
+        </div>
+      </div>`;
+
+    return `
+      <section class="iep-section" id="sec-academic">
+        <h2 class="iep-section-title">Academic Performance</h2>
+        <p class="iep-section-hint muted">Select a performance level and any relevant barriers for each subject area.</p>
+        ${subjects.map(subjectBlock).join('')}
+        <div class="iep-field">
+          <div class="iep-acad-assess-header">
+            <label class="iep-label" style="margin-bottom:0;">Assessment Data</label>
+            <button type="button" id="addAssessmentBtn" class="iep-acad-add-btn">+ Add Assessment</button>
+          </div>
+          <div id="assessmentRows"></div>
+        </div>
+        <div class="iep-field">
+          <label class="iep-label">Evaluation Results</label>
+          <textarea id="eval-results" rows="4" class="iep-text iep-textarea" placeholder="Summarize any recent evaluation findings — psych, speech, OT, etc. Reference report date if known."></textarea>
+          <p class="iep-section-hint muted" style="margin-top:5px;">e.g., Triennial re-evaluation, psych report, speech evaluation, OT assessment</p>
+        </div>
+      </section>`;
+  },
+
+  wireAcademic(host) {
+    const SCORE_TYPES = ['Percentile','Grade Equivalent','Standard Score','Lexile','Scale Score','Raw Score','Other'];
+    const addRow = () => {
+      const container = host.querySelector('#assessmentRows');
+      if (!container) return;
+      const row = document.createElement('div');
+      row.className = 'assessment-row iep-assess-row';
+      row.innerHTML = `
+        <div class="iep-assess-name-wrap">
+          <input type="text" class="assess-name iep-text iep-text-sm" placeholder="e.g., Star Reading, MAP, iReady" />
+        </div>
+        <div class="iep-assess-score-wrap">
+          <input type="text" class="assess-score iep-text iep-text-sm iep-assess-score-input" placeholder="Score" />
+          <span class="assess-interp iep-assess-interp hidden"></span>
+        </div>
+        <select class="assess-type iep-select iep-select-sm">
+          <option value="">Type...</option>
+          ${SCORE_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
+        <input type="date" class="assess-date iep-text iep-text-sm" />
+        <button type="button" class="iep-assess-remove-btn" aria-label="Remove">&times;</button>`;
+      const scoreEl = row.querySelector('.assess-score');
+      const typeEl = row.querySelector('.assess-type');
+      const interpEl = row.querySelector('.assess-interp');
+      const updateInterp = () => {
+        const val = parseInt(scoreEl.value);
+        if (typeEl.value === 'Percentile' && !isNaN(val) && val >= 1 && val <= 99) {
+          interpEl.textContent = val <= 24 ? 'Below Average Range' : val <= 74 ? 'Average Range' : 'Above Average Range';
+          interpEl.classList.remove('hidden');
+        } else {
+          interpEl.classList.add('hidden');
+        }
+      };
+      scoreEl.addEventListener('input', updateInterp);
+      typeEl.addEventListener('change', updateInterp);
+      row.querySelector('.iep-assess-remove-btn').addEventListener('click', () => row.remove());
+      container.appendChild(row);
+    };
+    const addBtn = host.querySelector('#addAssessmentBtn');
+    if (addBtn) addBtn.addEventListener('click', addRow);
   }
 };
 
