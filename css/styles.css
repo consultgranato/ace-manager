@@ -3444,3 +3444,99 @@ textarea:focus {
 @media (max-width: 600px) {
   .tf-detail-pair { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* ============================================================
+   Phase 3.4 — Public teacher feedback form
+   ============================================================ */
+
+.public-form-body {
+  background: var(--bg);
+  min-height: 100vh;
+  margin: 0;
+}
+
+.public-form-shell {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 18px 60px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.public-form-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 4px 20px;
+}
+
+.public-form-logo { width: 44px; height: 44px; border-radius: 10px; }
+.public-form-brand { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+.public-form-sub { font-size: 13px; color: var(--text-muted); }
+
+.public-form-main { flex: 1; }
+
+.public-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: 28px;
+}
+
+.public-form-title { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; color: var(--text); }
+.public-form-lead { font-size: 14.5px; color: var(--text-muted); margin: 0 0 22px; line-height: 1.5; }
+.public-form-msg { font-size: 15px; color: var(--text); text-align: center; padding: 40px 28px; }
+
+.public-form-footer { text-align: center; font-size: 12px; color: var(--text-faint); padding-top: 24px; }
+
+.public-form-loading { text-align: center; padding: 60px; color: var(--text-muted); }
+
+/* Picker */
+.picker-list { display: flex; flex-direction: column; gap: 8px; }
+.picker-item {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; padding: 16px 18px; font-size: 15px; font-weight: 600;
+  background: var(--bg-subtle); border: 1.5px solid var(--border-input);
+  border-radius: var(--radius-md); cursor: pointer; color: var(--text);
+  font-family: inherit; transition: all var(--t-fast) var(--ease);
+}
+.picker-item:hover { border-color: var(--purple-primary); background: var(--purple-tint); }
+
+/* Form */
+.tform-back {
+  background: none; border: none; cursor: pointer; color: var(--purple-primary);
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px; padding: 0; margin-bottom: 16px;
+}
+.tform-back:hover { text-decoration: underline; }
+
+.tform-field { margin-bottom: 22px; }
+.tform-label { display: block; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+.tform-label .req { color: var(--critical); }
+.tform-label .muted { font-weight: 400; }
+
+.tform-radiogroup, .tform-checkgroup { display: flex; flex-direction: column; gap: 6px; }
+
+.tform-radio, .tform-check {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 14px; transition: all var(--t-fast) var(--ease);
+}
+.tform-radio:hover, .tform-check:hover { background: var(--bg-subtle); border-color: var(--border-input); }
+.tform-radio input, .tform-check input { width: 17px; height: 17px; accent-color: var(--purple-primary); flex-shrink: 0; margin: 0; }
+
+.tform-checkgroup { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+@media (max-width: 560px) { .tform-checkgroup { grid-template-columns: 1fr; } }
+
+.tform-submit { width: 100%; padding: 14px; font-size: 15px; margin-top: 8px; }
+.tform-saved-hint { text-align: center; font-size: 12px; margin-top: 10px; min-height: 16px; }
+
+.public-form-thankyou { text-align: center; }
+.thankyou-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 72px; height: 72px; border-radius: 50%;
+  background: #ecfdf5; color: var(--success); margin-bottom: 16px;
+}
+.public-form-thankyou .btn-secondary { margin-top: 16px; }
