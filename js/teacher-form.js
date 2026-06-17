@@ -114,7 +114,7 @@
 
         <div class="tform-field">
           <label class="tform-label">Your name <span class="req">*</span></label>
-          <input type="text" id="tf-teacherName" placeholder="e.g., Ms. Behling" />
+          <input type="text" id="tf-teacherName" />
         </div>
 
         <div class="tform-field">
