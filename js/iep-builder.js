@@ -644,6 +644,72 @@ const aceIepBuilder = {
 
   academicSectionHTML() {
     const esc = window.aceUtils.escapeHtml;
+    const student = this.state.student;
+    const tf1s = this.state.tf1s || [];
+    const courses = (student && student.courses) || [];
+
+    // Build per-domain course and TF1 lookup
+    const getDomain = (c) => window.COURSE_DOMAIN_MAP ? window.COURSE_DOMAIN_MAP.getDomain(c) : 'none';
+    const DOMAINS = ['literacy', 'math', 'science', 'socialscience'];
+    const domainCourses = {};
+    const domainTf1s = {};
+    DOMAINS.forEach(d => {
+      domainCourses[d] = courses.filter(c => getDomain(c) === d);
+      domainTf1s[d] = [];
+      domainCourses[d].forEach(c => {
+        tf1s.filter(p => p.courseName === c.name).forEach(p => domainTf1s[d].push(p));
+      });
+    });
+
+    // Compute suggested common barrier IDs from TF1 signals
+    const computeSuggestions = (domainKey) => {
+      const suggested = new Set();
+      domainTf1s[domainKey].forEach(p => {
+        const lowEng  = ['Rarely engaged — frequently off-task', 'Sometimes engaged — inconsistent attention'];
+        const lowPart = ['Rarely participates — needs significant prompting', 'Sometimes participates — inconsistent'];
+        const lowInd  = ['Requires near-constant adult support', 'Requires frequent check-ins and prompting'];
+        if (lowEng.includes(p.engagementLevel) || lowPart.includes(p.participationLevel)) {
+          suggested.add('attention');
+          suggested.add('behavior');
+        }
+        if (lowInd.includes(p.independenceLevel)) suggested.add('organization');
+      });
+      return suggested;
+    };
+
+    // Read-only teacher-feedback reference panel
+    const SETTING_LABELS = { gen_ed: 'Gen Ed', co_taught: 'Co-Taught', sped_resource: 'SpEd/Resource' };
+    const refPanelHTML = (domainKey) => {
+      if (!domainCourses[domainKey].length) return '';
+      const pairs = domainTf1s[domainKey];
+      if (!pairs.length) {
+        return `<div class="iep-acad-tf-panel"><p class="iep-acad-tf-empty muted">No teacher feedback submitted yet for these courses.</p></div>`;
+      }
+      return `<div class="iep-acad-tf-panel">${pairs.map(p => {
+        const setting = SETTING_LABELS[p.settingType] || (p.settingType || '');
+        const dataRows = [
+          ['Performance',       p.overallPerformance],
+          ['Participation',     p.participationLevel],
+          ['Engagement',        p.engagementLevel],
+          ['Independence',      p.independenceLevel],
+          ['Peer interactions', p.peerInteractions],
+        ].filter(([, v]) => v);
+        const strategies = Array.isArray(p.effectiveStrategies) && p.effectiveStrategies.length
+          ? p.effectiveStrategies.join(', ') : '';
+        return `<div class="iep-acad-tf-row">
+          <div class="iep-acad-tf-row-header">
+            <span class="iep-acad-tf-course">${esc(p.courseName || '')}</span>
+            ${p.teacherName ? `<span class="iep-acad-tf-teacher">${esc(p.teacherName)}</span>` : ''}
+            ${setting ? `<span class="iep-acad-tf-setting">${esc(setting)}</span>` : ''}
+          </div>
+          <div class="iep-acad-tf-fields">
+            ${dataRows.map(([k, v]) => `<div class="iep-acad-tf-pair"><span class="iep-acad-tf-key">${esc(k)}</span><span class="iep-acad-tf-val">${esc(v)}</span></div>`).join('')}
+            ${strategies ? `<div class="iep-acad-tf-pair"><span class="iep-acad-tf-key">Supports that help</span><span class="iep-acad-tf-val">${esc(strategies)}</span></div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+    };
+
     const perfOptions = [
       'Significantly Below Grade Level',
       'Below Grade Level',
@@ -663,12 +729,12 @@ const aceIepBuilder = {
       {
         key: 'literacy', label: 'Literacy',
         specific: [
-          { id: 'decoding',      label: 'Decoding',             value: 'Decoding' },
-          { id: 'fluency',       label: 'Reading Fluency',      value: 'Reading Fluency' },
+          { id: 'decoding',      label: 'Decoding',              value: 'Decoding' },
+          { id: 'fluency',       label: 'Reading Fluency',       value: 'Reading Fluency' },
           { id: 'comprehension', label: 'Reading Comprehension', value: 'Reading Comprehension' },
-          { id: 'written',       label: 'Written Expression',   value: 'Written Expression' },
-          { id: 'spelling',      label: 'Spelling',             value: 'Spelling' },
-          { id: 'vocab',         label: 'Vocabulary',           value: 'Vocabulary' }
+          { id: 'written',       label: 'Written Expression',    value: 'Written Expression' },
+          { id: 'spelling',      label: 'Spelling',              value: 'Spelling' },
+          { id: 'vocab',         label: 'Vocabulary',            value: 'Vocabulary' }
         ]
       },
       {
@@ -701,23 +767,30 @@ const aceIepBuilder = {
       }
     ];
 
-    const barrierChecks = (key, items) => items.map(b =>
-      `<label class="iep-check"><input type="checkbox" id="bar-${key}-${b.id}" value="${esc(b.value)}" class="acad-barrier" /><span>${esc(b.label)}</span></label>`
-    ).join('');
+    const barrierChecks = (key, items, suggested = new Set()) => items.map(b => {
+      const s = suggested.has(b.id);
+      return `<label class="iep-check${s ? ' iep-check-suggested' : ''}">
+        <input type="checkbox" id="bar-${key}-${b.id}" value="${esc(b.value)}" class="acad-barrier" />
+        <span>${esc(b.label)}</span>${s ? ' <span class="iep-barrier-suggest-tag">suggested</span>' : ''}
+      </label>`;
+    }).join('');
 
-    const subjectBlock = (s) => `
-      <div class="iep-acad-block">
+    const subjectBlock = (s) => {
+      const suggestions = computeSuggestions(s.key);
+      return `<div class="iep-acad-block">
         <div class="iep-acad-block-title">${esc(s.label)}</div>
         ${this.selectField('acad-perf-' + s.key, 'Performance Level', perfOptions)}
+        ${refPanelHTML(s.key)}
         <div class="iep-field">
           <label class="iep-label">Common barriers</label>
-          <div class="iep-check-grid">${barrierChecks(s.key, commonBarriers)}</div>
+          <div class="iep-check-grid">${barrierChecks(s.key, commonBarriers, suggestions)}</div>
         </div>
         <div class="iep-field">
           <label class="iep-label">Subject-specific barriers</label>
           <div class="iep-check-grid">${barrierChecks(s.key, s.specific)}</div>
         </div>
       </div>`;
+    };
 
     return `
       <section class="iep-section" id="sec-academic">

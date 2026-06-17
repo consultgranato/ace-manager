@@ -344,3 +344,68 @@ window.aceCourseCatalogHelpers = {
     return window.aceCourseCatalog.find(c => c.name === name) || null;
   }
 };
+
+// =============================================================
+// COURSE_DOMAIN_MAP — maps courses to Academic Performance domains
+// Edit DEPT_DOMAIN below to update how departments are classified.
+// Departments not listed here fall through to keyword matching.
+// Domains: 'literacy' | 'math' | 'science' | 'socialscience' | 'none'
+// =============================================================
+window.COURSE_DOMAIN_MAP = (function () {
+  // ── Edit department → domain mappings here ──────────────────
+  const DEPT_DOMAIN = {
+    'English':                          'literacy',
+    'SpEd — English':                   'literacy',
+    'Multilingual Learners — English':  'literacy',
+    'Mathematics':                      'math',
+    'SpEd — Mathematics':               'math',
+    'Science':                          'science',
+    'SpEd — Science':                   'science',
+    'Social Studies':                   'socialscience',
+    'SpEd — Social Studies':            'socialscience',
+    // Departments below are explicitly 'none' — change only if needed
+    'Physical Welfare':                 'none',
+    'Visual Arts':                      'none',
+    'Theatre':                          'none',
+    'Music — Band':                     'none',
+    'Music — Choir':                    'none',
+    'Music — Orchestra':                'none',
+    'Music — Other':                    'none',
+    'Family and Consumer Sciences':     'none',
+    'Automotive Technology':            'none',
+    'Business Education':               'none',
+    'Computer Science':                 'none',
+    'Engineering':                      'none',
+    'AVID':                             'none',
+    'SpEd — Work Study':                'none',
+    'World Languages — Assyrian':       'none',
+    'World Languages — Chinese':        'none',
+    'World Languages — French':         'none',
+    'World Languages — German':         'none',
+    'World Languages — Hebrew':         'none',
+    'World Languages — Spanish':        'none',
+    // 'Multilingual Learners — Other' and 'Interdepartmental' are
+    // intentionally omitted — they use keyword fallback below.
+  };
+  // ── Keyword fallback for ambiguous departments ───────────────
+  // Checked in order; first match wins. Case-insensitive on course name.
+  const KEYWORDS = {
+    literacy:      ['english', 'reading', 'literacy', 'literature', 'composition', 'writing', 'journalism', 'speech'],
+    math:          ['algebra', 'geometry', 'trigonometry', 'calculus', 'statistics', 'math'],
+    science:       ['biology', 'chemistry', 'physics', 'science', 'anatomy', 'zoology', 'forensic', 'astronomy'],
+    socialscience: ['history', 'government', 'civics', 'geography', 'economics', 'psychology', 'sociology', 'social studies', 'world war', 'law'],
+  };
+  // ─────────────────────────────────────────────────────────────
+
+  return {
+    getDomain(course) {
+      const dept = (course && course.department) || '';
+      if (Object.prototype.hasOwnProperty.call(DEPT_DOMAIN, dept)) return DEPT_DOMAIN[dept];
+      const name = ((course && course.name) || '').toLowerCase();
+      for (const [domain, kws] of Object.entries(KEYWORDS)) {
+        if (kws.some(k => name.includes(k))) return domain;
+      }
+      return 'none';
+    }
+  };
+})();
