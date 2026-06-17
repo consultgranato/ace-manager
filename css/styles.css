@@ -3226,3 +3226,148 @@ textarea:focus {
 .card-status-dot.dot-purple {
   background: var(--purple-warm);
 }
+
+/* ============================================================
+   Phase 3.2 — Course selector
+   ============================================================ */
+
+.course-selector { display: flex; flex-direction: column; gap: 12px; }
+
+.course-search-wrap { position: relative; }
+
+.course-search-input {
+  width: 100%;
+}
+
+.course-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 200;
+  padding: 6px;
+}
+
+.course-dropdown-group {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  padding: 8px 10px 4px;
+}
+
+.course-dropdown-item {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.course-dropdown-item:hover { background: var(--purple-tint); }
+
+.course-opt-code {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.course-dropdown-empty {
+  padding: 12px 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.course-empty-hint { font-size: 13px; }
+
+.course-selected-list { display: flex; flex-direction: column; gap: 10px; }
+
+.course-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.course-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.course-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.course-card-code {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.course-pill-academic { background: var(--purple-tint); color: var(--purple-primary); }
+.course-pill-nonacademic { background: #f1f1f1; color: #777; }
+
+.course-card-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  padding: 2px;
+  display: inline-flex;
+  border-radius: var(--radius-sm);
+  transition: all var(--t-fast) var(--ease);
+  flex-shrink: 0;
+}
+
+.course-card-remove:hover { color: var(--critical); background: #fef2f2; }
+
+.course-card-fields {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .course-card-fields { grid-template-columns: 1fr; }
+}
+
+.course-card-field { display: flex; flex-direction: column; gap: 4px; }
+
+.course-card-field > span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.course-card-field input,
+.course-card-field select { font-size: 13px; padding: 7px 9px; }

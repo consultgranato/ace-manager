@@ -22,6 +22,7 @@ const aceAddStudent = {
     }
 
     this.renderForm(count || 0);
+    this.mountCourseSelector();
     this.attachListeners();
   },
 
@@ -112,6 +113,12 @@ const aceAddStudent = {
         </fieldset>
 
         <fieldset>
+          <legend>Classes</legend>
+          <p class="field-hint" style="margin: -4px 0 12px;">Add the student's current classes. Teacher feedback links can later be sent for academic classes.</p>
+          <div id="courseSelectorHost"></div>
+        </fieldset>
+
+        <fieldset>
           <legend>Supports &amp; Services</legend>
           <div class="form-row two-col">
             <label class="checkbox-label">
@@ -176,6 +183,13 @@ const aceAddStudent = {
         <a href="${this.basePath()}pages/caseload.html" class="btn-primary" style="display:inline-block;text-decoration:none;margin-top:12px;">View My Caseload</a>
       </div>
     `;
+  },
+
+  mountCourseSelector() {
+    this.courseSelector = window.aceCourseSelector.mount(
+      document.getElementById('courseSelectorHost'),
+      []
+    );
   },
 
   attachListeners() {
@@ -244,7 +258,8 @@ const aceAddStudent = {
         service_minutes: serviceMinutes,
         annual_review_date: annualReviewDate,
         reeval_due_date: reevalDueDate,
-        notes: notes
+        notes: notes,
+        courses: this.courseSelector ? this.courseSelector.getCourses() : []
       })
       .select()
       .single();

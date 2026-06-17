@@ -17,6 +17,10 @@ const aceEditStudent = {
       bodyHTML,
       saveLabel: 'Save Changes',
       cancelLabel: 'Cancel',
+      afterRender: (drawerBody) => {
+        const host = drawerBody.querySelector('#editCourseSelectorHost');
+        this._courseSelector = window.aceCourseSelector.mount(host, student.courses || []);
+      },
       onSave: async (drawerBody) => {
         return await this.handleSave(drawerBody, student);
       }
@@ -104,6 +108,13 @@ const aceEditStudent = {
           </label>
         </div>
 
+        <div class="form-row">
+          <label>
+            <span class="label-text">Classes</span>
+          </label>
+          <div id="editCourseSelectorHost"></div>
+        </div>
+
         <div id="editErrorMsg" class="error-msg" style="display:none;"></div>
       </form>
     `;
@@ -161,7 +172,8 @@ const aceEditStudent = {
         has_bip: hasBip,
         service_minutes: serviceMinutes,
         annual_review_date: annualReviewDate,
-        reeval_due_date: reevalDueDate
+        reeval_due_date: reevalDueDate,
+        courses: this._courseSelector ? this._courseSelector.getCourses() : (student.courses || [])
       })
       .eq('id', student.id)
       .select()

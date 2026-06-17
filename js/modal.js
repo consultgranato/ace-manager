@@ -27,7 +27,7 @@ const aceModal = {
     return host;
   },
 
-  openDrawer({ title, bodyHTML, saveLabel = 'Save', cancelLabel = 'Cancel', onSave, onCancel }) {
+  openDrawer({ title, bodyHTML, saveLabel = 'Save', cancelLabel = 'Cancel', onSave, onCancel, afterRender }) {
     return new Promise((resolve) => {
       const host = this._ensureHost();
       const id = 'drawer-' + Date.now();
@@ -52,6 +52,10 @@ const aceModal = {
         </div>
       `;
       host.appendChild(wrapper);
+
+      if (typeof afterRender === 'function') {
+        afterRender(wrapper.querySelector('.ace-drawer-body'));
+      }
 
       requestAnimationFrame(() => wrapper.classList.add('open'));
 
