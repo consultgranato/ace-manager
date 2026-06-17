@@ -7,8 +7,13 @@
 ALTER TABLE public.students
   ADD COLUMN IF NOT EXISTS courses JSONB DEFAULT '[]'::jsonb;
 
+-- Drop and recreate tool tables (safe — no data yet; handles partial prior runs)
+DROP TABLE IF EXISTS public.parent_feedback CASCADE;
+DROP TABLE IF EXISTS public.teacher_feedback CASCADE;
+DROP TABLE IF EXISTS public.transition_assessments CASCADE;
+
 -- 2. Transition Assessments (TA1)
-CREATE TABLE IF NOT EXISTS public.transition_assessments (
+CREATE TABLE public.transition_assessments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   case_manager_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -22,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.transition_assessments (
 );
 
 -- 3. Teacher Feedback (TF1) — one row per course link
-CREATE TABLE IF NOT EXISTS public.teacher_feedback (
+CREATE TABLE public.teacher_feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   case_manager_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -38,7 +43,7 @@ CREATE TABLE IF NOT EXISTS public.teacher_feedback (
 );
 
 -- 4. Parent Feedback (PF1)
-CREATE TABLE IF NOT EXISTS public.parent_feedback (
+CREATE TABLE public.parent_feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   case_manager_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -52,14 +57,14 @@ CREATE TABLE IF NOT EXISTS public.parent_feedback (
 );
 
 -- Indexes for student-scoped lookups
-CREATE INDEX IF NOT EXISTS idx_ta_student ON public.transition_assessments(student_id);
-CREATE INDEX IF NOT EXISTS idx_tf_student ON public.teacher_feedback(student_id);
-CREATE INDEX IF NOT EXISTS idx_pf_student ON public.parent_feedback(student_id);
+CREATE INDEX idx_ta_student ON public.transition_assessments(student_id);
+CREATE INDEX idx_tf_student ON public.teacher_feedback(student_id);
+CREATE INDEX idx_pf_student ON public.parent_feedback(student_id);
 
 -- Token lookup indexes (anonymous form access)
-CREATE INDEX IF NOT EXISTS idx_ta_token ON public.transition_assessments(token);
-CREATE INDEX IF NOT EXISTS idx_tf_token ON public.teacher_feedback(token);
-CREATE INDEX IF NOT EXISTS idx_pf_token ON public.parent_feedback(token);
+CREATE INDEX idx_ta_token ON public.transition_assessments(token);
+CREATE INDEX idx_tf_token ON public.teacher_feedback(token);
+CREATE INDEX idx_pf_token ON public.parent_feedback(token);
 
 -- ============================================================
 -- RLS POLICIES
