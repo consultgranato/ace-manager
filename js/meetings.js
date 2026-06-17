@@ -146,6 +146,23 @@ const aceMeetings = {
     }
 
     if (window.aceToast) window.aceToast.success('Meeting scheduled');
+
+    // Auto-attach an existing active feedback link that has no meeting yet
+    try {
+      const { data: orphanLinks } = await window.aceSupabase
+        .from('feedback_links')
+        .select('id')
+        .eq('student_id', student.id)
+        .eq('active', true)
+        .is('meeting_id', null);
+      if (orphanLinks && orphanLinks.length > 0) {
+        await window.aceSupabase
+          .from('feedback_links')
+          .update({ meeting_id: data.id })
+          .eq('id', orphanLinks[0].id);
+      }
+    } catch (e) { /* non-fatal */ }
+
     return data;
   },
 

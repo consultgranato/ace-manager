@@ -187,16 +187,6 @@ const aceProfile = {
         comingSoon: 'Phase 3'
       },
       {
-        id: 'teacher-feedback',
-        icon: window.aceIcons.graduationCap(18),
-        title: 'Teacher Feedback',
-        status: 'No links sent',
-        statusDot: 'gray',
-        actionLabel: 'Manage Feedback',
-        actionDisabled: true,
-        comingSoon: 'Phase 3'
-      },
-      {
         id: 'parent-feedback',
         icon: window.aceIcons.usersRound(18),
         title: 'Parent Feedback',
@@ -254,6 +244,29 @@ const aceProfile = {
     if (window.aceMeetings) {
       window.aceMeetings.renderMeetingSection(
         document.getElementById('meetingSectionHost'),
+        this.state.student
+      );
+    }
+
+    // Append the Teacher Feedback card — live, custom content
+    const tfCard = document.createElement('div');
+    tfCard.className = 'profile-card profile-card-teacher-feedback';
+    tfCard.dataset.card = 'teacher-feedback';
+    tfCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.graduationCap(18)}</div>
+        <div class="card-title">Teacher Feedback</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="teacherFeedbackHost">
+        <div class="muted" style="font-size:13px;">Loading…</div>
+      </div>
+    `;
+    host.appendChild(tfCard);
+
+    if (window.aceTeacherFeedback) {
+      window.aceTeacherFeedback.render(
+        document.getElementById('teacherFeedbackHost'),
         this.state.student
       );
     }
