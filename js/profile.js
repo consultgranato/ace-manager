@@ -187,16 +187,6 @@ const aceProfile = {
         comingSoon: 'Phase 3'
       },
       {
-        id: 'parent-feedback',
-        icon: window.aceIcons.usersRound(18),
-        title: 'Parent Feedback',
-        status: 'Not sent',
-        statusDot: 'gray',
-        actionLabel: 'Send Parent Form',
-        actionDisabled: true,
-        comingSoon: 'Phase 3'
-      },
-      {
         id: 'data',
         icon: window.aceIcons.barChart(18),
         title: 'Data Collection',
@@ -267,6 +257,29 @@ const aceProfile = {
     if (window.aceTeacherFeedback) {
       window.aceTeacherFeedback.render(
         document.getElementById('teacherFeedbackHost'),
+        this.state.student
+      );
+    }
+
+    // Append the Parent Feedback card — live, custom content
+    const pfCard = document.createElement('div');
+    pfCard.className = 'profile-card profile-card-parent-feedback';
+    pfCard.dataset.card = 'parent-feedback';
+    pfCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.usersRound(18)}</div>
+        <div class="card-title">Parent Feedback</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="parentFeedbackHost">
+        <div class="muted" style="font-size:13px;">Loading…</div>
+      </div>
+    `;
+    host.appendChild(pfCard);
+
+    if (window.aceParentFeedback) {
+      window.aceParentFeedback.render(
+        document.getElementById('parentFeedbackHost'),
         this.state.student
       );
     }
