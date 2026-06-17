@@ -48,7 +48,7 @@ const aceIepBuilder = {
     { id: 'sec-attendance', label: 'Attendance' },
     { id: 'sec-functional', label: 'Functional Performance' },
     { id: 'sec-goals', label: 'Goal Progress' },
-    { id: 'sec-disability', label: 'Disability Detail' },
+    { id: 'sec-disability', label: 'Student Information' },
     { id: 'sec-generate', label: 'Generate' }
   ],
 
@@ -127,10 +127,7 @@ const aceIepBuilder = {
           ${this.attendanceSectionHTML()}
           ${this.functionalSectionHTML()}
           ${this.goalsSectionHTML()}
-          <section class="iep-section" id="sec-disability">
-            <h2 class="iep-section-title">Disability Detail</h2>
-            <div class="iep-placeholder muted">Built in the next update (3.8b).</div>
-          </section>
+          ${this.studentInfoSectionHTML()}
           <section class="iep-section" id="sec-generate">
             <h2 class="iep-section-title">Generate</h2>
             <div class="iep-placeholder muted">The Generate button and output panel arrive in a later update.</div>
@@ -142,6 +139,7 @@ const aceIepBuilder = {
     this.wireTOC(host);
     this.wireContextToggle(host);
     this.wireFuncCards(host);
+    this.wireStudentInfo(host);
   },
 
   contextSectionHTML() {
@@ -348,6 +346,300 @@ const aceIepBuilder = {
           domain.querySelectorAll('.iep-func-card').forEach(c => c.classList.remove('selected'));
           card.classList.add('selected');
         });
+      });
+    });
+  },
+
+  studentInfoSectionHTML() {
+    const sldCheckboxes = (prefix) => `
+      <div class="iep-check-grid">
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-decoding" value="Reading Decoding" /><span>Reading Decoding</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-fluency" value="Reading Fluency" /><span>Reading Fluency</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-comprehension" value="Reading Comprehension" /><span>Reading Comprehension</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-written" value="Written Expression" /><span>Written Expression</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-math-calc" value="Math Calculation" /><span>Math Calculation</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-math-ps" value="Math Problem Solving" /><span>Math Problem Solving</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-spelling" value="Spelling" /><span>Spelling</span></label>
+        <label class="iep-check"><input type="checkbox" id="${prefix}sld-listening" value="Listening Comprehension" /><span>Listening Comprehension</span></label>
+      </div>`;
+
+    const sldPrograms = (prefix) => `
+      <div id="${prefix}sld-program-row" class="iep-field" style="display:none;">
+        <label class="iep-label">Current reading/intervention program</label>
+        <select id="${prefix}sld-program" class="iep-select">
+          <option value="">Select...</option>
+          <option>Reading 01 — Literacy Foundations (RDYR01)</option>
+          <option>Reading 02 — Intro to Literacy Comprehension (RDYR02)</option>
+          <option>Reading 03 — Literacy Applications (RDYR03)</option>
+          <option>Integrated Reading 3-4 (RDYR39)</option>
+          <option>None</option>
+        </select>
+      </div>
+      <div id="${prefix}sld-math-program-row" class="iep-field" style="display:none;">
+        <label class="iep-label">Current math intervention or support program</label>
+        <select id="${prefix}sld-math-program" class="iep-select">
+          <option value="">Select...</option>
+          <option>Math Extension — Algebra 1 (MAYA03-E)</option>
+          <option>Math Extension — Geometry (MAYG03-E)</option>
+          <option>Math Extension — Algebra 2 (MAYA11-E)</option>
+          <option>Math Extension — General (MASM03)</option>
+          <option>Ascend Math</option>
+          <option>IXL Math</option>
+          <option>None</option>
+        </select>
+      </div>`;
+
+    const idFuncCheckboxes = (prefix) => `
+      <label class="iep-check"><input type="checkbox" id="${prefix}id-func-reading" value="Functional reading (signs, labels, forms)" /><span>Functional reading (signs, labels, forms)</span></label>
+      <label class="iep-check"><input type="checkbox" id="${prefix}id-func-math" value="Functional math (money, time, measurement)" /><span>Functional math (money, time, measurement)</span></label>
+      <label class="iep-check"><input type="checkbox" id="${prefix}id-func-writing" value="Written communication for daily living" /><span>Written communication for daily living</span></label>
+      <label class="iep-check"><input type="checkbox" id="${prefix}id-func-voc" value="Vocational/job-related skills" /><span>Vocational/job-related skills</span></label>
+      <label class="iep-check"><input type="checkbox" id="${prefix}id-func-tech" value="Technology for independence" /><span>Technology for independence</span></label>`;
+
+    const edBipRadios = (prefix) => `
+      <div class="iep-field">
+        <label class="iep-label">Behavior intervention plan in place?</label>
+        <div class="iep-radio-row">
+          <label class="iep-radio-opt"><input type="radio" name="${prefix}ed-bip" id="${prefix}ed-bip-yes" value="Yes" /><span>Yes</span></label>
+          <label class="iep-radio-opt"><input type="radio" name="${prefix}ed-bip" id="${prefix}ed-bip-no" value="No" /><span>No</span></label>
+        </div>
+      </div>`;
+
+    const mdAcc = (id, title, content) => `
+      <div class="iep-md-acc-wrap">
+        <button type="button" class="iep-md-acc-btn" data-target="${id}">
+          <span>${title}</span><span class="iep-md-acc-arrow">▾</span>
+        </button>
+        <div id="${id}" class="iep-md-acc-content">${content}</div>
+      </div>`;
+
+    return `
+      <section class="iep-section" id="sec-disability">
+        <h2 class="iep-section-title">Student Information</h2>
+        <p class="iep-section-hint muted">These fields drive the disability-specific narrative. Pre-population from profile arrives in the next update.</p>
+
+        <div class="iep-field">
+          <label class="iep-label">Student First Name</label>
+          <input type="text" id="studentName" class="iep-text" placeholder="First name" />
+        </div>
+        <div class="iep-si-grid">
+          <div class="iep-field">
+            <label class="iep-label">Grade</label>
+            <select id="grade" class="iep-select">
+              <option value="">Select...</option>
+              <option value="9">9 (Freshman)</option>
+              <option value="10">10 (Sophomore)</option>
+              <option value="11">11 (Junior)</option>
+              <option value="12">12 (Senior)</option>
+            </select>
+          </div>
+          <div class="iep-field">
+            <label class="iep-label">Primary Disability Category</label>
+            <select id="disability" class="iep-select">
+              <option value="">Select primary eligibility...</option>
+              <option value="Specific Learning Disability">Specific Learning Disability (SLD)</option>
+              <option value="Autism">Autism Spectrum Disorder</option>
+              <option value="Other Health Impairment">Other Health Impairment (OHI)</option>
+              <option value="Intellectual Disability">Intellectual Disability</option>
+              <option value="Emotional Disability">Emotional Disability (ED)</option>
+              <option value="Speech or Language Impairment">Speech or Language Impairment</option>
+              <option value="Multiple Disabilities">Multiple Disabilities</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="iep-field">
+          <label class="iep-label">Secondary Disability Category</label>
+          <select id="secondaryDisability" class="iep-select">
+            <option value="None">None</option>
+            <option value="Specific Learning Disability">Specific Learning Disability (SLD)</option>
+            <option value="Autism">Autism Spectrum Disorder</option>
+            <option value="Other Health Impairment">Other Health Impairment (OHI)</option>
+            <option value="Intellectual Disability">Intellectual Disability</option>
+            <option value="Emotional Disability">Emotional Disability (ED)</option>
+            <option value="Speech or Language Impairment">Speech or Language Impairment</option>
+            <option value="Multiple Disabilities">Multiple Disabilities</option>
+            <option value="Other">Other</option>
+          </select>
+          <div id="secondaryNote" class="iep-secondary-note" style="display:none;">Note: Secondary eligibility noted. Primary disability drives form prompts.</div>
+        </div>
+
+        <!-- SLD Block -->
+        <div id="block-sld" class="iep-disability-block">
+          <div class="iep-disability-block-title">SLD — Specific Learning Disability</div>
+          <div class="iep-field">
+            <label class="iep-label">Primary area(s) of deficit</label>
+            ${sldCheckboxes('')}
+          </div>
+          ${sldPrograms('')}
+        </div>
+
+        <!-- ASD Block -->
+        <div id="block-asd" class="iep-disability-block">
+          <div class="iep-disability-block-title">ASD — Autism Spectrum Disorder</div>
+          ${this.selectField('asd-social', 'Social communication needs', ['No significant impact noted','Difficulty initiating peer interactions','Difficulty maintaining conversations','Challenges with nonverbal communication','Difficulty with group work or collaborative tasks','Significant support needed across all social contexts'])}
+          ${this.selectField('asd-sensory', 'Sensory considerations', ['None noted','Mild — manageable with minor accommodations','Moderate — sensory breaks or environment modifications needed','Significant — sensory needs affect participation daily'])}
+          ${this.selectField('asd-exec', 'Executive functioning notes', ['Age-appropriate','Mild challenges with planning or organization','Moderate challenges — requires prompting and scaffolding','Significant challenges across multiple executive skill areas'])}
+          ${this.selectField('asd-behavior', 'Behavior/self-regulation notes', ['No behavioral concerns noted','Occasional dysregulation with quick recovery','Frequent dysregulation requiring adult support','Behavior intervention plan in place'])}
+        </div>
+
+        <!-- OHI Block -->
+        <div id="block-ohi" class="iep-disability-block">
+          <div class="iep-disability-block-title">OHI — Other Health Impairment</div>
+          ${this.selectField('ohi-attention', 'Attention/focus impact on academics', ['Minimal impact — manageable with current accommodations','Moderate impact — affects task completion and pacing','Significant impact — requires frequent redirection and support','Severe impact — affects all academic areas daily'])}
+          ${this.selectField('ohi-medical', 'Functional medical impact on school performance', ['No significant functional impact noted','Fatigue affects afternoon performance','Fatigue affects performance throughout the day','Medication timing affects focus windows','Frequent nurse visits or health-related absences','Multiple functional impacts present'])}
+          ${this.selectField('ohi-attendance', 'Attendance pattern', ['Satisfactory','Inconsistent — some absences but not chronic','Improving — was chronic, showing progress','Chronic absenteeism (10% or more of school days)'])}
+        </div>
+
+        <!-- ID Block -->
+        <div id="block-id" class="iep-disability-block">
+          <div class="iep-disability-block-title">ID — Intellectual Disability</div>
+          ${this.selectField('id-adaptive', 'Adaptive behavior notes', ['Age-appropriate in most areas with support','Needs support in daily living skills','Needs support in communication and social skills','Needs support across multiple adaptive domains'])}
+          <div class="iep-field">
+            <label class="iep-label">Functional academics focus areas</label>
+            <div class="iep-check-grid">
+              ${idFuncCheckboxes('')}
+            </div>
+          </div>
+          ${this.selectField('id-support', 'Level of support needed', ['Minimal — periodic check-ins','Moderate — regular adult support during tasks','Extensive — near-constant support across settings'])}
+        </div>
+
+        <!-- ED Block -->
+        <div id="block-ed" class="iep-disability-block">
+          <div class="iep-disability-block-title">ED — Emotional Disability</div>
+          ${this.selectField('ed-supports', 'Current therapeutic supports', ['None in place currently','School-based social worker/counselor only','Outside therapy (student/family reported)','Both school-based and outside supports','Intensive supports — multiple providers'])}
+          ${edBipRadios('')}
+          ${this.selectField('ed-sem', 'Social-emotional functioning notes', ['Generally appropriate with occasional difficulty','Difficulty managing frustration or disappointment','Difficulty with peer relationships across settings','Frequent emotional dysregulation affecting learning','Significant mental health needs affecting daily function'])}
+        </div>
+
+        <!-- SLI Block -->
+        <div id="block-sli" class="iep-disability-block">
+          <div class="iep-disability-block-title">SLI — Speech or Language Impairment</div>
+          ${this.selectField('sli-receptive', 'Receptive language notes', ['Within functional limits','Mild difficulty understanding complex directions','Moderate difficulty — benefits from repetition and visual supports','Significant difficulty understanding spoken language'])}
+          ${this.selectField('sli-expressive', 'Expressive language notes', ['Within functional limits','Mild difficulty organizing verbal responses','Moderate difficulty — limited sentence complexity or vocabulary','Significant difficulty with verbal expression'])}
+          ${this.selectField('sli-impact', 'Impact on academic access', ['Minimal — accommodations sufficient','Moderate — affects participation and written output','Significant — affects access across multiple content areas'])}
+        </div>
+
+        <!-- Multiple Disabilities Block -->
+        <div id="block-multiple" class="iep-disability-block">
+          <div class="iep-disability-block-title">Multiple Disabilities</div>
+          <p class="iep-section-hint muted">Expand only the sections relevant to this student's classification.</p>
+
+          ${mdAcc('acc-sld', 'Specific Learning Disability (SLD)', `
+            <div class="iep-field">
+              <label class="iep-label">Primary area(s) of deficit</label>
+              ${sldCheckboxes('md-')}
+            </div>
+            ${sldPrograms('md-')}
+          `)}
+
+          ${mdAcc('acc-asd', 'Autism Spectrum Disorder (ASD)', `
+            ${this.selectField('md-asd-social', 'Social communication needs', ['No significant impact noted','Difficulty initiating peer interactions','Difficulty maintaining conversations','Challenges with nonverbal communication','Difficulty with group work or collaborative tasks','Significant support needed across all social contexts'])}
+            ${this.selectField('md-asd-sensory', 'Sensory considerations', ['None noted','Mild — manageable with minor accommodations','Moderate — sensory breaks or environment modifications needed','Significant — sensory needs affect participation daily'])}
+            ${this.selectField('md-asd-exec', 'Executive functioning notes', ['Age-appropriate','Mild challenges with planning or organization','Moderate challenges — requires prompting and scaffolding','Significant challenges across multiple executive skill areas'])}
+            ${this.selectField('md-asd-behavior', 'Behavior/self-regulation notes', ['No behavioral concerns noted','Occasional dysregulation with quick recovery','Frequent dysregulation requiring adult support','Behavior intervention plan in place'])}
+          `)}
+
+          ${mdAcc('acc-ohi', 'Other Health Impairment (OHI)', `
+            ${this.selectField('md-ohi-attention', 'Attention/focus impact on academics', ['Minimal impact — manageable with current accommodations','Moderate impact — affects task completion and pacing','Significant impact — requires frequent redirection and support','Severe impact — affects all academic areas daily'])}
+            ${this.selectField('md-ohi-medical', 'Functional medical impact on school performance', ['No significant functional impact noted','Fatigue affects afternoon performance','Fatigue affects performance throughout the day','Medication timing affects focus windows','Frequent nurse visits or health-related absences','Multiple functional impacts present'])}
+            ${this.selectField('md-ohi-attendance', 'Attendance pattern', ['Satisfactory','Inconsistent — some absences but not chronic','Improving — was chronic, showing progress','Chronic absenteeism (10% or more of school days)'])}
+          `)}
+
+          ${mdAcc('acc-id', 'Intellectual Disability (ID)', `
+            ${this.selectField('md-id-adaptive', 'Adaptive behavior notes', ['Age-appropriate in most areas with support','Needs support in daily living skills','Needs support in communication and social skills','Needs support across multiple adaptive domains'])}
+            <div class="iep-field">
+              <label class="iep-label">Functional academics focus areas</label>
+              <div class="iep-check-grid">
+                ${idFuncCheckboxes('md-')}
+              </div>
+            </div>
+            ${this.selectField('md-id-support', 'Level of support needed', ['Minimal — periodic check-ins','Moderate — regular adult support during tasks','Extensive — near-constant support across settings'])}
+          `)}
+
+          ${mdAcc('acc-ed', 'Emotional Disability (ED)', `
+            ${this.selectField('md-ed-supports', 'Current therapeutic supports', ['None in place currently','School-based social worker/counselor only','Outside therapy (student/family reported)','Both school-based and outside supports','Intensive supports — multiple providers'])}
+            ${edBipRadios('md-')}
+            ${this.selectField('md-ed-sem', 'Social-emotional functioning notes', ['Generally appropriate with occasional difficulty','Difficulty managing frustration or disappointment','Difficulty with peer relationships across settings','Frequent emotional dysregulation affecting learning','Significant mental health needs affecting daily function'])}
+          `)}
+
+          ${mdAcc('acc-sli', 'Speech or Language Impairment (SLI)', `
+            ${this.selectField('md-sli-receptive', 'Receptive language notes', ['Within functional limits','Mild difficulty understanding complex directions','Moderate difficulty — benefits from repetition and visual supports','Significant difficulty understanding spoken language'])}
+            ${this.selectField('md-sli-expressive', 'Expressive language notes', ['Within functional limits','Mild difficulty organizing verbal responses','Moderate difficulty — limited sentence complexity or vocabulary','Significant difficulty with verbal expression'])}
+            ${this.selectField('md-sli-impact', 'Impact on academic access', ['Minimal — accommodations sufficient','Moderate — affects participation and written output','Significant — affects access across multiple content areas'])}
+          `)}
+        </div>
+      </section>`;
+  },
+
+  wireStudentInfo(host) {
+    const DISABILITY_MAP = {
+      'Specific Learning Disability': 'block-sld',
+      'Autism': 'block-asd',
+      'Other Health Impairment': 'block-ohi',
+      'Intellectual Disability': 'block-id',
+      'Emotional Disability': 'block-ed',
+      'Speech or Language Impairment': 'block-sli',
+      'Multiple Disabilities': 'block-multiple'
+    };
+
+    const disabilitySelect = host.querySelector('#disability');
+    if (disabilitySelect) {
+      disabilitySelect.addEventListener('change', () => {
+        const val = disabilitySelect.value;
+        host.querySelectorAll('.iep-disability-block').forEach(b => b.classList.remove('active'));
+        if (val && DISABILITY_MAP[val]) {
+          const block = host.querySelector('#' + DISABILITY_MAP[val]);
+          if (block) block.classList.add('active');
+        }
+      });
+    }
+
+    const secSelect = host.querySelector('#secondaryDisability');
+    if (secSelect) {
+      secSelect.addEventListener('change', () => {
+        const note = host.querySelector('#secondaryNote');
+        if (note) note.style.display = (secSelect.value && secSelect.value !== 'None') ? 'block' : 'none';
+      });
+    }
+
+    const updateSldPrograms = () => {
+      const readIds = ['sld-decoding','sld-fluency','sld-comprehension','sld-written','sld-spelling'];
+      const mathIds = ['sld-math-calc','sld-math-ps'];
+      const readOn = readIds.some(id => { const el = host.querySelector('#' + id); return el && el.checked; });
+      const mathOn = mathIds.some(id => { const el = host.querySelector('#' + id); return el && el.checked; });
+      const pr = host.querySelector('#sld-program-row');
+      if (pr) pr.style.display = readOn ? 'block' : 'none';
+      const mr = host.querySelector('#sld-math-program-row');
+      if (mr) mr.style.display = mathOn ? 'block' : 'none';
+    };
+    ['sld-decoding','sld-fluency','sld-comprehension','sld-written','sld-spelling','sld-math-calc','sld-math-ps'].forEach(id => {
+      const el = host.querySelector('#' + id);
+      if (el) el.addEventListener('change', updateSldPrograms);
+    });
+
+    const updateMdSldPrograms = () => {
+      const readIds = ['md-sld-decoding','md-sld-fluency','md-sld-comprehension','md-sld-written','md-sld-spelling'];
+      const mathIds = ['md-sld-math-calc','md-sld-math-ps'];
+      const readOn = readIds.some(id => { const el = host.querySelector('#' + id); return el && el.checked; });
+      const mathOn = mathIds.some(id => { const el = host.querySelector('#' + id); return el && el.checked; });
+      const pr = host.querySelector('#md-sld-program-row');
+      if (pr) pr.style.display = readOn ? 'block' : 'none';
+      const mr = host.querySelector('#md-sld-math-program-row');
+      if (mr) mr.style.display = mathOn ? 'block' : 'none';
+    };
+    ['md-sld-decoding','md-sld-fluency','md-sld-comprehension','md-sld-written','md-sld-spelling','md-sld-math-calc','md-sld-math-ps'].forEach(id => {
+      const el = host.querySelector('#' + id);
+      if (el) el.addEventListener('change', updateMdSldPrograms);
+    });
+
+    host.querySelectorAll('.iep-md-acc-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const content = host.querySelector('#' + btn.dataset.target);
+        if (content) {
+          const open = content.classList.toggle('active');
+          btn.classList.toggle('open', open);
+        }
       });
     });
   }
