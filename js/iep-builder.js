@@ -69,7 +69,13 @@ const aceIepBuilder = {
     // Load DNAs (used by inputs status now; full pre-pop in 3.9)
     await this.loadDNAs(student.id);
 
+    // Render the form HTML into the DOM first…
     this.render(host);
+
+    // …then run identity prefill as the very last step of the resolved
+    // async chain, guaranteeing the student object is loaded AND the form
+    // fields exist in the DOM before we touch them (3.9.1).
+    this.prefillIdentity(this.state.student);
   },
 
   async loadDNAs(studentId) {
@@ -138,9 +144,9 @@ const aceIepBuilder = {
     this.wireFuncCards(host);
     this.wireStudentInfo(host);
     this.wireAcademic(host);
-
-    // 3.9 — deterministic identity pre-population (after DOM exists)
-    this.prefillIdentity(this.state.student);
+    // NOTE: identity prefill is intentionally NOT called here. It runs as
+    // the final step of init() — after the student fetch has resolved and
+    // this render has committed the form to the DOM (see 3.9.1).
   },
 
   contextSectionHTML() {
@@ -652,6 +658,9 @@ const aceIepBuilder = {
   // no-clobber guard. No DNA reads, no suggestions, no narrative.
   // -------------------------------------------------------------
   prefillIdentity(student) {
+    // 3.9.1 diagnostic — confirms prefill fires and whether the student
+    // object is present at call time. Quiet enough to leave in place.
+    console.log('[prefill] running with', !!student, student && student.first_name);
     if (!student) return;
 
     // Set a <select> to the option matching `target` by value OR label
@@ -696,6 +705,8 @@ const aceIepBuilder = {
     if (student.secondary_disability && String(student.secondary_disability).trim() !== '') {
       fillSelect('secondaryDisability', student.secondary_disability, ['None', '']);
     }
+
+    console.log('[prefill] identity set');
   },
 
   academicSectionHTML() {
