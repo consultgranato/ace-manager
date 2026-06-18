@@ -1072,6 +1072,52 @@ h3 { font-size: 18px; }
   font-size: 14px;
 }
 
+/* Phase 3.11a — five Embrace-aligned output sections + per-section copy */
+.iep-output-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.iep-output-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.iep-output-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.iep-output-head .iep-label { margin: 0; }
+.iep-output-copy {
+  flex: 0 0 auto;
+  padding: 4px 14px;
+  font-size: 13px;
+}
+.iep-output-area {
+  width: 100%;
+  line-height: 1.6;
+  font-size: 14px;
+}
+.iep-output-compliance {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--surface-2, #f8f9fb);
+}
+.iep-output-compliance-head {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.iep-output-compliance-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2, #444);
+}
+
 .attention-reasons {
   margin: 10px 0 8px;
   padding: 0;

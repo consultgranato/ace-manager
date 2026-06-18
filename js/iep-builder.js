@@ -930,50 +930,104 @@ const aceIepBuilder = {
   // input flags) is 3.10b — see clearly-marked insertion points below.
   // =============================================================
 
+  // 3.11a — five Embrace-aligned output sections (in render order) + a separate
+  // non-copyable Compliance Notes area. Each section maps to a buildSegments()
+  // destination and has its own Copy button.
+  OUTPUT_SECTIONS: [
+    { dest: 'academic',   label: 'Academic',   rows: 8, placeholder: 'Academic present levels — snapshot, domain levels, barriers, teacher evidence, and Illinois Learning Standards framing.' },
+    { dest: 'strengths',  label: 'Strengths',  rows: 3, placeholder: 'Student strengths.' },
+    { dest: 'functional', label: 'Functional', rows: 8, placeholder: 'Functional performance, behavior intervention plan, disability-specific impact, and transition present levels.' },
+    { dest: 'parent',     label: 'Parent',     rows: 4, placeholder: 'Parent / family input.' },
+    { dest: 'impact',     label: 'Impact',     rows: 4, placeholder: 'Adverse-impact statements (how the disability affects involvement and progress in the general education curriculum).' }
+  ],
+
   generateSectionHTML() {
+    const esc = window.aceUtils.escapeHtml;
+    const blocks = this.OUTPUT_SECTIONS.map(sct => `
+      <div class="iep-output-block" data-dest="${sct.dest}">
+        <div class="iep-output-head">
+          <label class="iep-label" for="iepOut-${sct.dest}">${esc(sct.label)}</label>
+          <button type="button" class="iep-output-copy btn-secondary" data-dest="${sct.dest}" data-label="${esc(sct.label)}" style="display:none;">Copy</button>
+        </div>
+        <textarea id="iepOut-${sct.dest}" class="iep-text iep-textarea iep-output-area" rows="${sct.rows}" placeholder="${esc(sct.placeholder)}"></textarea>
+      </div>`).join('');
+
     return `
       <section class="iep-section" id="sec-generate">
         <h2 class="iep-section-title">Generate</h2>
-        <p class="iep-section-hint muted">Assembles a professional Present Levels narrative from the fields above plus the teacher and parent input already received. Review and edit before copying into Embrace.</p>
+        <p class="iep-section-hint muted">Generates a professional Present Levels narrative split into Embrace-aligned sections from the fields above plus the teacher, parent, and transition input already received. Edit any section, then copy it into the matching Embrace field.</p>
         <div class="iep-generate-actions">
           <button type="button" id="iepGenerateBtn" class="btn-primary">Generate Present Levels</button>
-          <button type="button" id="iepCopyBtn" class="btn-secondary" style="display:none;">Copy to clipboard</button>
         </div>
-        <textarea id="iepNarrativeOutput" class="iep-text iep-textarea iep-narrative-output" rows="20" placeholder="Your generated Present Levels narrative will appear here. You can edit it freely before copying."></textarea>
+        <div class="iep-output-sections">
+          ${blocks}
+        </div>
+        <div class="iep-output-compliance" id="iepComplianceWrap" style="display:none;">
+          <div class="iep-output-compliance-head">Compliance Notes <span class="muted">— guidance for the case manager; not copied, remove before finalizing</span></div>
+          <div class="iep-output-compliance-body" id="iepComplianceBody" style="white-space:pre-wrap;"></div>
+        </div>
       </section>`;
   },
 
   wireGenerate(host) {
     const btn = host.querySelector('#iepGenerateBtn');
-    const out = host.querySelector('#iepNarrativeOutput');
-    const copyBtn = host.querySelector('#iepCopyBtn');
-    if (!btn || !out) return;
+    if (!btn) return;
+    const DESTS = this.OUTPUT_SECTIONS.map(s => s.dest);
+    const areaFor = dest => host.querySelector('#iepOut-' + dest);
+    // Per-destination snapshot of the last generated text, for no-clobber.
+    this._lastGenerated = this._lastGenerated || {};
 
     btn.addEventListener('click', () => {
-      // No-clobber: if the case manager has hand-edited the draft, confirm
-      // before replacing it.
-      const current = out.value.trim();
-      if (current && current !== (this._lastGenerated || '').trim()) {
-        const ok = window.confirm('Regenerating will replace your current draft, including any edits you have made. Continue?');
+      // No-clobber: if any section diverges from what was last generated
+      // (i.e. the case manager has hand-edited it), confirm before replacing.
+      const edited = DESTS.some(dest => {
+        const el = areaFor(dest);
+        if (!el) return false;
+        const cur = el.value.trim();
+        return cur && cur !== ((this._lastGenerated[dest] || '').trim());
+      });
+      if (edited) {
+        const ok = window.confirm('Regenerating will replace the current draft in all sections, including any edits you have made. Continue?');
         if (!ok) return;
       }
-      const text = this.buildNarrative().join('\n\n');
-      out.value = text;
-      this._lastGenerated = text;
-      if (copyBtn) copyBtn.style.display = '';
+
+      const seg = this.buildSegments();
+      DESTS.forEach(dest => {
+        const el = areaFor(dest);
+        if (!el) return;
+        const text = (seg[dest] || []).join('\n\n');
+        el.value = text;
+        this._lastGenerated[dest] = text;
+      });
+
+      // Reveal copy buttons now that there is content to copy.
+      host.querySelectorAll('.iep-output-copy').forEach(b => { b.style.display = ''; });
+
+      // Compliance Notes — display-only, never a copy target.
+      const wrap = host.querySelector('#iepComplianceWrap');
+      const body = host.querySelector('#iepComplianceBody');
+      if (wrap && body) {
+        const compText = (seg.compliance || []).join('\n\n');
+        if (compText.trim()) { body.textContent = compText; wrap.style.display = ''; }
+        else { body.textContent = ''; wrap.style.display = 'none'; }
+      }
     });
 
-    if (copyBtn) {
-      copyBtn.addEventListener('click', async () => {
+    // Per-section copy — copies that section's CURRENT (possibly edited) value.
+    host.querySelectorAll('.iep-output-copy').forEach(b => {
+      b.addEventListener('click', async () => {
+        const el = areaFor(b.dataset.dest);
+        if (!el) return;
+        const label = b.dataset.label || this._upperFirst(b.dataset.dest || '');
         try {
-          await navigator.clipboard.writeText(out.value);
-          if (window.aceToast) window.aceToast.success('Copied to clipboard');
+          await navigator.clipboard.writeText(el.value);
         } catch (e) {
-          out.select();
+          el.select();
           try { document.execCommand('copy'); } catch (_) {}
         }
+        if (window.aceToast) window.aceToast.success(label + ' copied');
       });
-    }
+    });
   },
 
   // ---- prose helpers -----------------------------------------
@@ -1097,29 +1151,38 @@ const aceIepBuilder = {
   },
 
   // ---- orchestrator ------------------------------------------
-  buildNarrative() {
+  // 3.11a — Produce destination-tagged segments for the five Embrace-aligned
+  // output sections plus the compliance block. The CALL ORDER below is
+  // identical to the 3.10b build order so the shared `stated` de-dup tracker
+  // resolves back-references exactly as before — only the routing of each
+  // segment to a destination changes (impact statements consolidate into
+  // their own `impact` bucket rather than interleaving with academic/functional).
+  buildSegments() {
     const d = this.collectNarrativeData();
     const stated = new Set(); // shared concept tracker across the whole build
-    const paras = [];
-    const push = p => { if (p && p.trim()) paras.push(p.trim()); };
+    const seg = { academic: [], strengths: [], functional: [], parent: [], impact: [], compliance: [] };
+    const add = (dest, p) => { if (p && p.trim()) seg[dest].push(p.trim()); };
 
-    push(this.narrSnapshot(d));                   // (1) snapshot
-    push(this.narrStrengths(d));                  // (2) strengths
-    push(this.narrAcademic(d, stated));           // (3) academic by domain + attributed TF1
-    push(this.narrAdverseImpactAcademic(d, stated)); // 3.10b — adverse impact (academic)
-    push(this.narrFunctional(d, stated));         // (4) functional + TF1 corroboration
-    push(this.narrAdverseImpactFunctional(d, stated)); // 3.10b — adverse impact (functional)
-    push(this.narrDisability(d, stated));         // (5) disability-specific impact
-    push(this.narrParent(d));                     // (6) parent input
-    // 3.10b — transition / student-voice present levels (TA1), gated to age
-    // 14½+. When gated out, nothing is inserted. When included with no TA1 on
-    // file, narrTransition returns '' (nothing fabricated) — the compliance
-    // block carries the "required at 14½" flag instead.
-    if (this._isTransitionAge(d)) push(this.narrTransition(d));
-    // 3.10b — missing-input compliance flags, as a clearly-labeled removable
-    // block the case manager reads and deletes before finalizing.
-    push(this.complianceNotesBlock(d));
-    return paras;
+    add('academic',   this.narrSnapshot(d));                       // snapshot/eligibility intro
+    add('strengths',  this.narrStrengths(d));                      // strengths
+    add('academic',   this.narrAcademic(d, stated));               // academic domains + attributed TF1 + IL Standards
+    add('impact',     this.narrAdverseImpactAcademic(d, stated));  // adverse impact (academic) → Impact only
+    add('functional', this.narrFunctional(d, stated));             // functional obs + TF1 corroboration + BIP
+    add('impact',     this.narrAdverseImpactFunctional(d, stated));// adverse impact (functional) → Impact only
+    add('functional', this.narrDisability(d, stated));             // disability-specific impact
+    add('parent',     this.narrParent(d));                         // parent input
+    // Transition / student-voice present levels (TA1), gated to age 14½+.
+    if (this._isTransitionAge(d)) add('functional', this.narrTransition(d));
+    // Missing-input compliance flags — removable guidance, never a copy target.
+    add('compliance', this.complianceNotesBlock(d));
+    return seg;
+  },
+
+  // Backward-compatible flat narrative (used by harnesses/any other callers).
+  // Concatenates the segments in destination order.
+  buildNarrative() {
+    const seg = this.buildSegments();
+    return [].concat(seg.academic, seg.strengths, seg.functional, seg.parent, seg.impact, seg.compliance);
   },
 
   // (1) Snapshot
