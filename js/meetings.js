@@ -309,6 +309,131 @@ const aceMeetings = {
     return true;
   },
 
+  // -------------------------------------------------------------
+  // Phase 3.11b — auto-check prep items from tool completions.
+  //
+  // The prep checklist (meetings.prep_checklist) is the single source of
+  // truth read by aceStatus.fullState (sidebar dots, caseload pills, Needs
+  // Attention). Auto-checks persist HERE so every surface stays consistent —
+  // no parallel state path.
+  //
+  // Auto-check is ONE-TIME: an item gets a sticky `auto_checked` stamp the
+  // first time its data condition is met. After that the case manager owns
+  // the box — a manual uncheck is respected and never re-checked.
+  // -------------------------------------------------------------
+
+  // Read the data-backed conditions for the three DNA prep items, using the
+  // same paths the feedback cards / 3.8d panel use.
+  async computeAutoConditions(student) {
+    const out = { teacher: false, parent: false, transition: false };
+    if (!student || !student.id) return out;
+
+    // Teacher feedback — checked only when ALL expected academic-course TF1s
+    // are received (received === expected). A single partial receipt does not
+    // check it. With no academic courses there is nothing expected → stays manual.
+    const academicCourses = (student.courses || []).filter(c => c.is_academic);
+    if (academicCourses.length > 0) {
+      const { data: links } = await window.aceSupabase
+        .from('feedback_links')
+        .select('id').eq('student_id', student.id).eq('active', true)
+        .order('created_at', { ascending: false }).limit(1);
+      if (links && links[0]) {
+        const { data: fb } = await window.aceSupabase
+          .from('teacher_feedback')
+          .select('course_name').eq('link_id', links[0].id).eq('status', 'completed');
+        const got = new Set((fb || []).map(r => r.course_name));
+        out.teacher = academicCourses.every(c => got.has(c.name));
+      }
+    }
+
+    // Parent input — a completed PF1 on the active parent link.
+    const { data: pf } = await window.aceSupabase
+      .from('parent_feedback')
+      .select('status,payload').eq('student_id', student.id).eq('active', true)
+      .eq('status', 'completed').limit(1);
+    out.parent = !!(pf && pf[0] && pf[0].payload && pf[0].payload.version);
+
+    // Transition assessment — a completed TA1 on file.
+    const { data: ta } = await window.aceSupabase
+      .from('transition_assessments')
+      .select('status,payload').eq('student_id', student.id).eq('status', 'completed')
+      .order('completed_at', { ascending: false }).limit(1);
+    out.transition = !!(ta && ta[0] && ta[0].payload && ta[0].payload.version);
+
+    return out;
+  },
+
+  // Maps a default prep item label to its auto-condition key.
+  PREP_AUTO_CONDITION: {
+    'Send teacher feedback links': 'teacher',
+    'Send parent feedback survey': 'parent',
+    'Administer transition assessment': 'transition'
+  },
+
+  // Fetch the active meeting, apply any DNA-driven auto-checks (one-time),
+  // persist if anything changed, and return the (possibly updated) active
+  // meeting object so the caller can render from it. Returns null/active in the
+  // same shape as getActiveMeeting so it can replace that call directly.
+  async applyAutoChecks(student) {
+    if (!student || !student.id) return null;
+    const active = await this.getActiveMeeting(student.id);
+    if (!active) return null;
+    // Prep checklist only exists for these two states; leave others untouched.
+    if (active.state !== 'upcoming' && active.state !== 'past_not_completed') return active;
+
+    const meeting = active.meeting;
+    const checklist = meeting.prep_checklist || [];
+    if (!checklist.length) return active;
+
+    try {
+      const conditions = await this.computeAutoConditions(student);
+      let changed = false;
+      const next = checklist.map(item => {
+        const key = this.PREP_AUTO_CONDITION[item.label];
+        if (!key || !item.auto) return item;
+        if (conditions[key] && !item.completed && !item.auto_checked) {
+          changed = true;
+          return { ...item, completed: true, completed_at: new Date().toISOString(), auto_checked: true };
+        }
+        return item;
+      });
+      if (changed) {
+        const { error } = await window.aceSupabase
+          .from('meetings').update({ prep_checklist: next }).eq('id', meeting.id);
+        if (!error) meeting.prep_checklist = next; // reflect for immediate render
+      }
+    } catch (e) {
+      // Non-fatal — fall back to rendering the existing checklist.
+    }
+    return active;
+  },
+
+  // Event signal from the IEP builder: the present-levels narrative has been
+  // generated (or a section copied). One-time auto-check of the draft item.
+  async markDraftGenerated(studentId) {
+    if (!studentId) return;
+    try {
+      const active = await this.getActiveMeeting(studentId);
+      if (!active || (active.state !== 'upcoming' && active.state !== 'past_not_completed')) return;
+      const meeting = active.meeting;
+      const checklist = meeting.prep_checklist || [];
+      let changed = false;
+      const next = checklist.map(item => {
+        if (item.label === 'Generate IEP draft from latest data' && item.auto &&
+            !item.completed && !item.auto_checked) {
+          changed = true;
+          return { ...item, completed: true, completed_at: new Date().toISOString(), auto_checked: true };
+        }
+        return item;
+      });
+      if (changed) {
+        await window.aceSupabase.from('meetings').update({ prep_checklist: next }).eq('id', meeting.id);
+      }
+    } catch (e) {
+      // Non-fatal — the case manager can still check the item manually.
+    }
+  },
+
   async toggleFollowupItem(meetingId, itemIndex, completed) {
     const { data: meeting, error: fetchErr } = await window.aceSupabase
       .from('meetings')
@@ -346,7 +471,10 @@ const aceMeetings = {
   async renderMeetingSection(targetEl, student) {
     if (!targetEl) return;
 
-    const active = await this.getActiveMeeting(student.id);
+    // 3.11b — apply data-driven auto-checks first, then render from the
+    // (possibly updated) active meeting. Falls through to the same shape as
+    // getActiveMeeting, so the rest of this method is unchanged.
+    const active = await this.applyAutoChecks(student);
 
     if (!active) {
       targetEl.innerHTML = `

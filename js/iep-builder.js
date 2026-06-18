@@ -1011,6 +1011,15 @@ const aceIepBuilder = {
         if (compText.trim()) { body.textContent = compText; wrap.style.display = ''; }
         else { body.textContent = ''; wrap.style.display = 'none'; }
       }
+
+      // 3.11b — signal the meeting prep checklist that the present-levels draft
+      // has been generated (auto-checks "Generate IEP draft from latest data").
+      // Fire-and-forget; persists through the meetings store so all surfaces
+      // stay consistent via fullState. Never blocks the UI.
+      const sid = this.state.student && this.state.student.id;
+      if (sid && window.aceMeetings && window.aceMeetings.markDraftGenerated) {
+        window.aceMeetings.markDraftGenerated(sid);
+      }
     });
 
     // Per-section copy — copies that section's CURRENT (possibly edited) value.
