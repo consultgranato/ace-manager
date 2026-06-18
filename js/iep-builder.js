@@ -991,6 +991,21 @@ const aceIepBuilder = {
   _upperFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; },
   _softQuote(t) { return '“' + String(t).trim().replace(/\.+$/, '') + '”'; },
 
+  // 3.10b.1 — Normalize first-person pronouns in TA1 option/free-text strings
+  // to third person when woven into the third-person narrative (the student's
+  // pronouns are rendered as they/their/them elsewhere in the engine).
+  // Run BEFORE lowercasing so the standalone "I" boundary still matches.
+  _thirdPerson(s) {
+    if (!s) return s;
+    return String(s)
+      .replace(/\bmyself\b/gi, 'themselves')
+      .replace(/\bmine\b/gi, 'theirs')
+      .replace(/\bmy\b/gi, 'their')
+      .replace(/\bI'm\b/g, "they're")
+      .replace(/\bI\b/g, 'they')
+      .replace(/\bme\b/gi, 'them');
+  },
+
   // Behavioral concepts a single TF1 corroborates (de-dup keys)
   _tf1Concepts(tf) {
     const LOW_ENG  = ['Rarely engaged — frequently off-task', 'Sometimes engaged — inconsistent attention'];
@@ -1144,12 +1159,12 @@ const aceIepBuilder = {
     const sorted = subjects.slice().sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level));
 
     // 3.10b — ISBE 34-54: frame academic present levels relative to the
-    // Illinois Learning Standards. Referenced in the intro and the first
-    // domain sentence; kept natural (not repeated on every domain).
+    // Illinois Learning Standards. Stated once in the intro; each domain
+    // sentence then references grade level normally (3.10b.1 — no repetition).
     const sentences = [`Current data reflects ${name}'s present levels of academic achievement relative to grade-level Illinois Learning Standards across content areas.`];
     sorted.forEach((r, idx) => {
       let s = (idx === 0)
-        ? `Relative to grade-level Illinois Learning Standards in ${r.label}, ${name} is performing ${r.level.toLowerCase()}`
+        ? `In ${r.label}, ${name} is performing ${r.level.toLowerCase()}`
         : `In ${r.label}, they are performing ${r.level.toLowerCase()}`;
       if (r.barriers && r.barriers.length) {
         const blist = this._naturalList(r.barriers.map(b => b.value.toLowerCase()));
@@ -1408,7 +1423,10 @@ const aceIepBuilder = {
     const ta = d.ta1;
     if (!ta) return '';
     const name = d.name || 'This student';
-    const list = arr => this._naturalList((arr || []).filter(Boolean));
+    // 3.10b.1 — normalize any first-person leak from TA1 option text, then
+    // lowercase for mid-sentence rendering.
+    const tp = arr => (arr || []).filter(Boolean).map(x => this._thirdPerson(x).toLowerCase());
+    const list = arr => this._naturalList(tp(arr));
     const L = [];
 
     const GOAL = {
@@ -1419,26 +1437,27 @@ const aceIepBuilder = {
       'Start working right away': 'entering the workforce directly after high school',
       'Still exploring my options': 'still exploring post-secondary options'
     };
+    const careerPhrase = ta.careerInterest ? this._thirdPerson(ta.careerInterest) : '';
     if (ta.postSecondaryGoal) {
       let s = `Looking ahead, ${name} identifies a post-secondary vision of ${GOAL[ta.postSecondaryGoal] || ta.postSecondaryGoal.toLowerCase()}`;
-      if (ta.careerInterest) s += `, expressing interest in ${ta.careerInterest}`;
+      if (careerPhrase) s += `, expressing interest in the field of ${careerPhrase}`;
       L.push(s + '.');
-    } else if (ta.careerInterest) {
-      L.push(`Looking ahead, ${name} expresses interest in ${ta.careerInterest}.`);
+    } else if (careerPhrase) {
+      L.push(`Looking ahead, ${name} expresses interest in the field of ${careerPhrase}.`);
     }
 
     const sParts = [];
-    if (ta.studentStrengths && ta.studentStrengths.length) sParts.push(`personal strengths in ${list(ta.studentStrengths.map(x => x.toLowerCase()))}`);
-    if (ta.outsideInterests && ta.outsideInterests.length) sParts.push(`interests outside of school including ${list(ta.outsideInterests.map(x => x.toLowerCase()))}`);
+    if (ta.studentStrengths && ta.studentStrengths.length) sParts.push(`personal strengths in ${list(ta.studentStrengths)}`);
+    if (ta.outsideInterests && ta.outsideInterests.length) sParts.push(`interests outside of school including ${list(ta.outsideInterests)}`);
     if (sParts.length) L.push(`${name} identifies ${this._naturalList(sParts)}.`);
 
     if (ta.learningStyles && ta.learningStyles.length) {
-      L.push(`${name} reports learning best through ${list(ta.learningStyles.map(x => x.toLowerCase()))}.`);
+      L.push(`${name} reports learning best through ${list(ta.learningStyles)}.`);
     }
 
     if (ta.selfAdvocacyActions && ta.selfAdvocacyActions.length) {
       const acts = ta.selfAdvocacyActions.filter(a => a !== 'None of these yet');
-      if (acts.length) L.push(`In the area of self-advocacy, ${name} reports having taken steps such as ${list(acts.map(x => x.toLowerCase()))}.`);
+      if (acts.length) L.push(`In the area of self-advocacy, ${name} reports having taken steps such as ${list(acts)}.`);
       else L.push(`${name} reports not yet having taken independent self-advocacy steps.`);
     }
 
@@ -1461,10 +1480,10 @@ const aceIepBuilder = {
     };
     const livingParts = [];
     if (ta.independentLiving && LIVE[ta.independentLiving]) livingParts.push(`anticipates ${LIVE[ta.independentLiving]} after high school`);
-    if (ta.dailyLivingSkills && ta.dailyLivingSkills.length) livingParts.push(`reports being able to independently ${list(ta.dailyLivingSkills.map(x => x.toLowerCase()))}`);
+    if (ta.dailyLivingSkills && ta.dailyLivingSkills.length) livingParts.push(`reports being able to independently ${list(ta.dailyLivingSkills)}`);
     if (livingParts.length) L.push(`In the area of independent living, ${name} ${this._naturalList(livingParts)}.`);
     if (ta.dailyLivingGrowth && ta.dailyLivingGrowth.length) {
-      L.push(`${name} identifies ${list(ta.dailyLivingGrowth.map(x => x.toLowerCase()))} as daily-living skills they would like to develop further.`);
+      L.push(`${name} identifies ${list(ta.dailyLivingGrowth)} as daily-living skills they would like to develop further.`);
     }
 
     if (typeof ta.overallReadinessScore === 'number' && ta.overallReadinessScore > 0) {
