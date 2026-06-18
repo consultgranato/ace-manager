@@ -1091,7 +1091,7 @@ const aceIepBuilder = {
     push(this.narrStrengths(d));           // (2) strengths
     push(this.narrAcademic(d, stated));    // (3) academic by domain + attributed TF1
     push(this.narrFunctional(d, stated));  // (4) functional + TF1 corroboration
-    push(this.narrDisability(d));          // (5) disability-specific
+    push(this.narrDisability(d, stated));  // (5) disability-specific impact
     push(this.narrParent(d));              // (6) parent input
     // === 3.10b INSERTION POINT — transition / student-voice paragraph (TA1),
     //     gated to age 14½+, inserted here AFTER parent input. ===
@@ -1194,54 +1194,62 @@ const aceIepBuilder = {
     });
   },
 
-  // (4) Functional performance + TF1 behavioral corroboration
+  // (4) Functional performance — leads with the case manager's own written
+  //     observations (-obs) for each area that has them; TF1 behavioral signals
+  //     then corroborate, de-duped against the shared `stated` tracker.
   narrFunctional(d, stated) {
     const name = d.name || 'This student';
-    const domains = (d.functionalDomains || []).filter(x => x.level && x.level !== 'Age Appropriate');
     const hasBip = d.bip === 'Yes';
-    if (!domains.length && !hasBip) return '';
-
-    const LANG = {
-      'Significant Difficulty': { phrase: 'significant difficulty', generic: 'requiring substantial adult support' },
-      'Moderate Difficulty':   { phrase: 'moderate difficulty',   generic: 'benefiting from regular prompting and support' },
-      'Mild Difficulty':       { phrase: 'mild difficulty',       generic: 'manageable with current supports in place' }
-    };
     const CONCEPT_BY_FUNC = { 'func-attn': 'attention', 'func-org': 'organization', 'func-reg': 'behavior', 'func-social': 'behavior' };
-
-    const sentence = (x) => {
-      const lang = LANG[x.level];
-      if (!lang) return '';
-      let s = `${x.label} is an area of ${lang.phrase} for ${name}`;
-      if (x.setting) s += `, particularly ${x.setting.toLowerCase()}`;
-      s += '. ';
-      s += x.obs ? (this._upperFirst(x.obs) + (/[.!?]$/.test(x.obs) ? '' : '.')) : `This is ${lang.generic}.`;
-      const c = CONCEPT_BY_FUNC[x.id];
-      if (c) stated.add(c);
-      return s.trim();
+    const DIFFICULTY = {
+      'Significant Difficulty': 'significant difficulty',
+      'Moderate Difficulty':   'moderate difficulty',
+      'Mild Difficulty':       'mild difficulty'
     };
 
-    const ef = domains.filter(x => x.group === 'Executive Functioning');
-    const se = domains.filter(x => x.group === 'Social-Emotional');
-    const parts = [];
-    if (ef.length) {
-      const ss = ef.map(sentence).filter(Boolean);
-      if (ss.length) parts.push(`With regard to executive functioning, ${this._lowerFirst(ss.join(' '))}`);
-    }
-    if (se.length) {
-      const ss = se.map(sentence).filter(Boolean);
-      if (ss.length) parts.push(`In terms of social-emotional functioning, ${this._lowerFirst(ss.join(' '))}`);
-    }
-    let p = parts.join(' ');
+    // Surface only the functional areas where the case manager entered an
+    // observation. Areas with no -obs text are skipped (do not invent).
+    const withObs = (d.functionalDomains || []).filter(x => x.obs && x.obs.trim());
 
-    // TF1 behavioral corroboration (participation/engagement/independence/peer)
+    const sentences = withObs.map(x => {
+      const concept = CONCEPT_BY_FUNC[x.id];
+      const obs = x.obs.trim();
+      const obsText = this._upperFirst(obs) + (/[.!?]$/.test(obs) ? '' : '.');
+      let lead;
+      if (concept && stated.has(concept)) {
+        // Concept already described earlier — back-reference, then surface the
+        // case manager's specific observation (which is unique content).
+        lead = `Consistent with the above, ${x.label.toLowerCase()} remains an area of need for ${name}`;
+      } else {
+        const diff = DIFFICULTY[x.level] ? ` is an area of ${DIFFICULTY[x.level]}` : ' is an area of need';
+        lead = `${x.label}${diff} for ${name}`;
+        if (concept) stated.add(concept);
+      }
+      if (x.setting) lead += `, particularly ${x.setting.toLowerCase()}`;
+      return `${lead}. ${obsText}`;
+    });
+
+    let p = sentences.join(' ');
+
+    // TF1 behavioral corroboration — back-reference concepts already described;
+    // introduce a genuinely-new concept only once.
     const tfs = (d.tf1s || []).filter(tf => tf && tf.courseName);
-    const corro = new Set();
-    tfs.forEach(tf => this._tf1Concepts(tf).forEach(c => { if (stated.has(c)) corro.add(c); }));
-    if (corro.size) {
+    const corro = new Set(), fresh = new Set();
+    tfs.forEach(tf => this._tf1Concepts(tf).forEach(c => {
+      if (stated.has(c)) corro.add(c); else fresh.add(c);
+    }));
+    const clauses = [];
+    if (corro.size) clauses.push(`teacher reports across ${name}'s classes are consistent with these observations`);
+    if (fresh.size) {
+      clauses.push(`teachers additionally note ${this._naturalList([...fresh].map(c => this._conceptPhrase(c)))}`);
+      fresh.forEach(c => stated.add(c));
+    }
+    if (clauses.length) {
       if (p) p += ' ';
-      p += `These patterns are consistent with teacher reports across ${name}'s classes, where ${this._naturalList([...corro].map(c => this._conceptPhrase(c)))} ${corro.size > 1 ? 'have' : 'has'} also been observed.`;
+      p += this._upperFirst(clauses.join('; ')) + '.';
     }
 
+    // BIP — UNCHANGED: sourced from student.has_bip (via d.bip). Do not modify.
     if (hasBip) {
       if (p) p += ' ';
       p += `A Behavior Intervention Plan is currently in place to support ${name}'s behavioral needs.`;
@@ -1249,20 +1257,28 @@ const aceIepBuilder = {
     return p;
   },
 
-  // (5) Disability-specific paragraph (from the active disability sub-block)
-  narrDisability(d) {
+  // (5) Disability-specific present-level IMPACT (from the active conditional
+  //     block). Eligibility is stated ONCE in the snapshot and is never restated
+  //     here — this paragraph describes how the disability presents. Returns ''
+  //     when the active block has no impact data on file.
+  narrDisability(d, stated) {
     const name = d.name || 'This student';
     const dis = d.disability;
     if (!dis) return '';
     const L = [];
     const meaningful = (v, ...neutral) => v && !neutral.some(n => v.toLowerCase().startsWith(n.toLowerCase()));
+    // Light de-dup: if a tracked concept was already described, back-reference it
+    // while still surfacing the specific clinical descriptor (unique content).
+    const tagged = (concept, sentence) => {
+      if (concept && stated.has(concept)) return 'As noted above, ' + sentence;
+      if (concept) stated.add(concept);
+      return sentence;
+    };
 
     switch (dis) {
       case 'Specific Learning Disability':
         if (d.sldDeficits && d.sldDeficits.length) {
           L.push(`${name}'s specific learning disability primarily affects ${this._naturalList(d.sldDeficits.map(s => s.toLowerCase()))}.`);
-        } else {
-          L.push(`${name} is eligible for services under the category of Specific Learning Disability.`);
         }
         if (meaningful(d.sldProgram, 'None', 'Select')) L.push(`${name} currently receives reading intervention through ${d.sldProgram}.`);
         if (meaningful(d.sldMathProgram, 'None', 'Select')) L.push(`Math intervention is provided through ${d.sldMathProgram}.`);
@@ -1271,39 +1287,33 @@ const aceIepBuilder = {
         if (meaningful(d.asdSocial, 'No significant impact')) L.push(`In the area of social communication, ${name} presents with ${d.asdSocial.toLowerCase()}.`);
         if (meaningful(d.asdSensory, 'None')) L.push(`Sensory considerations are ${d.asdSensory.toLowerCase()}.`);
         if (meaningful(d.asdExec, 'Age-appropriate')) L.push(`With regard to executive functioning, ${name} shows ${d.asdExec.toLowerCase()}.`);
-        if (meaningful(d.asdBehavior, 'No behavioral concerns')) L.push(`Behaviorally, ${name} presents with ${d.asdBehavior.toLowerCase()}.`);
-        if (!L.length) L.push(`${name} is eligible for services under the category of Autism Spectrum Disorder.`);
+        if (meaningful(d.asdBehavior, 'No behavioral concerns')) L.push(tagged('behavior', `${name}'s behavioral presentation includes ${d.asdBehavior.toLowerCase()}.`));
         break;
       case 'Other Health Impairment':
-        if (meaningful(d.ohiAttention, 'Minimal impact')) L.push(`${name}'s health impairment has a ${d.ohiAttention.toLowerCase()} on attention and focus.`);
+        if (meaningful(d.ohiAttention, 'Minimal impact')) L.push(tagged('attention', `${name}'s health impairment has a ${d.ohiAttention.toLowerCase()} on attention and focus.`));
         if (meaningful(d.ohiMedical, 'No significant')) L.push(`In terms of functional medical impact, ${this._lowerFirst(d.ohiMedical)}.`);
         if (meaningful(d.ohiAttendance, 'Satisfactory')) L.push(`Attendance reflects ${d.ohiAttendance.toLowerCase()}.`);
-        if (!L.length) L.push(`${name} is eligible for services under the category of Other Health Impairment.`);
         break;
       case 'Intellectual Disability':
         if (d.idAdaptive) L.push(`With respect to adaptive behavior, ${name} ${this._lowerFirst(d.idAdaptive)}.`);
         if (d.idFuncAreas && d.idFuncAreas.length) L.push(`Instruction emphasizes functional academics, including ${this._naturalList(d.idFuncAreas.map(s => s.toLowerCase()))}.`);
         if (d.idSupport) L.push(`${name} requires a ${d.idSupport.toLowerCase()} level of support.`);
-        if (!L.length) L.push(`${name} is eligible for services under the category of Intellectual Disability.`);
         break;
       case 'Emotional Disability':
         if (meaningful(d.edSupports, 'None in place')) L.push(`${name} currently receives ${d.edSupports.toLowerCase()}.`);
-        if (d.edSem) L.push(`Socially and emotionally, ${name} demonstrates ${d.edSem.toLowerCase()}.`);
-        if (d.edBip === 'Yes') L.push(`A Behavior Intervention Plan is in place to support ${name}'s emotional and behavioral needs.`);
-        if (!L.length) L.push(`${name} is eligible for services under the category of Emotional Disability.`);
+        if (d.edSem) L.push(tagged('behavior', `${name}'s social-emotional functioning is marked by ${d.edSem.toLowerCase()}.`));
+        // BIP is stated once via student.has_bip in the functional paragraph — not repeated here.
         break;
       case 'Speech or Language Impairment':
         if (meaningful(d.sliReceptive, 'Within functional limits')) L.push(`Receptive language is characterized by ${d.sliReceptive.toLowerCase()}.`);
         if (meaningful(d.sliExpressive, 'Within functional limits')) L.push(`Expressive language is characterized by ${d.sliExpressive.toLowerCase()}.`);
         if (meaningful(d.sliImpact, 'Minimal')) L.push(`The impact on academic access is ${d.sliImpact.toLowerCase()}.`);
-        if (!L.length) L.push(`${name} is eligible for services under the category of Speech or Language Impairment.`);
         break;
       case 'Multiple Disabilities':
-        L.push(`${name} is eligible for services under the category of Multiple Disabilities, reflecting the combined impact of more than one area of need.`);
-        if (d.sldDeficits && d.sldDeficits.length) L.push(`Learning needs include ${this._naturalList(d.sldDeficits.map(s => s.toLowerCase()))}.`);
+        if (d.sldDeficits && d.sldDeficits.length) L.push(`${name}'s learning needs span more than one area, including ${this._naturalList(d.sldDeficits.map(s => s.toLowerCase()))}.`);
         break;
       default:
-        L.push(`${name} is eligible for special education services under the category of ${dis}.`);
+        break;
     }
     return L.join(' ');
   },
