@@ -1057,6 +1057,21 @@ h3 { font-size: 18px; }
   vertical-align: middle;
 }
 
+/* Phase 3.10a — PLAAFP narrative generate panel */
+.iep-generate-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.iep-narrative-output {
+  width: 100%;
+  min-height: 360px;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
 .attention-reasons {
   margin: 10px 0 8px;
   padding: 0;
