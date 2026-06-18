@@ -1076,7 +1076,8 @@ const aceIepBuilder = {
       // DNAs (read via the same path 3.8d uses)
       courses: student.courses || [],
       tf1s: this.state.tf1s || [],
-      pf1: this.state.pf1 || null
+      pf1: this.state.pf1 || null,
+      ta1: this.state.ta1 || null   // 3.10b — transition present-levels (gated 14½+)
     };
   },
 
@@ -1087,16 +1088,22 @@ const aceIepBuilder = {
     const paras = [];
     const push = p => { if (p && p.trim()) paras.push(p.trim()); };
 
-    push(this.narrSnapshot(d));            // (1) snapshot
-    push(this.narrStrengths(d));           // (2) strengths
-    push(this.narrAcademic(d, stated));    // (3) academic by domain + attributed TF1
-    push(this.narrFunctional(d, stated));  // (4) functional + TF1 corroboration
-    push(this.narrDisability(d, stated));  // (5) disability-specific impact
-    push(this.narrParent(d));              // (6) parent input
-    // === 3.10b INSERTION POINT — transition / student-voice paragraph (TA1),
-    //     gated to age 14½+, inserted here AFTER parent input. ===
-    // === 3.10b INSERTION POINT — adverse-impact statement, Illinois Learning
-    //     Standards references, and missing-input compliance flags. ===
+    push(this.narrSnapshot(d));                   // (1) snapshot
+    push(this.narrStrengths(d));                  // (2) strengths
+    push(this.narrAcademic(d, stated));           // (3) academic by domain + attributed TF1
+    push(this.narrAdverseImpactAcademic(d, stated)); // 3.10b — adverse impact (academic)
+    push(this.narrFunctional(d, stated));         // (4) functional + TF1 corroboration
+    push(this.narrAdverseImpactFunctional(d, stated)); // 3.10b — adverse impact (functional)
+    push(this.narrDisability(d, stated));         // (5) disability-specific impact
+    push(this.narrParent(d));                     // (6) parent input
+    // 3.10b — transition / student-voice present levels (TA1), gated to age
+    // 14½+. When gated out, nothing is inserted. When included with no TA1 on
+    // file, narrTransition returns '' (nothing fabricated) — the compliance
+    // block carries the "required at 14½" flag instead.
+    if (this._isTransitionAge(d)) push(this.narrTransition(d));
+    // 3.10b — missing-input compliance flags, as a clearly-labeled removable
+    // block the case manager reads and deletes before finalizing.
+    push(this.complianceNotesBlock(d));
     return paras;
   },
 
@@ -1136,10 +1143,13 @@ const aceIepBuilder = {
     const order = ['Significantly Below Grade Level', 'Below Grade Level', 'Approaching Grade Level', 'At Grade Level', 'Above Grade Level'];
     const sorted = subjects.slice().sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level));
 
-    const sentences = [`Current data reflects ${name}'s present levels of academic achievement across content areas.`];
+    // 3.10b — ISBE 34-54: frame academic present levels relative to the
+    // Illinois Learning Standards. Referenced in the intro and the first
+    // domain sentence; kept natural (not repeated on every domain).
+    const sentences = [`Current data reflects ${name}'s present levels of academic achievement relative to grade-level Illinois Learning Standards across content areas.`];
     sorted.forEach((r, idx) => {
       let s = (idx === 0)
-        ? `In ${r.label}, ${name} is performing ${r.level.toLowerCase()}`
+        ? `Relative to grade-level Illinois Learning Standards in ${r.label}, ${name} is performing ${r.level.toLowerCase()}`
         : `In ${r.label}, they are performing ${r.level.toLowerCase()}`;
       if (r.barriers && r.barriers.length) {
         const blist = this._naturalList(r.barriers.map(b => b.value.toLowerCase()));
@@ -1336,6 +1346,173 @@ const aceIepBuilder = {
     }
     if (pf.anythingElse) L.push(`${parent} also shared: ${this._softQuote(pf.anythingElse)}.`);
     return L.join(' ');
+  },
+
+  // =============================================================
+  // 3.10b — IDEA/ISBE compliance layer (ADDITIVE ONLY)
+  // Adverse-impact statements, transition present-levels (gated), and
+  // missing-input flags. Adds to the assembled narrative; the 3.10a
+  // de-dup/functional/BIP/eligibility logic is untouched.
+  // =============================================================
+
+  // Age gate for transition present levels. No DOB field exists on the
+  // student record, so per the 3.10b spec we default to grade 9 and above
+  // (the IEP in effect when the student turns 14½).
+  _isTransitionAge(d) {
+    const g = parseInt(d.grade, 10);
+    return !isNaN(g) && g >= 9;
+  },
+
+  // Adverse-impact statement (academic) — IDEA §300.320(a)(1). Explicit,
+  // concrete, and tied to the academic levels/barriers already stated; not
+  // boilerplate. References the named needs rather than re-describing them.
+  narrAdverseImpactAcademic(d) {
+    const name = d.name || 'This student';
+    const subjects = (d.academicSubjects || []).filter(r => r.level);
+    if (!subjects.length) return '';
+
+    const below = ['Significantly Below Grade Level', 'Below Grade Level', 'Approaching Grade Level'];
+    const needAreas = subjects.filter(r => below.includes(r.level));
+    const focus = needAreas.length ? needAreas : subjects;
+    const areaLabels = [...new Set(focus.map(r => r.label.toLowerCase()))];
+    const barriers = [];
+    focus.forEach(r => (r.barriers || []).forEach(b => barriers.push(b.value.toLowerCase())));
+    const uniqBarriers = [...new Set(barriers)];
+
+    const disPhrase = d.disability ? `${name}'s ${d.disability}` : `${name}'s disability`;
+    const subjectClause = uniqBarriers.length
+      ? `${name}'s documented needs in ${this._naturalList(uniqBarriers)}`
+      : `${name}'s areas of academic need`;
+    return `As a result of ${disPhrase}, ${subjectClause} adversely impact ${name}'s involvement and progress in the general education curriculum, limiting their ability to independently access and demonstrate grade-level content in ${this._naturalList(areaLabels)}.`;
+  },
+
+  // Adverse-impact statement (functional) — tied to the functional areas the
+  // case manager documented (observations preferred; rated difficulties as a
+  // fallback). Concrete effect on accessing the general curriculum.
+  narrAdverseImpactFunctional(d) {
+    const name = d.name || 'This student';
+    const withObs = (d.functionalDomains || []).filter(x => x.obs && x.obs.trim());
+    const rated = (d.functionalDomains || []).filter(x =>
+      ['Significant Difficulty', 'Moderate Difficulty', 'Mild Difficulty'].includes(x.level));
+    const source = withObs.length ? withObs : rated;
+    if (!source.length) return '';
+    const areas = [...new Set(source.map(x => x.label.toLowerCase()))];
+    return `${name}'s functional needs in ${this._naturalList(areas)} adversely impact their involvement and progress in the general education curriculum by interfering with their ability to consistently engage in instruction, complete tasks independently, and participate fully alongside same-age peers.`;
+  },
+
+  // Transition / student-voice PRESENT LEVELS from a completed TA1. Attributed
+  // to the student throughout. PRESENT LEVELS ONLY — no measurable postsecondary
+  // goals, services, or course of study (those are Phase 4). Returns '' if no
+  // TA1 is on file (the compliance block flags the absence).
+  narrTransition(d) {
+    const ta = d.ta1;
+    if (!ta) return '';
+    const name = d.name || 'This student';
+    const list = arr => this._naturalList((arr || []).filter(Boolean));
+    const L = [];
+
+    const GOAL = {
+      '4-year college': 'attending a four-year college',
+      '2-year or community college': 'attending a two-year or community college',
+      'Trade or technical school': 'attending a trade or technical school',
+      'Military': 'entering the military',
+      'Start working right away': 'entering the workforce directly after high school',
+      'Still exploring my options': 'still exploring post-secondary options'
+    };
+    if (ta.postSecondaryGoal) {
+      let s = `Looking ahead, ${name} identifies a post-secondary vision of ${GOAL[ta.postSecondaryGoal] || ta.postSecondaryGoal.toLowerCase()}`;
+      if (ta.careerInterest) s += `, expressing interest in ${ta.careerInterest}`;
+      L.push(s + '.');
+    } else if (ta.careerInterest) {
+      L.push(`Looking ahead, ${name} expresses interest in ${ta.careerInterest}.`);
+    }
+
+    const sParts = [];
+    if (ta.studentStrengths && ta.studentStrengths.length) sParts.push(`personal strengths in ${list(ta.studentStrengths.map(x => x.toLowerCase()))}`);
+    if (ta.outsideInterests && ta.outsideInterests.length) sParts.push(`interests outside of school including ${list(ta.outsideInterests.map(x => x.toLowerCase()))}`);
+    if (sParts.length) L.push(`${name} identifies ${this._naturalList(sParts)}.`);
+
+    if (ta.learningStyles && ta.learningStyles.length) {
+      L.push(`${name} reports learning best through ${list(ta.learningStyles.map(x => x.toLowerCase()))}.`);
+    }
+
+    if (ta.selfAdvocacyActions && ta.selfAdvocacyActions.length) {
+      const acts = ta.selfAdvocacyActions.filter(a => a !== 'None of these yet');
+      if (acts.length) L.push(`In the area of self-advocacy, ${name} reports having taken steps such as ${list(acts.map(x => x.toLowerCase()))}.`);
+      else L.push(`${name} reports not yet having taken independent self-advocacy steps.`);
+    }
+
+    const AWARE = {
+      'Yes — I understand it well': 'a strong understanding of how their disability affects their learning',
+      'Somewhat — I know a little': 'some understanding of how their disability affects their learning',
+      "Not really — I'm not sure": 'limited awareness of how their disability affects their learning',
+      "No — I don't know much about it": 'little awareness of how their disability affects their learning'
+    };
+    if (ta.disabilityAwareness) {
+      L.push(`${name} reports ${AWARE[ta.disabilityAwareness] || ta.disabilityAwareness.toLowerCase()}.`);
+    }
+
+    const LIVE = {
+      'Living with family': 'living with family',
+      'Living on my own': 'living independently',
+      'Living with a roommate': 'living with a roommate',
+      'Living in a college dorm': 'living in a college dorm',
+      "I'm not sure yet": ''
+    };
+    const livingParts = [];
+    if (ta.independentLiving && LIVE[ta.independentLiving]) livingParts.push(`anticipates ${LIVE[ta.independentLiving]} after high school`);
+    if (ta.dailyLivingSkills && ta.dailyLivingSkills.length) livingParts.push(`reports being able to independently ${list(ta.dailyLivingSkills.map(x => x.toLowerCase()))}`);
+    if (livingParts.length) L.push(`In the area of independent living, ${name} ${this._naturalList(livingParts)}.`);
+    if (ta.dailyLivingGrowth && ta.dailyLivingGrowth.length) {
+      L.push(`${name} identifies ${list(ta.dailyLivingGrowth.map(x => x.toLowerCase()))} as daily-living skills they would like to develop further.`);
+    }
+
+    if (typeof ta.overallReadinessScore === 'number' && ta.overallReadinessScore > 0) {
+      L.push(`Based on self-report across these areas, ${name}'s overall transition-readiness score is currently ${ta.overallReadinessScore}%.`);
+    }
+
+    if (!L.length) return '';
+    return `The following transition-related present levels reflect ${name}'s own input from a completed transition assessment. ` + L.join(' ');
+  },
+
+  // Missing-input compliance flags. A clearly-labeled, removable block — this
+  // is guidance for the case manager, not part of the final narrative text.
+  complianceNotesBlock(d) {
+    const notes = [];
+    const map = window.COURSE_DOMAIN_MAP;
+    const ACAD_DOMAINS = ['literacy', 'math', 'science', 'socialscience'];
+    const DOMAIN_LABEL = { literacy: 'Literacy', math: 'Math', science: 'Science', socialscience: 'Social Science' };
+
+    if (!d.pf1) notes.push('Parent input has not yet been received.');
+
+    if (this._isTransitionAge(d) && !d.ta1) {
+      notes.push('Transition assessment is required for the IEP in effect at age 14½ and is not yet on file.');
+    }
+
+    if (map) {
+      const tfNames = new Set((d.tf1s || []).filter(t => t && t.courseName).map(t => t.courseName));
+      const missingCourses = (d.courses || [])
+        .filter(c => ACAD_DOMAINS.includes(map.getDomain(c)))
+        .filter(c => !tfNames.has(c.name))
+        .map(c => c.name);
+      if (missingCourses.length) {
+        notes.push(`Teacher feedback not yet received for ${this._naturalList(missingCourses)}.`);
+      }
+
+      const ratingByKey = {};
+      (d.academicSubjects || []).forEach(s => { ratingByKey[s.key] = s.level; });
+      const missingRatings = ACAD_DOMAINS
+        .filter(dom => (d.courses || []).some(c => map.getDomain(c) === dom) && !ratingByKey[dom])
+        .map(dom => DOMAIN_LABEL[dom]);
+      if (missingRatings.length) {
+        notes.push(`Academic Performance rating not yet entered for ${this._naturalList(missingRatings)}.`);
+      }
+    }
+
+    if (!notes.length) return '';
+    return `— — — — — — — — — — — — — — — — — — — — — — — —\n` +
+      `COMPLIANCE NOTES (guidance for the case manager — review and delete before finalizing):\n` +
+      notes.map(n => '• ' + n).join('\n');
   }
 };
 
