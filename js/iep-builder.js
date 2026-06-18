@@ -138,6 +138,9 @@ const aceIepBuilder = {
     this.wireFuncCards(host);
     this.wireStudentInfo(host);
     this.wireAcademic(host);
+
+    // 3.9 — deterministic identity pre-population (after DOM exists)
+    this.prefillIdentity(this.state.student);
   },
 
   contextSectionHTML() {
@@ -640,6 +643,59 @@ const aceIepBuilder = {
         }
       });
     });
+  },
+
+  // -------------------------------------------------------------
+  // 3.9 — Deterministic identity pre-population
+  // Fills ONLY #studentName, #grade, #disability, #secondaryDisability
+  // from the loaded profile, with tolerant value normalization and a
+  // no-clobber guard. No DNA reads, no suggestions, no narrative.
+  // -------------------------------------------------------------
+  prefillIdentity(student) {
+    if (!student) return;
+
+    // Set a <select> to the option matching `target` by value OR label
+    // text (trimmed, case-insensitive). Only acts when the select is
+    // currently on one of `unsetValues` (no-clobber). Warns on no match.
+    const fillSelect = (id, target, unsetValues) => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      if (!unsetValues.includes(sel.value)) return; // already set — never clobber
+      const want = (target == null ? '' : String(target)).trim().toLowerCase();
+      if (!want) return;
+      let match = null;
+      for (const opt of sel.options) {
+        const v = (opt.value || '').trim().toLowerCase();
+        const t = (opt.textContent || '').trim().toLowerCase();
+        if (v === want || t === want) { match = opt; break; }
+      }
+      if (match) {
+        sel.value = match.value;
+      } else {
+        console.warn(`[IEP prefill] No matching #${id} option for profile value:`, target);
+      }
+    };
+
+    // Student first name (text) — fill only when empty
+    const nameEl = document.getElementById('studentName');
+    if (nameEl && nameEl.value.trim() === '' && student.first_name) {
+      nameEl.value = student.first_name;
+    }
+
+    // Grade — profile stores e.g. "9 (Freshman)"; option value is "9".
+    // Matching on label text bridges that; unset = placeholder "".
+    fillSelect('grade', student.grade, ['']);
+
+    // Primary disability — profile stores label form e.g.
+    // "Specific Learning Disability (SLD)"; option value is the short
+    // form. Match on label text; unset = placeholder "".
+    fillSelect('disability', student.primary_disability, ['']);
+
+    // Secondary disability — leave the "None" default if profile has
+    // none. Unset = "None" (the default) or "".
+    if (student.secondary_disability && String(student.secondary_disability).trim() !== '') {
+      fillSelect('secondaryDisability', student.secondary_disability, ['None', '']);
+    }
   },
 
   academicSectionHTML() {
