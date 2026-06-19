@@ -425,12 +425,17 @@ const aceMeetings = {
   async markDraftGenerated(studentId) {
     if (!studentId) return;
     try {
-      await window.aceSupabase
+      const { error } = await window.aceSupabase
         .from('students')
         .update({ iep_draft_generated_at: new Date().toISOString() })
         .eq('id', studentId);
+      // Do not swallow — a silent RLS/network failure here is exactly why the
+      // marker previously never persisted and item #4 never auto-checked.
+      if (error) {
+        console.error('markDraftGenerated: failed to persist iep_draft_generated_at', error);
+      }
     } catch (e) {
-      // Non-fatal — the case manager can still check the item manually.
+      console.error('markDraftGenerated: unexpected error persisting iep_draft_generated_at', e);
     }
   },
 
