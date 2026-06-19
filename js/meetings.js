@@ -664,13 +664,50 @@ const aceMeetings = {
 
   // Read the data-backed conditions for the three DNA prep items, using the
   // same paths the feedback cards / 3.8d panel use.
-  async computeAutoConditions(student) {
+  // Phase 3.14 — current-cycle cutoff. The cutoff is the held date of the most
+  // recent PREVIOUS completed meeting (the one before currentMeeting). An input
+  // counts toward an auto-check only if its completed_at is on/after the day
+  // AFTER that meeting — i.e., it belongs to THIS cycle, not the last one.
+  // Returns an absolute ms instant, or null when there is no prior completed
+  // meeting (first-meeting fallback: count any existing input).
+  async _cycleCutoffInstant(studentId, currentMeeting) {
+    let q = window.aceSupabase
+      .from('meetings')
+      .select('scheduled_date')
+      .eq('student_id', studentId)
+      .eq('completed', true);
+    if (currentMeeting && currentMeeting.scheduled_date) {
+      q = q.lt('scheduled_date', currentMeeting.scheduled_date);
+    }
+    q = q.order('scheduled_date', { ascending: false }).limit(1);
+
+    const { data } = await q;
+    if (!data || !data[0] || !data[0].scheduled_date) return null; // no prior cycle
+    const d = window.aceUtils.parseLocalDate(data[0].scheduled_date);
+    if (!d) return null;
+    d.setDate(d.getDate() + 1);   // start of the day after the prior meeting
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  },
+
+  async computeAutoConditions(student, currentMeeting) {
     const out = { teacher: false, parent: false, transition: false, draft: false };
     if (!student || !student.id) return out;
 
+    // Only count inputs collected for the CURRENT cycle (3.14). A null cutoff
+    // (no prior completed meeting) counts any existing input.
+    const cutoff = await this._cycleCutoffInstant(student.id, currentMeeting);
+    const after = (ts) => {
+      if (!ts) return false;
+      if (cutoff === null) return true;
+      const t = new Date(ts).getTime();
+      return !isNaN(t) && t >= cutoff;
+    };
+
     // Teacher feedback — checked only when ALL expected academic-course TF1s
-    // are received (received === expected). A single partial receipt does not
-    // check it. With no academic courses there is nothing expected → stays manual.
+    // are received THIS cycle (received === expected). A single partial receipt
+    // (or a stale, pre-cutoff receipt) does not check it. With no academic
+    // courses there is nothing expected → stays manual.
     const academicCourses = (student.courses || []).filter(c => c.is_academic);
     if (academicCourses.length > 0) {
       const { data: links } = await window.aceSupabase
@@ -680,34 +717,33 @@ const aceMeetings = {
       if (links && links[0]) {
         const { data: fb } = await window.aceSupabase
           .from('teacher_feedback')
-          .select('course_name').eq('link_id', links[0].id).eq('status', 'completed');
-        const got = new Set((fb || []).map(r => r.course_name));
+          .select('course_name, completed_at').eq('link_id', links[0].id).eq('status', 'completed');
+        const got = new Set((fb || []).filter(r => after(r.completed_at)).map(r => r.course_name));
         out.teacher = academicCourses.every(c => got.has(c.name));
       }
     }
 
-    // Parent input — a completed PF1 on the active parent link.
+    // Parent input — a completed PF1 submitted this cycle.
     const { data: pf } = await window.aceSupabase
       .from('parent_feedback')
-      .select('status,payload').eq('student_id', student.id).eq('active', true)
-      .eq('status', 'completed').limit(1);
-    out.parent = !!(pf && pf[0] && pf[0].payload && pf[0].payload.version);
+      .select('status,payload,completed_at').eq('student_id', student.id).eq('active', true)
+      .eq('status', 'completed').order('completed_at', { ascending: false }).limit(1);
+    out.parent = !!(pf && pf[0] && pf[0].payload && pf[0].payload.version && after(pf[0].completed_at));
 
-    // Transition assessment — a completed TA1 on file.
+    // Transition assessment — a completed TA1 submitted this cycle.
     const { data: ta } = await window.aceSupabase
       .from('transition_assessments')
-      .select('status,payload').eq('student_id', student.id).eq('status', 'completed')
+      .select('status,payload,completed_at').eq('student_id', student.id).eq('status', 'completed')
       .order('completed_at', { ascending: false }).limit(1);
-    out.transition = !!(ta && ta[0] && ta[0].payload && ta[0].payload.version);
+    out.transition = !!(ta && ta[0] && ta[0].payload && ta[0].payload.version && after(ta[0].completed_at));
 
-    // IEP draft — a durable marker stamped on the student record when the
-    // present-levels narrative is generated (or a section copied) in the
-    // builder. Re-derived here so item #4 auto-checks through the same path
-    // as the three above, instead of relying on an in-session event.
+    // IEP draft — marker stamped on the student when the narrative is generated.
+    // Re-derived here so item #4 auto-checks through the same path as the three
+    // above; counts only when stamped this cycle.
     const { data: stu } = await window.aceSupabase
       .from('students')
       .select('iep_draft_generated_at').eq('id', student.id).limit(1);
-    out.draft = !!(stu && stu[0] && stu[0].iep_draft_generated_at);
+    out.draft = !!(stu && stu[0] && after(stu[0].iep_draft_generated_at));
 
     return out;
   },
@@ -736,7 +772,7 @@ const aceMeetings = {
     if (!checklist.length) return active;
 
     try {
-      const conditions = await this.computeAutoConditions(student);
+      const conditions = await this.computeAutoConditions(student, meeting);
       let changed = false;
       const next = checklist.map(item => {
         const key = this.PREP_AUTO_CONDITION[item.label];
