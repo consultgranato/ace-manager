@@ -21,6 +21,24 @@ const aceUtils = {
     return isNaN(d) ? null : d;
   },
 
+  // Add a whole number of years to a date-only value, returning a YYYY-MM-DD
+  // string. Parses as a LOCAL date (parseLocalDate) so there is no UTC-midnight
+  // off-by-one. Feb 29 + N years lands on Feb 28 when the target year is not a
+  // leap year (clamped, never rolls into March).
+  addYearsISO(dateInput, years) {
+    const d = this.parseLocalDate(dateInput);
+    if (!d) return null;
+    const month = d.getMonth();
+    const target = new Date(d.getFullYear() + years, month, d.getDate());
+    // Overflow guard: only Feb 29 → non-leap year shifts the month forward;
+    // setDate(0) snaps back to the last day of the intended month (Feb 28).
+    if (target.getMonth() !== month) target.setDate(0);
+    const y = target.getFullYear();
+    const m = String(target.getMonth() + 1).padStart(2, '0');
+    const day = String(target.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  },
+
   // Format a date string (YYYY-MM-DD or Date object) to "Mon, Jun 9"
   formatShortDate(dateInput) {
     const d = this.parseLocalDate(dateInput);
