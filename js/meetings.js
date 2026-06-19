@@ -166,6 +166,281 @@ const aceMeetings = {
     return data;
   },
 
+  // -------------------------------------------------------------
+  // Phase 3.12b — edit / delete meetings + due-date recompute.
+  //
+  // Due dates are a derived function of the student's COMPLETED meetings: each
+  // completed meeting of a driving type contributes a candidate (held date +
+  // offset); the clock = the latest candidate. When a completed meeting is
+  // deleted or edited, the affected clock(s) are recomputed from the REMAINING
+  // completed meetings, falling back to that meeting's prior_* snapshot (the
+  // pre-advancement baseline from 3.12a) when a clock loses its last driver.
+  // -------------------------------------------------------------
+
+  // Completed meeting types that drive each clock.
+  ANNUAL_DRIVERS: ['annual', 'reeval', 'initial'],
+  REEVAL_DRIVERS: ['reeval', 'initial'],
+
+  _clocksDriven(type) {
+    return {
+      annual: this.ANNUAL_DRIVERS.includes(type),
+      reeval: this.REEVAL_DRIVERS.includes(type)
+    };
+  },
+
+  // Pure: latest advanced date per clock over a set of completed meetings,
+  // falling back to the provided baseline when a clock has no driver. ISO
+  // YYYY-MM-DD strings compare lexicographically == chronologically.
+  _computeClocks(completedSet, fallback) {
+    const latest = (drivers, offset) => {
+      let best = null;
+      for (const m of completedSet) {
+        if (!drivers.includes(m.meeting_type)) continue;
+        const cand = window.aceUtils.addYearsISO(m.scheduled_date, offset);
+        if (cand && (best === null || cand > best)) best = cand;
+      }
+      return best;
+    };
+    const a = latest(this.ANNUAL_DRIVERS, 1);
+    const r = latest(this.REEVAL_DRIVERS, 3);
+    return {
+      annual_review_date: a !== null ? a : (fallback.annual != null ? fallback.annual : null),
+      reeval_due_date:    r !== null ? r : (fallback.reeval != null ? fallback.reeval : null)
+    };
+  },
+
+  async _completedMeetings(studentId) {
+    const { data } = await window.aceSupabase
+      .from('meetings')
+      .select('id, meeting_type, scheduled_date')
+      .eq('student_id', studentId)
+      .eq('completed', true);
+    return data || [];
+  },
+
+  // Shared recompute. Recompute the due date(s) `affecting` drives, from the
+  // student's REMAINING completed meetings (excluding excludeMeetingId), falling
+  // back to affecting.prior_* when a clock loses its last driver. Returns a
+  // partial students update containing only the affected clock(s).
+  async recomputeDueDates(studentId, affecting, excludeMeetingId) {
+    const remaining = (await this._completedMeetings(studentId))
+      .filter(m => m.id !== excludeMeetingId);
+    const fallback = {
+      annual: affecting.prior_annual_review_date != null ? affecting.prior_annual_review_date : null,
+      reeval: affecting.prior_reeval_due_date != null ? affecting.prior_reeval_due_date : null
+    };
+    const clocks = this._computeClocks(remaining, fallback);
+    const driven = this._clocksDriven(affecting.meeting_type);
+    const update = {};
+    if (driven.annual) update.annual_review_date = clocks.annual_review_date;
+    if (driven.reeval) update.reeval_due_date = clocks.reeval_due_date;
+    return update;
+  },
+
+  // Edit drawer — pre-filled, works for scheduled AND completed meetings.
+  async openEditDrawer(meeting, student) {
+    const esc = window.aceUtils.escapeHtml;
+    const typeOpts = [
+      ['annual', 'Annual Review'], ['reeval', 'Re-evaluation'], ['initial', 'Initial Eligibility'],
+      ['amendment', 'Amendment'], ['transition', 'Transition Planning']
+    ].map(([v, l]) => `<option value="${v}" ${meeting.meeting_type === v ? 'selected' : ''}>${l}</option>`).join('');
+
+    const bodyHTML = `
+      <form id="editMeetingForm" class="student-form" style="gap:14px;">
+        <div class="form-row">
+          <label>
+            <span class="label-text">Meeting Type <span class="required">*</span></span>
+            <select id="editMeetingType" required>${typeOpts}</select>
+          </label>
+        </div>
+        <div class="form-row two-col">
+          <label>
+            <span class="label-text">Date <span class="required">*</span></span>
+            <input type="date" id="editMeetingDate" required value="${esc(meeting.scheduled_date || '')}" />
+          </label>
+          <label>
+            <span class="label-text">Time <span class="optional">(optional)</span></span>
+            <input type="time" id="editMeetingTime" value="${esc(meeting.scheduled_time || '')}" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span class="label-text">Attendees <span class="optional">(optional)</span></span>
+            <input type="text" id="editMeetingAttendees" value="${esc(meeting.attendees || '')}" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span class="label-text">Notes <span class="optional">(optional)</span></span>
+            <textarea id="editMeetingNotes" rows="3">${esc(meeting.meeting_notes || '')}</textarea>
+          </label>
+        </div>
+        ${meeting.completed ? `<div class="meeting-preview muted">This meeting is completed. Changing its type or date will recompute the student's due dates.</div>` : ''}
+        <div id="editMeetingErrorMsg" class="error-msg" style="display:none;"></div>
+      </form>
+    `;
+
+    return await window.aceModal.openDrawer({
+      title: 'Edit Meeting',
+      bodyHTML,
+      saveLabel: 'Save Changes',
+      cancelLabel: 'Cancel',
+      onSave: async (drawerBody) => await this.handleEditSave(drawerBody, meeting, student)
+    });
+  },
+
+  async handleEditSave(drawerBody, meeting, student) {
+    const errEl = drawerBody.querySelector('#editMeetingErrorMsg');
+    errEl.style.display = 'none';
+
+    const newType = drawerBody.querySelector('#editMeetingType').value;
+    const newDate = drawerBody.querySelector('#editMeetingDate').value;
+    const newTime = drawerBody.querySelector('#editMeetingTime').value || null;
+    const attendees = drawerBody.querySelector('#editMeetingAttendees').value.trim();
+    const notes = drawerBody.querySelector('#editMeetingNotes').value.trim();
+
+    if (!newType || !newDate) {
+      errEl.textContent = 'Meeting type and date are required.';
+      errEl.style.display = 'block';
+      return false;
+    }
+
+    const fields = {
+      meeting_type: newType,
+      scheduled_date: newDate,
+      scheduled_time: newTime,
+      attendees,
+      meeting_notes: notes
+    };
+
+    const typeChanged = newType !== meeting.meeting_type;
+    const dateChanged = newDate !== meeting.scheduled_date;
+    let studentUpdate = null;
+
+    // Only a completed meeting whose type/date changed shifts due dates.
+    if (meeting.completed && (typeChanged || dateChanged)) {
+      const remaining = (await this._completedMeetings(student.id)).filter(m => m.id !== meeting.id);
+      const origFallback = {
+        annual: meeting.prior_annual_review_date != null ? meeting.prior_annual_review_date : null,
+        reeval: meeting.prior_reeval_due_date != null ? meeting.prior_reeval_due_date : null
+      };
+      const oldDriven = this._clocksDriven(meeting.meeting_type);
+      const newDriven = this._clocksDriven(newType);
+
+      // Refresh this meeting's prior_* = the baseline WITHOUT it (what a later
+      // delete would restore), only for clock(s) the new type drives.
+      const without = this._computeClocks(remaining, origFallback);
+      fields.prior_annual_review_date = newDriven.annual ? without.annual_review_date : null;
+      fields.prior_reeval_due_date    = newDriven.reeval ? without.reeval_due_date    : null;
+
+      // Student dates = recompute INCLUDING this meeting's new values, for every
+      // clock affected by the change (union of old + new driven clocks). A clock
+      // the new type no longer drives reverts via the remaining set / baseline.
+      const withNew = remaining.concat([{ id: meeting.id, meeting_type: newType, scheduled_date: newDate }]);
+      const withC = this._computeClocks(withNew, origFallback);
+      studentUpdate = {};
+      if (oldDriven.annual || newDriven.annual) studentUpdate.annual_review_date = withC.annual_review_date;
+      if (oldDriven.reeval || newDriven.reeval) studentUpdate.reeval_due_date = withC.reeval_due_date;
+    }
+
+    const { error } = await window.aceSupabase.from('meetings').update(fields).eq('id', meeting.id);
+    if (error) {
+      errEl.textContent = 'Could not save changes: ' + error.message;
+      errEl.style.display = 'block';
+      return false;
+    }
+
+    if (studentUpdate && Object.keys(studentUpdate).length) {
+      const { error: sErr } = await window.aceSupabase.from('students').update(studentUpdate).eq('id', student.id);
+      if (sErr) {
+        errEl.textContent = 'Saved the meeting, but updating due dates failed: ' + sErr.message;
+        errEl.style.display = 'block';
+        return false;
+      }
+      Object.assign(student, studentUpdate);   // keep in-memory student (and profile header) consistent
+    }
+
+    if (window.aceToast) window.aceToast.success('Meeting updated');
+    return { dueDatesChanged: !!(studentUpdate && Object.keys(studentUpdate).length) };
+  },
+
+  // Delete with confirmation. A completed meeting reverts the due date(s) it
+  // advanced BEFORE the row is removed, so a due date is never left advanced
+  // into the future with no meeting backing it.
+  async confirmDelete(meeting, student) {
+    return await window.aceModal.openModal({
+      title: 'Delete this meeting?',
+      message: "Delete this meeting? This can't be undone.",
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'danger',
+      onConfirm: async () => {
+        if (meeting.completed) {
+          const studentUpdate = await this.recomputeDueDates(student.id, meeting, meeting.id);
+          if (Object.keys(studentUpdate).length) {
+            const { error: sErr } = await window.aceSupabase
+              .from('students').update(studentUpdate).eq('id', student.id);
+            if (sErr) throw sErr;
+            Object.assign(student, studentUpdate);
+          }
+        }
+        const { error } = await window.aceSupabase.from('meetings').delete().eq('id', meeting.id);
+        if (error) throw error;
+      }
+    });
+  },
+
+  // Re-render the meeting card after an edit/delete, and (when due dates moved)
+  // re-derive the profile header deadline and sidebar dot so every fullState
+  // surface stays consistent. Caseload / Home re-derive on next navigation.
+  _afterMeetingMutation(targetEl, student, dueDatesChanged) {
+    this.renderMeetingSection(targetEl, student);
+    // Any add/edit/delete/complete changes the active-meeting state, which the
+    // sidebar dot derives via fullState — always re-render it.
+    const sb = document.getElementById('sidebarHost');
+    if (sb && window.aceSidebar && typeof window.aceSidebar.render === 'function') {
+      window.aceSidebar.render(sb);
+    }
+    // The profile header shows the next deadline — refresh only when a due date moved.
+    if (dueDatesChanged && window.aceProfile && typeof window.aceProfile.renderHeader === 'function') {
+      window.aceProfile.renderHeader();
+    }
+  },
+
+  // Edit/Delete action buttons shared by the scheduled and completed cards.
+  _meetingActionsHTML() {
+    const btn = (id, icon, color, label) =>
+      `<button type="button" id="${id}" title="${label}" aria-label="${label}" ` +
+      `style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;` +
+      `border:1px solid var(--border);border-radius:6px;background:#fff;color:${color};cursor:pointer;">${icon}</button>`;
+    return `<div class="meeting-actions" style="display:flex;gap:6px;">
+      ${btn('editMeetingBtn', window.aceIcons.edit(15), 'var(--text-muted)', 'Edit meeting')}
+      ${btn('deleteMeetingBtn', window.aceIcons.trash2(15), 'var(--critical)', 'Delete meeting')}
+    </div>`;
+  },
+
+  _wireMeetingActions(targetEl, meeting, student) {
+    const editBtn = targetEl.querySelector('#editMeetingBtn');
+    if (editBtn) {
+      editBtn.addEventListener('click', async () => {
+        const res = await this.openEditDrawer(meeting, student);
+        if (res && res.confirmed) {
+          this._afterMeetingMutation(targetEl, student, !!(res.result && res.result.dueDatesChanged));
+        }
+      });
+    }
+    const delBtn = targetEl.querySelector('#deleteMeetingBtn');
+    if (delBtn) {
+      delBtn.addEventListener('click', async () => {
+        const ok = await this.confirmDelete(meeting, student);
+        if (ok) {
+          if (window.aceToast) window.aceToast.success('Meeting deleted');
+          this._afterMeetingMutation(targetEl, student, !!meeting.completed);
+        }
+      });
+    }
+  },
+
   // Returns the meeting currently relevant for this student, with state info:
   //   { meeting, state: 'upcoming' | 'past_not_completed' | 'completed_followups_pending' }
   // Returns null when no relevant meeting exists.
@@ -540,9 +815,12 @@ const aceMeetings = {
             <div class="meeting-type-pill">${this.meetingTypeLabel(meeting.meeting_type)}</div>
             <div class="meeting-date-line">${dateLabel}${timeLabel} <span class="muted">· ${dayLabel}</span></div>
           </div>
-          <button class="${markBtnClass}" id="markCompleteBtn" ${markBtnDisabled ? 'disabled title="Available on or after the meeting date"' : ''}>
-            ${window.aceIcons.check(14)} Mark Complete
-          </button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="${markBtnClass}" id="markCompleteBtn" ${markBtnDisabled ? 'disabled title="Available on or after the meeting date"' : ''}>
+              ${window.aceIcons.check(14)} Mark Complete
+            </button>
+            ${this._meetingActionsHTML()}
+          </div>
         </div>
 
         ${meeting.attendees ? `<div class="meeting-attendees"><strong>Attendees:</strong> ${window.aceUtils.escapeHtml(meeting.attendees)}</div>` : ''}
@@ -589,10 +867,13 @@ const aceMeetings = {
       markBtn.addEventListener('click', async () => {
         const completed = await window.aceMarkComplete.confirm(meeting, student);
         if (completed) {
-          this.renderMeetingSection(targetEl, student);
+          // Completion may have advanced due dates (3.12a) — refresh header/sidebar too.
+          this._afterMeetingMutation(targetEl, student, true);
         }
       });
     }
+
+    this._wireMeetingActions(targetEl, meeting, student);
   },
 
   // State: 'completed_followups_pending'
@@ -604,8 +885,11 @@ const aceMeetings = {
 
     targetEl.innerHTML = `
       <div class="meeting-section">
-        <div class="meeting-completed-banner">
-          ${window.aceIcons.check(14)} Completed ${dateLabel} · ${this.meetingTypeLabel(meeting.meeting_type)}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div class="meeting-completed-banner" style="margin:0;">
+            ${window.aceIcons.check(14)} Completed ${dateLabel} · ${this.meetingTypeLabel(meeting.meeting_type)}
+          </div>
+          ${this._meetingActionsHTML()}
         </div>
 
         <div class="followup-checklist">
@@ -666,6 +950,8 @@ const aceMeetings = {
         }
       });
     }
+
+    this._wireMeetingActions(targetEl, meeting, student);
   },
 
   meetingTypeLabel(type) {
