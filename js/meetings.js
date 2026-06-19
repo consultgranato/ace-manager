@@ -123,6 +123,9 @@ const aceMeetings = {
       auto: item.auto
     }));
 
+    // 3.13 — add the auto-dated, manual-check "Send draft to parent by" item.
+    this._insertSendDraftItem(prepChecklist, await this._buildSendDraftItem(meetingDate));
+
     const { data, error } = await window.aceSupabase
       .from('meetings')
       .insert({
@@ -164,6 +167,59 @@ const aceMeetings = {
     } catch (e) { /* non-fatal */ }
 
     return data;
+  },
+
+  // -------------------------------------------------------------
+  // Phase 3.13 — "Send draft to parent by" prep item (manual check, auto date).
+  // The date is 3 SCHOOL days before the meeting, skipping weekends and the
+  // district non-school days (the user's saved list, else the D219 seed). The
+  // computed date is stored on the prep item (send_by) so it renders without
+  // recomputation; 3.12b's edit refreshes it when scheduled_date changes.
+  // -------------------------------------------------------------
+
+  SEND_DRAFT_LABEL: 'Send draft to parent by',
+
+  // The effective non-school-days list: the user's saved list when non-empty,
+  // otherwise the seeded D219 2026-27 calendar.
+  async _effectiveNonSchoolDays() {
+    try {
+      const profile = window.aceAuth ? await window.aceAuth.getProfile() : null;
+      const stored = profile && profile.non_school_days;
+      if (Array.isArray(stored) && stored.length) return stored;
+    } catch (e) { /* fall through to seed */ }
+    return Array.isArray(window.D219_NON_SCHOOL_DAYS_SEED) ? window.D219_NON_SCHOOL_DAYS_SEED : [];
+  },
+
+  async _buildSendDraftItem(meetingDate) {
+    const sendBy = window.aceUtils.sendDraftByDate(meetingDate, await this._effectiveNonSchoolDays(), 3);
+    return { label: this.SEND_DRAFT_LABEL, completed: false, completed_at: null, auto: false, send_by: sendBy };
+  },
+
+  // Insert (or replace) the send-draft item right after "Generate IEP draft".
+  _insertSendDraftItem(checklist, item) {
+    const existing = checklist.findIndex(i => i.label === this.SEND_DRAFT_LABEL);
+    if (existing >= 0) {
+      checklist[existing] = { ...checklist[existing], send_by: item.send_by };
+      return;
+    }
+    const genIdx = checklist.findIndex(i => i.label === 'Generate IEP draft from latest data');
+    if (genIdx >= 0) checklist.splice(genIdx + 1, 0, item);
+    else checklist.push(item);
+  },
+
+  // Render a prep item's label. The send-draft item shows its computed date with
+  // an urgency cue (red) once that date is today or past and still unchecked.
+  _prepLabelHTML(item) {
+    const esc = window.aceUtils.escapeHtml;
+    if (item && item.label === this.SEND_DRAFT_LABEL) {
+      if (!item.send_by) return esc(item.label);
+      const days = window.aceUtils.daysUntil(item.send_by);
+      const past = days !== null && days <= 0 && !item.completed;
+      const color = past ? 'var(--critical)' : 'var(--purple-primary)';
+      const title = past ? ' title="On or past the send-by date"' : '';
+      return `${esc(item.label)} <strong style="color:${color};"${title}>${esc(window.aceUtils.formatShortDate(item.send_by))}</strong>`;
+    }
+    return esc(item ? item.label : '');
   },
 
   // -------------------------------------------------------------
@@ -316,6 +372,15 @@ const aceMeetings = {
     const typeChanged = newType !== meeting.meeting_type;
     const dateChanged = newDate !== meeting.scheduled_date;
     let studentUpdate = null;
+
+    // 3.13 — when the meeting date moves, recompute the "Send draft to parent
+    // by" date (and add the item if this meeting predates 3.13).
+    if (dateChanged) {
+      const prep = Array.isArray(meeting.prep_checklist)
+        ? meeting.prep_checklist.map(i => ({ ...i })) : [];
+      this._insertSendDraftItem(prep, await this._buildSendDraftItem(newDate));
+      fields.prep_checklist = prep;
+    }
 
     // Only a completed meeting whose type/date changed shifts due dates.
     if (meeting.completed && (typeChanged || dateChanged)) {
@@ -836,7 +901,7 @@ const aceMeetings = {
               <li class="prep-item ${item.completed ? 'completed' : ''}">
                 <label>
                   <input type="checkbox" data-index="${i}" ${item.completed ? 'checked' : ''} />
-                  <span class="prep-label">${window.aceUtils.escapeHtml(item.label)}</span>
+                  <span class="prep-label">${this._prepLabelHTML(item)}</span>
                   ${item.auto ? `<span class="prep-auto-badge">auto</span>` : ''}
                 </label>
               </li>

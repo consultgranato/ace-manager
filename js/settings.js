@@ -45,6 +45,24 @@ const aceSettings = {
         </section>
 
         <section class="settings-section">
+          <h2 class="settings-section-title">District non-school days (D219 2026-27) — edit each school year</h2>
+          <div class="settings-card">
+            <p class="muted settings-note" style="margin-top:0;">
+              Used to calculate each meeting's “Send draft to parent by” date (3 school days before the meeting), skipping weekends and these dates.
+            </p>
+            <div class="nsd-add-row" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+              <input type="date" id="nsdNewDate" />
+              <button class="btn-secondary" id="nsdAddBtn" type="button">${window.aceIcons.plus(14)} Add date</button>
+            </div>
+            <div id="nsdList" class="nsd-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:14px;">
+              <button class="btn-primary" id="nsdSaveBtn" type="button">Save non-school days</button>
+              <span id="nsdStatus" class="muted" style="font-size:13px;"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
           <h2 class="settings-section-title">Archived Students</h2>
           <div id="archivedList" class="settings-card-list">
             <div class="muted">Loading…</div>
@@ -76,7 +94,80 @@ const aceSettings = {
       window.aceRouter.toLogin();
     });
 
+    this.initNonSchoolDays(profile);
     await this.renderArchivedList();
+  },
+
+  // ---- District non-school days editor (Phase 3.13) -----------
+  initNonSchoolDays(profile) {
+    const stored = profile && profile.non_school_days;
+    const seeded = Array.isArray(window.D219_NON_SCHOOL_DAYS_SEED) ? window.D219_NON_SCHOOL_DAYS_SEED : [];
+    // Working copy: the saved list when present, otherwise the seed (so the
+    // editor is pre-populated and a first Save persists the seed).
+    this._nsd = (Array.isArray(stored) && stored.length) ? stored.slice() : seeded.slice();
+    this._nsdUsingSeed = !(Array.isArray(stored) && stored.length);
+    this._sortNsd();
+
+    const addBtn = document.getElementById('nsdAddBtn');
+    const saveBtn = document.getElementById('nsdSaveBtn');
+    const input = document.getElementById('nsdNewDate');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      const v = input && input.value;
+      if (!v) return;
+      if (!this._nsd.includes(v)) { this._nsd.push(v); this._sortNsd(); this.renderNonSchoolDays(); this._setNsdStatus('Unsaved changes'); }
+      if (input) input.value = '';
+    });
+    if (saveBtn) saveBtn.addEventListener('click', () => this.saveNonSchoolDays());
+
+    this.renderNonSchoolDays();
+    if (this._nsdUsingSeed) this._setNsdStatus('Showing the D219 seed — Save to make it your own.');
+  },
+
+  _sortNsd() { this._nsd.sort((a, b) => a.localeCompare(b)); },
+
+  _setNsdStatus(msg) {
+    const el = document.getElementById('nsdStatus');
+    if (el) el.textContent = msg || '';
+  },
+
+  renderNonSchoolDays() {
+    const list = document.getElementById('nsdList');
+    if (!list) return;
+    if (!this._nsd.length) {
+      list.innerHTML = '<span class="muted" style="font-size:13px;">No dates — “Send draft by” will skip weekends only.</span>';
+      return;
+    }
+    list.innerHTML = this._nsd.map(d => `
+      <span class="nsd-chip" data-date="${d}" style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--border);border-radius:14px;font-size:13px;background:#fff;">
+        ${window.aceUtils.escapeHtml(window.aceUtils.formatShortDate(d))}, ${d.slice(0, 4)}
+        <button type="button" class="nsd-remove" data-date="${d}" aria-label="Remove ${d}" style="border:none;background:none;cursor:pointer;color:var(--text-muted);line-height:1;padding:0;">${window.aceIcons.x(13)}</button>
+      </span>
+    `).join('');
+    list.querySelectorAll('.nsd-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.date;
+        this._nsd = this._nsd.filter(x => x !== d);
+        this.renderNonSchoolDays();
+        this._setNsdStatus('Unsaved changes');
+      });
+    });
+  },
+
+  async saveNonSchoolDays() {
+    const saveBtn = document.getElementById('nsdSaveBtn');
+    if (saveBtn) { saveBtn.disabled = true; }
+    this._setNsdStatus('Saving…');
+    const { error } = await window.aceAuth.updateProfile({ non_school_days: this._nsd });
+    if (saveBtn) saveBtn.disabled = false;
+    if (error) {
+      console.error('Failed to save non-school days:', error);
+      this._setNsdStatus('Could not save — try again.');
+      if (window.aceToast) window.aceToast.error('Could not save non-school days');
+      return;
+    }
+    this._nsdUsingSeed = false;
+    this._setNsdStatus('Saved.');
+    if (window.aceToast) window.aceToast.success('Non-school days saved');
   },
 
   async renderArchivedList() {

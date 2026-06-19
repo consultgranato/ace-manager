@@ -39,6 +39,39 @@ const aceUtils = {
     return `${y}-${m}-${day}`;
   },
 
+  // Local Date object → "YYYY-MM-DD" (local components, no UTC shift).
+  dateToISO(d) {
+    if (!(d instanceof Date) || isNaN(d)) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  },
+
+  // "Send draft to parent by" countback: n SCHOOL days before meetingDate,
+  // skipping Saturdays, Sundays, and any ISO date in nonSchoolDays (the single
+  // source of truth — the district calendar is never hardcoded here).
+  // Starts the day BEFORE the meeting and steps back one calendar day at a time,
+  // counting only in-session weekdays. Out-of-session gaps are simply skipped;
+  // a bounded guard ensures it never loops forever. Returns YYYY-MM-DD or null.
+  sendDraftByDate(meetingDate, nonSchoolDays, n = 3) {
+    const start = this.parseLocalDate(meetingDate);
+    if (!start) return null;
+    const skip = new Set(Array.isArray(nonSchoolDays) ? nonSchoolDays : []);
+    const d = new Date(start);
+    let counted = 0;
+    let guard = 0;
+    while (counted < n && guard < 4000) {
+      d.setDate(d.getDate() - 1);   // begin the day before the meeting
+      guard++;
+      const dow = d.getDay();        // 0 = Sun, 6 = Sat
+      if (dow === 0 || dow === 6) continue;
+      if (skip.has(this.dateToISO(d))) continue;
+      counted++;
+    }
+    return counted === n ? this.dateToISO(d) : null;
+  },
+
   // Format a date string (YYYY-MM-DD or Date object) to "Mon, Jun 9"
   formatShortDate(dateInput) {
     const d = this.parseLocalDate(dateInput);
