@@ -1012,10 +1012,11 @@ const aceIepBuilder = {
         else { body.textContent = ''; wrap.style.display = 'none'; }
       }
 
-      // 3.11b — signal the meeting prep checklist that the present-levels draft
-      // has been generated (auto-checks "Generate IEP draft from latest data").
-      // Fire-and-forget; persists through the meetings store so all surfaces
-      // stay consistent via fullState. Never blocks the UI.
+      // 3.11c — stamp the durable students.iep_draft_generated_at marker.
+      // Re-derived by aceMeetings.computeAutoConditions so prep item #4
+      // ("Generate IEP draft from latest data") auto-checks through the same
+      // applyAutoChecks path as the teacher/parent/transition items — keeping
+      // every surface consistent via fullState. Fire-and-forget; never blocks UI.
       const sid = this.state.student && this.state.student.id;
       if (sid && window.aceMeetings && window.aceMeetings.markDraftGenerated) {
         window.aceMeetings.markDraftGenerated(sid);

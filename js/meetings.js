@@ -325,7 +325,7 @@ const aceMeetings = {
   // Read the data-backed conditions for the three DNA prep items, using the
   // same paths the feedback cards / 3.8d panel use.
   async computeAutoConditions(student) {
-    const out = { teacher: false, parent: false, transition: false };
+    const out = { teacher: false, parent: false, transition: false, draft: false };
     if (!student || !student.id) return out;
 
     // Teacher feedback — checked only when ALL expected academic-course TF1s
@@ -360,6 +360,15 @@ const aceMeetings = {
       .order('completed_at', { ascending: false }).limit(1);
     out.transition = !!(ta && ta[0] && ta[0].payload && ta[0].payload.version);
 
+    // IEP draft — a durable marker stamped on the student record when the
+    // present-levels narrative is generated (or a section copied) in the
+    // builder. Re-derived here so item #4 auto-checks through the same path
+    // as the three above, instead of relying on an in-session event.
+    const { data: stu } = await window.aceSupabase
+      .from('students')
+      .select('iep_draft_generated_at').eq('id', student.id).limit(1);
+    out.draft = !!(stu && stu[0] && stu[0].iep_draft_generated_at);
+
     return out;
   },
 
@@ -367,7 +376,8 @@ const aceMeetings = {
   PREP_AUTO_CONDITION: {
     'Send teacher feedback links': 'teacher',
     'Send parent feedback survey': 'parent',
-    'Administer transition assessment': 'transition'
+    'Administer transition assessment': 'transition',
+    'Generate IEP draft from latest data': 'draft'
   },
 
   // Fetch the active meeting, apply any DNA-driven auto-checks (one-time),
@@ -408,27 +418,17 @@ const aceMeetings = {
     return active;
   },
 
-  // Event signal from the IEP builder: the present-levels narrative has been
-  // generated (or a section copied). One-time auto-check of the draft item.
+  // Durable marker for prep item #4 ("Generate IEP draft from latest data").
+  // The IEP builder stamps students.iep_draft_generated_at when the narrative
+  // is generated or a section copied; computeAutoConditions reads it and
+  // applyAutoChecks performs the one-time check — no separate event path.
   async markDraftGenerated(studentId) {
     if (!studentId) return;
     try {
-      const active = await this.getActiveMeeting(studentId);
-      if (!active || (active.state !== 'upcoming' && active.state !== 'past_not_completed')) return;
-      const meeting = active.meeting;
-      const checklist = meeting.prep_checklist || [];
-      let changed = false;
-      const next = checklist.map(item => {
-        if (item.label === 'Generate IEP draft from latest data' && item.auto &&
-            !item.completed && !item.auto_checked) {
-          changed = true;
-          return { ...item, completed: true, completed_at: new Date().toISOString(), auto_checked: true };
-        }
-        return item;
-      });
-      if (changed) {
-        await window.aceSupabase.from('meetings').update({ prep_checklist: next }).eq('id', meeting.id);
-      }
+      await window.aceSupabase
+        .from('students')
+        .update({ iep_draft_generated_at: new Date().toISOString() })
+        .eq('id', studentId);
     } catch (e) {
       // Non-fatal — the case manager can still check the item manually.
     }
