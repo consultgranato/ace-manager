@@ -130,9 +130,8 @@ const aceHomepage = {
       return;
     }
 
-    // Sort by urgency (most urgent first)
-    const urgencyOrder = { overdue: 4, critical: 3, approaching: 2, clear: 1, none: 0 };
-    flagged.sort((a, b) => (urgencyOrder[b.state.urgency] || 0) - (urgencyOrder[a.state.urgency] || 0));
+    // Sort by urgency (most urgent first) using the shared dot-based order.
+    flagged.sort((a, b) => window.aceStatus.dotOrder(b.state.dot) - window.aceStatus.dotOrder(a.state.dot));
 
     container.innerHTML = flagged.map(({ student, state }) => this.attentionCardHTML(student, state)).join('');
   },
@@ -141,12 +140,8 @@ const aceHomepage = {
     const esc = window.aceUtils.escapeHtml;
     const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
 
-    // Map state.urgency to the existing attention-{urgency} CSS class
-    const urgencyClass = state.urgency === 'overdue' || state.urgency === 'critical'
-      ? 'attention-critical'
-      : state.urgency === 'approaching'
-        ? 'attention-approaching'
-        : 'attention-clear';
+    // Left-border accent from the same dot the status uses (Part 2 shared scale).
+    const urgencyClass = window.aceStatus.attentionClassForDot(state.dot);
 
     // Add a state-kind class so we can style the meeting-related cards distinctly
     const stateClass = `attention-${state.stateKind.replace('_', '-')}`;
@@ -281,14 +276,11 @@ const aceHomepage = {
   },
 
   async renderRecentActivity() {
-    const container = document.getElementById('recentActivity');
-    if (!container) return;
-
-    container.innerHTML = `
-      <div class="empty-state-small">
-        <div class="muted">Recent activity will appear here once you start using the app.</div>
-      </div>
-    `;
+    // No activity feed yet — keep the section hidden entirely rather than
+    // showing an empty placeholder. When a real activity source exists, render
+    // it here and reveal the section only when there are items.
+    const section = document.getElementById('recentActivitySection');
+    if (section) section.style.display = 'none';
   }
 };
 

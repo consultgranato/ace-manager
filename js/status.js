@@ -21,6 +21,60 @@
 
 const aceStatus = {
 
+  // -----------------------------------------------------------
+  // Phase 3.17 — ONE urgency scale shared by every surface
+  // (sidebar dots, caseload pills/rows, profile due chip, Needs Attention),
+  // so the same event renders the same color everywhere. This is color
+  // OUTPUT only — it does not change which items are flagged (needsAttention)
+  // or any deadline math.
+  //   overdue (< 0):       red
+  //   soon (0–30):         amber
+  //   approaching (31–60): purple / muted  (NOT amber — "soon" is reserved)
+  //   comfortable (> 60):  green
+  // -----------------------------------------------------------
+  urgencyLevel(days) {
+    if (days === null || days === undefined || isNaN(days)) return 'none';
+    if (days < 0) return 'overdue';
+    if (days <= 30) return 'soon';
+    if (days <= 60) return 'approaching';
+    return 'comfortable';
+  },
+
+  // level → visual tokens. dot is the single value fullState sets; every other
+  // surface derives its color from the dot so they can never disagree (2.8.1).
+  URGENCY_VISUAL: {
+    overdue:     { dot: 'red',    pill: 'ace-pill-critical', attention: 'attention-critical',    order: 5 },
+    soon:        { dot: 'amber',  pill: 'ace-pill-warning',  attention: 'attention-approaching', order: 4 },
+    approaching: { dot: 'purple', pill: 'ace-pill-purple',   attention: 'attention-clear',       order: 3 },
+    comfortable: { dot: 'green',  pill: 'ace-pill-success',  attention: 'attention-clear',       order: 2 },
+    none:        { dot: 'gray',   pill: 'ace-pill-neutral',  attention: 'attention-clear',       order: 1 }
+  },
+
+  visualForDays(days) {
+    return this.URGENCY_VISUAL[this.urgencyLevel(days)] || this.URGENCY_VISUAL.none;
+  },
+
+  // Resolve the visual tokens from a dot color, so pill / attention border /
+  // sort order always agree with whatever dot fullState chose.
+  _visualByDot(dot) {
+    for (const k in this.URGENCY_VISUAL) {
+      if (this.URGENCY_VISUAL[k].dot === dot) return this.URGENCY_VISUAL[k];
+    }
+    return this.URGENCY_VISUAL.none;
+  },
+  pillClassForDot(dot) { return this._visualByDot(dot).pill; },
+  attentionClassForDot(dot) { return this._visualByDot(dot).attention; },
+  dotOrder(dot) { return this._visualByDot(dot).order; },
+
+  // Soonest due-date days for a student (annual / reeval), or null.
+  soonestDueDays(student) {
+    const ds = [student.annual_review_date, student.reeval_due_date]
+      .filter(Boolean)
+      .map(d => window.aceUtils.daysUntil(d))
+      .filter(d => d !== null);
+    return ds.length ? Math.min(...ds) : null;
+  },
+
   // Legacy deadline-only computation (unchanged behavior)
   forStudent(student) {
     if (!student) return { dot: 'gray', urgency: 'none', pillLabel: '', reasons: [] };
@@ -74,12 +128,15 @@ const aceStatus = {
       const base = this.forStudent(student);
       const top = base.reasons[0];
       if (!top) {
-        return { stateKind: 'clear', dot: 'green', urgency: 'clear', headline: 'On track', subline: '', pillLabel: 'On track', needsAttention: false };
+        // No urgent reason — still color the dot from the shared scale so a
+        // 31–60-day due date reads the same (purple) here as on the profile
+        // chip, while far-out/none stays green/gray. Not flagged for attention.
+        return { stateKind: 'clear', dot: this.visualForDays(this.soonestDueDays(student)).dot, urgency: 'clear', headline: 'On track', subline: '', pillLabel: 'On track', needsAttention: false };
       }
       const onlyApproachingOrWorse = ['approaching', 'critical', 'overdue'].includes(top.urgency);
       return {
         stateKind: 'no_meeting',
-        dot: base.dot,
+        dot: this.visualForDays(this.soonestDueDays(student)).dot,
         urgency: base.urgency,
         headline: top.text,
         subline: 'No meeting scheduled — coordinate with secretary',
@@ -109,11 +166,10 @@ const aceStatus = {
       // Only flag on attention if meeting is within 14 days OR prep items pending
       const needsAttention = days <= 14 || prepPending > 0;
 
-      // Urgency for the dot/border:
-      let urgency = 'approaching';
-      let dot = 'purple';
-      if (days <= 2) { urgency = 'critical'; dot = 'red'; }
-      else if (days <= 7) { urgency = 'approaching'; dot = 'amber'; }
+      // Color from the shared scale so a far-future meeting is never amber
+      // ("soon") and matches the dot/pill on every other surface.
+      const urgency = this.urgencyLevel(days);
+      const dot = this.visualForDays(days).dot;
 
       // Compact pill label
       let pillLabel;

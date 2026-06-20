@@ -5,7 +5,8 @@
 const aceCaseload = {
 
   state: {
-    filter: 'active'  // 'active' | 'archived'
+    filter: 'active',  // 'active' | 'archived'
+    view: 'cards'      // 'cards' | 'list' — remembered in-memory for the session
   },
 
   async render() {
@@ -29,15 +30,26 @@ const aceCaseload = {
           </button>
         </header>
 
-        <div class="caseload-filter">
-          <button class="caseload-tab ${this.state.filter === 'active' ? 'active' : ''}" data-filter="active">
-            Active
-            <span class="caseload-tab-count" id="activeCount">0</span>
-          </button>
-          <button class="caseload-tab ${this.state.filter === 'archived' ? 'active' : ''}" data-filter="archived">
-            Archived
-            <span class="caseload-tab-count" id="archivedCount">0</span>
-          </button>
+        <div class="caseload-toolbar">
+          <div class="caseload-filter">
+            <button class="caseload-tab ${this.state.filter === 'active' ? 'active' : ''}" data-filter="active">
+              Active
+              <span class="caseload-tab-count" id="activeCount">0</span>
+            </button>
+            <button class="caseload-tab ${this.state.filter === 'archived' ? 'active' : ''}" data-filter="archived">
+              Archived
+              <span class="caseload-tab-count" id="archivedCount">0</span>
+            </button>
+          </div>
+
+          <div class="caseload-viewtoggle" role="group" aria-label="View">
+            <button class="caseload-view-btn ${this.state.view === 'cards' ? 'active' : ''}" data-view="cards" title="Card view" aria-label="Card view">
+              ${window.aceIcons.layoutGrid ? window.aceIcons.layoutGrid(15) : ''} Cards
+            </button>
+            <button class="caseload-view-btn ${this.state.view === 'list' ? 'active' : ''}" data-view="list" title="List view" aria-label="List view">
+              ${window.aceIcons.list ? window.aceIcons.list(15) : ''} List
+            </button>
+          </div>
         </div>
 
         <div class="caseload-grid" id="caseloadGrid">
@@ -54,6 +66,17 @@ const aceCaseload = {
       btn.addEventListener('click', () => {
         this.state.filter = btn.dataset.filter;
         this.updateFilterUI();
+        this.loadAndRenderStudents();
+      });
+    });
+
+    document.querySelectorAll('.caseload-view-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (this.state.view === btn.dataset.view) return;
+        this.state.view = btn.dataset.view;
+        document.querySelectorAll('.caseload-view-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.view === this.state.view);
+        });
         this.loadAndRenderStudents();
       });
     });
@@ -115,16 +138,20 @@ const aceCaseload = {
       });
     }
 
+    const isList = this.state.view === 'list';
+    grid.classList.toggle('caseload-grid-cards', !isList);
+    grid.classList.toggle('caseload-grid-list', isList);
+
     grid.innerHTML = list.map(s => {
       const activeMeeting = window.aceMeetings
         ? window.aceMeetings.computeActiveFromMeetings(meetingsByStudent[s.id] || [])
         : null;
-      return this.studentCardHTML(s, activeMeeting);
+      return isList ? this.studentRowHTML(s, activeMeeting) : this.studentCardHTML(s, activeMeeting);
     }).join('');
 
-    grid.querySelectorAll('.caseload-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.dataset.id;
+    grid.querySelectorAll('.caseload-card, .caseload-row').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
         window.location.href = `${this.basePath()}pages/student-profile.html?id=${id}`;
       });
     });
@@ -160,13 +187,9 @@ const aceCaseload = {
     // Meeting-aware status for active students
     const state = window.aceStatus.fullState(s, activeMeeting);
 
-    const pillClass = {
-      overdue: 'ace-pill-critical',
-      critical: 'ace-pill-critical',
-      approaching: 'ace-pill-warning',
-      clear: 'ace-pill-success',
-      none: 'ace-pill-neutral'
-    }[state.urgency] || 'ace-pill-neutral';
+    // Pill color derives from the same dot the status uses (Part 2 shared
+    // scale), so the dot and pill can never disagree.
+    const pillClass = window.aceStatus.pillClassForDot(state.dot);
 
     return `
       <div class="caseload-card" data-id="${s.id}">
@@ -186,6 +209,44 @@ const aceCaseload = {
         <div class="caseload-card-footer">
           <span class="caseload-card-open">Open profile</span>
         </div>
+      </div>
+    `;
+  },
+
+  // Prefer a parenthetical abbreviation (e.g., "…(SLD)" → "SLD") for the dense
+  // list; fall back to the full label (CSS truncates it).
+  _disabilityAbbrev(d) {
+    if (!d) return '';
+    const m = String(d).match(/\(([^)]+)\)/);
+    return m ? m[1] : d;
+  },
+
+  // Dense one-row-per-student rendering for the list view (Part 4).
+  studentRowHTML(s, activeMeeting) {
+    const esc = window.aceUtils.escapeHtml;
+
+    if (s.archived) {
+      return `
+        <div class="caseload-row archived" data-id="${s.id}">
+          <span class="status-dot dot-gray"></span>
+          <span class="caseload-row-name">${esc(s.first_name)} ${esc(s.last_initial)}.</span>
+          <span class="caseload-row-grade">${esc(s.grade)}</span>
+          <span class="caseload-row-disability" title="${esc(s.primary_disability || '')}">${esc(this._disabilityAbbrev(s.primary_disability))}</span>
+          <span class="caseload-row-status"><span class="ace-pill ace-pill-neutral">Archived</span></span>
+        </div>
+      `;
+    }
+
+    const state = window.aceStatus.fullState(s, activeMeeting);
+    const pillClass = window.aceStatus.pillClassForDot(state.dot);
+
+    return `
+      <div class="caseload-row" data-id="${s.id}">
+        <span class="status-dot dot-${state.dot}"></span>
+        <span class="caseload-row-name">${esc(s.first_name)} ${esc(s.last_initial)}.${s.has_bip ? ' <span class="caseload-row-bip">BIP</span>' : ''}</span>
+        <span class="caseload-row-grade">${esc(s.grade)}</span>
+        <span class="caseload-row-disability" title="${esc(s.primary_disability || '')}">${esc(this._disabilityAbbrev(s.primary_disability))}</span>
+        <span class="caseload-row-status"><span class="ace-pill ${pillClass}">${esc(state.pillLabel)}</span></span>
       </div>
     `;
   },

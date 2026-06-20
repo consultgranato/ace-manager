@@ -25,6 +25,8 @@ const aceIcons = {
   chevronLeft(size) { return this._svg('<path d="m15 18-6-6 6-6"/>', size); },
   chevronRight(size){ return this._svg('<path d="m9 18 6-6-6-6"/>', size); },
   menu(size)        { return this._svg('<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>', size); },
+  layoutGrid(size)  { return this._svg('<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>', size); },
+  list(size)        { return this._svg('<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>', size); },
 
   // Actions
   plus(size)        { return this._svg('<path d="M5 12h14"/><path d="M12 5v14"/>', size); },

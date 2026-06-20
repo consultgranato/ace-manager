@@ -160,8 +160,12 @@ const aceProfile = {
     else when = `in ${next.days} days`;
     const label = `${next.label} Due: ${dateStr} · ${when}`;
 
+    // Chip color from the Part 2 shared scale, so the same student reads the
+    // same urgency color here and on the caseload / sidebar.
+    const level = window.aceStatus ? window.aceStatus.urgencyLevel(next.days) : next.urgency;
+
     return {
-      html: `<div class="profile-deadline urgency-${next.urgency}">${label}</div>`
+      html: `<div class="profile-deadline urgency-${level}">${label}</div>`
     };
   },
 

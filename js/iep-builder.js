@@ -112,12 +112,16 @@ const aceIepBuilder = {
       <div class="iep-layout">
         <nav class="iep-toc">
           <a href="${bp}pages/student-profile.html?id=${s.id}" class="iep-toc-back">${window.aceIcons.arrowLeft(14)} Back to profile</a>
-          <div class="iep-toc-title">IEP Present Levels</div>
+          <div class="iep-toc-head">
+            <div class="iep-toc-title">IEP Present Levels</div>
+            <button type="button" class="iep-toc-collapse" id="iepTocCollapse" title="Hide section nav" aria-label="Hide section nav">${window.aceIcons.chevronLeft(16)}</button>
+          </div>
           <ul class="iep-toc-list">
             ${this.TOC_SECTIONS.map(t => `<li><a href="#${t.id}" class="iep-toc-link" data-target="${t.id}">${esc(t.label)}</a></li>`).join('')}
           </ul>
         </nav>
         <div class="iep-main">
+          <button type="button" class="iep-toc-reopen" id="iepTocReopen" title="Show sections" aria-label="Show sections">${window.aceIcons.menu(15)} Sections</button>
           <div class="iep-doc-header">
             <h1>${esc(s.first_name)} ${esc(s.last_initial)}. — Present Levels</h1>
             <p class="muted">Build the PLAAFP. Fields the system already knows are filled in for you. The narrative pulls from transition, teacher, and parent feedback automatically.</p>
@@ -406,8 +410,25 @@ const aceIepBuilder = {
         e.preventDefault();
         const target = document.getElementById(link.dataset.target);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // On the narrow single-column layout the nav is an overlay — close it
+        // after picking a section so it doesn't cover the content.
+        if (window.innerWidth <= 900) {
+          const layout = host.querySelector('.iep-layout');
+          if (layout) layout.classList.add('toc-collapsed');
+        }
       });
     });
+
+    // Collapsible section nav (Part 3.17) — reclaim width for content.
+    const layout = host.querySelector('.iep-layout');
+    const collapseBtn = host.querySelector('#iepTocCollapse');
+    const reopenBtn = host.querySelector('#iepTocReopen');
+    if (collapseBtn && layout) {
+      collapseBtn.addEventListener('click', () => layout.classList.add('toc-collapsed'));
+    }
+    if (reopenBtn && layout) {
+      reopenBtn.addEventListener('click', () => layout.classList.remove('toc-collapsed'));
+    }
     // Scroll-spy: highlight active section
     const sections = this.TOC_SECTIONS.map(t => document.getElementById(t.id)).filter(Boolean);
     const obs = new IntersectionObserver((entries) => {

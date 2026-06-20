@@ -607,7 +607,7 @@ h3 { font-size: 18px; }
 }
 
 .home-header {
-  margin-bottom: 32px;
+  margin-bottom: 22px;
 }
 
 .home-header h1 {
@@ -619,7 +619,7 @@ h3 { font-size: 18px; }
 }
 
 .home-section {
-  margin-bottom: 36px;
+  margin-bottom: 24px;
 }
 
 .section-title {
@@ -630,6 +630,15 @@ h3 { font-size: 18px; }
   color: var(--text-faint);
   margin: 0 0 14px;
 }
+
+/* Collapsible month calendar on Home (Part 3.17 — actionable content first). */
+.home-calendar-summary {
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; list-style: none; user-select: none;
+  padding: 4px 0; margin-bottom: 14px;
+}
+.home-calendar-summary::-webkit-details-marker { display: none; }
+.home-calendar-hint { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
 
 /* Calendar widget */
 .calendar-widget {
@@ -919,14 +928,14 @@ h3 { font-size: 18px; }
 .attention-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 
 .attention-card {
   display: block;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  padding: 18px 20px;
+  padding: 14px 16px;
   text-decoration: none;
   color: var(--text);
   box-shadow: var(--shadow-sm);
@@ -1334,14 +1343,22 @@ h3 { font-size: 18px; }
   font-weight: 600;
 }
 
-.profile-deadline.urgency-clear {
+.profile-deadline.urgency-clear,
+.profile-deadline.urgency-comfortable {
   background: #ecfdf5;
   color: #065f46;
 }
 
-.profile-deadline.urgency-approaching {
+/* soon (0–30 days) — amber */
+.profile-deadline.urgency-soon {
   background: #fff7ed;
   color: #b45309;
+}
+
+/* approaching (31–60 days) — muted/purple, NOT amber */
+.profile-deadline.urgency-approaching {
+  background: var(--purple-tint);
+  color: var(--purple-primary);
 }
 
 .profile-deadline.urgency-critical,
@@ -2159,16 +2176,51 @@ h3 { font-size: 18px; }
   white-space: nowrap;
 }
 
+.caseload-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
 .caseload-filter {
   display: flex;
   gap: 4px;
-  margin-bottom: 20px;
   background: var(--bg-card);
   padding: 4px;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   width: fit-content;
 }
+
+/* Cards / List view toggle (Part 4) */
+.caseload-viewtoggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-card);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.caseload-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+.caseload-view-btn:hover:not(.active) { background: var(--bg-subtle); color: var(--text); }
+.caseload-view-btn.active { background: var(--purple-tint); color: var(--purple-primary); }
 
 .caseload-tab {
   background: transparent;
@@ -2218,13 +2270,59 @@ h3 { font-size: 18px; }
 .caseload-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+  gap: 12px;
+}
+
+/* Dense list view (Part 4): one compact row per student. */
+.caseload-grid.caseload-grid-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.caseload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+.caseload-row:last-child { border-bottom: none; }
+.caseload-row:hover { background: var(--bg-subtle); }
+.caseload-row .status-dot { flex: 0 0 auto; }
+.caseload-row-name {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.caseload-row-grade { flex: 0 0 auto; width: 58px; font-size: 13px; color: var(--text-muted); }
+.caseload-row-disability {
+  flex: 0 0 auto; width: 130px;
+  font-size: 12.5px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.caseload-row-status { flex: 0 0 auto; margin-left: auto; }
+.caseload-row-bip {
+  font-size: 10px; font-weight: 700; color: var(--purple-primary);
+  background: var(--purple-tint); padding: 1px 5px; border-radius: 4px;
+}
+.caseload-row.archived .caseload-row-name { color: var(--text-muted); font-weight: 500; }
+@media (max-width: 640px) {
+  .caseload-row-disability { display: none; }
+  .caseload-row-grade { width: 44px; }
 }
 
 .caseload-card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: all var(--t-fast) var(--ease);
@@ -3827,15 +3925,42 @@ textarea:focus {
    ============================================================ */
 
 .iep-page { max-width: none; padding: 0; }
-.iep-layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; align-items: start; }
-@media (max-width: 880px) { .iep-layout { grid-template-columns: 1fr; } }
+/* minmax(0,1fr) lets the content column shrink below its content's intrinsic
+   width so long strings wrap instead of forcing a horizontal scrollbar. */
+.iep-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 0; align-items: start; position: relative; }
+@media (max-width: 900px) { .iep-layout { grid-template-columns: 1fr; } }
+
+/* Collapsible section nav — reclaim full width for content. */
+.iep-layout.toc-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
+.iep-layout.toc-collapsed .iep-toc { display: none; }
 
 .iep-toc {
   position: sticky; top: 0; align-self: start; height: 100vh;
   padding: 24px 18px; border-right: 1px solid var(--border);
   overflow-y: auto; background: var(--bg-subtle);
 }
-@media (max-width: 880px) { .iep-toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); } }
+@media (max-width: 900px) { .iep-toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); } }
+
+.iep-toc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.iep-toc-collapse {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: white; color: var(--text-muted); cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+.iep-toc-collapse:hover { color: var(--purple-primary); border-color: var(--purple-warm); }
+
+/* Reopen button lives in the content column; only visible once collapsed. */
+.iep-toc-reopen {
+  display: none; align-items: center; gap: 6px;
+  margin-bottom: 16px; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: white; color: var(--purple-primary); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all var(--t-fast) var(--ease);
+}
+.iep-toc-reopen:hover { background: var(--purple-tint); }
+.iep-layout.toc-collapsed .iep-toc-reopen { display: inline-flex; }
 
 .iep-toc-back { font-size: 13px; color: var(--purple-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
 .iep-toc-back:hover { text-decoration: underline; }
@@ -3845,8 +3970,32 @@ textarea:focus {
 .iep-toc-link:hover { background: white; color: var(--text); }
 .iep-toc-link.active { background: white; color: var(--purple-primary); border-left-color: var(--purple-primary); font-weight: 600; }
 
-.iep-main { padding: 32px 40px 120px; max-width: 820px; }
-@media (max-width: 880px) { .iep-main { padding: 24px 18px 80px; } }
+.iep-main { padding: 30px 36px 120px; max-width: 860px; min-width: 0; overflow-wrap: break-word; }
+@media (max-width: 1100px) { .iep-main { padding: 28px 28px 100px; } }
+@media (max-width: 900px) { .iep-main { padding: 22px 18px 80px; } }
+
+/* On the IEP Builder at laptop widths, collapse the main app sidebar to a slim
+   icon rail so the section nav + content get the room they need — no horizontal
+   scroll or clipped text from ~960px up. Below 900px the sidebar already goes
+   off-canvas with a toggle, so this only applies above that. */
+@media (min-width: 901px) {
+  .iep-builder-page .ace-sidebar { width: 60px; }
+  .iep-builder-page .ace-app-main,
+  .iep-builder-page .ace-footer { margin-left: 60px; }
+
+  .iep-builder-page .brand-text,
+  .iep-builder-page .nav-label,
+  .iep-builder-page .sidebar-section-title,
+  .iep-builder-page .sidebar-students,
+  .iep-builder-page .sidebar-add-btn,
+  .iep-builder-page .sidebar-logout { display: none; }
+
+  .iep-builder-page .sidebar-brand { justify-content: center; padding: 14px 6px; gap: 0; }
+  .iep-builder-page .brand-logo { width: 38px; height: 38px; }
+  .iep-builder-page .sidebar-nav,
+  .iep-builder-page .sidebar-footer { padding-left: 8px; padding-right: 8px; }
+  .iep-builder-page .nav-item { justify-content: center; padding: 10px 0; }
+}
 
 .iep-doc-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
 .iep-doc-header p { font-size: 14px; margin: 0 0 28px; line-height: 1.5; }
