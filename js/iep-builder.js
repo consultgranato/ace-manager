@@ -139,6 +139,7 @@ const aceIepBuilder = {
     this.wireTOC(host);
     this.wireContextToggle(host);
     this.wireFuncCards(host);
+    this.wireStrengths(host);
     this.wireStudentInfo(host);
     this.wireAcademic(host);
     this.wireGenerate(host);
@@ -213,18 +214,105 @@ const aceIepBuilder = {
     return `
       <section class="iep-section" id="sec-strengths">
         <h2 class="iep-section-title">Strengths</h2>
+        ${this.strengthsParentNoteHTML()}
         <div class="iep-field">
           <label class="iep-label">Academic strengths</label>
           ${this.checkGrid('ac-strength', this.ACADEMIC_STRENGTHS)}
           <input type="text" id="str-ac-other" class="iep-text" placeholder="Any academic strengths not listed" />
+          ${this.strengthChipsHTML('ac-strength', 'str-ac-other')}
         </div>
         <div class="iep-field">
           <label class="iep-label">Functional &amp; transitional strengths</label>
           ${this.checkGrid('fn-strength', this.FUNCTIONAL_STRENGTHS)}
           <input type="text" id="str-fn-other" class="iep-text" placeholder="Any functional strengths not listed" />
+          ${this.strengthChipsHTML('fn-strength', 'str-fn-other')}
         </div>
       </section>
     `;
+  },
+
+  // 3.15 — Suggestion chips drawn from TA1 studentStrengths. Advisory only:
+  // nothing is inserted unless the case manager clicks a chip (see
+  // wireStrengths). Renders nothing when no TA1 / no strengths on file.
+  strengthChipsHTML(group, otherId) {
+    const ta = this.state.ta1;
+    if (!ta || !Array.isArray(ta.studentStrengths) || !ta.studentStrengths.length) return '';
+    const esc = window.aceUtils.escapeHtml;
+    const chips = ta.studentStrengths.map(v => `
+      <span class="iep-strength-chip">
+        <button type="button" class="iep-strength-chip-add" data-group="${esc(group)}" data-other="${esc(otherId)}" data-value="${esc(v)}">+ ${esc(v)}</button>
+        <button type="button" class="iep-strength-chip-x" title="Dismiss suggestion" aria-label="Dismiss suggestion">&times;</button>
+      </span>`).join('');
+    return `<div class="iep-strength-suggest">
+      <span class="iep-strength-suggest-label">From student's transition assessment — click to add</span>
+      <div class="iep-strength-chips">${chips}</div>
+    </div>`;
+  },
+
+  // 3.15 — Read-only parent reference from PF1 whatsGoingWell. Surfaced as a
+  // reference note only; never parsed into a field, never auto-filled.
+  strengthsParentNoteHTML() {
+    const pf = this.state.pf1;
+    const text = pf && pf.whatsGoingWell ? String(pf.whatsGoingWell).trim() : '';
+    if (!text) return '';
+    const esc = window.aceUtils.escapeHtml;
+    return `<div class="iep-strength-parent-note">
+      <span class="iep-strength-parent-label">Parent noted (reference only):</span>
+      <span class="iep-strength-parent-text">${esc(text)}</span>
+    </div>`;
+  },
+
+  // 3.15 — Wire the strength suggestion chips. A chip acts ONLY on an explicit
+  // click: it checks the matching preset box when the value maps to one, else
+  // appends to the section's "other" text field (additive, de-duped, never
+  // clobbering existing text). The × dismisses a suggestion without inserting.
+  // Both actions remove the chip; ignored chips stay visible and inert.
+  wireStrengths(host) {
+    const section = host.querySelector('#sec-strengths');
+    if (!section) return;
+
+    section.querySelectorAll('.iep-strength-chip-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = (btn.dataset.value || '').trim();
+        const group = btn.dataset.group;
+        const otherId = btn.dataset.other;
+        if (!value) return;
+
+        // Prefer an exact preset checkbox match (case-insensitive).
+        let matched = false;
+        section.querySelectorAll(`input[name="${group}"]`).forEach(box => {
+          if (box.value.trim().toLowerCase() === value.toLowerCase()) {
+            box.checked = true;
+            matched = true;
+          }
+        });
+
+        // Otherwise append to the "other" text field without clobbering or
+        // duplicating what is already there.
+        if (!matched) {
+          const other = document.getElementById(otherId);
+          if (other) {
+            const parts = other.value.trim()
+              ? other.value.split(',').map(s => s.trim()).filter(Boolean)
+              : [];
+            if (!parts.some(p => p.toLowerCase() === value.toLowerCase())) {
+              parts.push(value);
+              other.value = parts.join(', ');
+            }
+          }
+        }
+
+        const chip = btn.closest('.iep-strength-chip');
+        if (chip) chip.remove();
+      });
+    });
+
+    section.querySelectorAll('.iep-strength-chip-x').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const chip = btn.closest('.iep-strength-chip');
+        if (chip) chip.remove();
+      });
+    });
   },
 
   selectField(id, label, options) {
