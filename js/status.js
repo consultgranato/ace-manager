@@ -31,10 +31,10 @@ const aceStatus = {
       const days = window.aceUtils.daysUntil(student.annual_review_date);
       const urgency = window.aceUtils.urgency(student.annual_review_date);
       if (days !== null) {
-        if (days < 0) reasons.push({ text: `Annual overdue by ${Math.abs(days)} days`, urgency: 'overdue' });
-        else if (days === 0) reasons.push({ text: 'Annual due today', urgency: 'critical' });
-        else if (urgency === 'critical') reasons.push({ text: `Annual due in ${days} days`, urgency: 'critical' });
-        else if (urgency === 'approaching') reasons.push({ text: `Annual due in ${days} days`, urgency: 'approaching' });
+        if (days < 0) reasons.push({ text: `Annual Review overdue by ${Math.abs(days)} days`, urgency: 'overdue' });
+        else if (days === 0) reasons.push({ text: 'Annual Review Due today', urgency: 'critical' });
+        else if (urgency === 'critical') reasons.push({ text: `Annual Review Due in ${days} days`, urgency: 'critical' });
+        else if (urgency === 'approaching') reasons.push({ text: `Annual Review Due in ${days} days`, urgency: 'approaching' });
       }
     }
 
@@ -43,9 +43,9 @@ const aceStatus = {
       const urgency = window.aceUtils.urgency(student.reeval_due_date);
       if (days !== null) {
         if (days < 0) reasons.push({ text: `Re-eval overdue by ${Math.abs(days)} days`, urgency: 'overdue' });
-        else if (days === 0) reasons.push({ text: 'Re-eval due today', urgency: 'critical' });
-        else if (urgency === 'critical') reasons.push({ text: `Re-eval due in ${days} days`, urgency: 'critical' });
-        else if (urgency === 'approaching') reasons.push({ text: `Re-eval due in ${days} days`, urgency: 'approaching' });
+        else if (days === 0) reasons.push({ text: 'Re-eval Due today', urgency: 'critical' });
+        else if (urgency === 'critical') reasons.push({ text: `Re-eval Due in ${days} days`, urgency: 'critical' });
+        else if (urgency === 'approaching') reasons.push({ text: `Re-eval Due in ${days} days`, urgency: 'approaching' });
       }
     }
 

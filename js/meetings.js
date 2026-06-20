@@ -1010,14 +1010,14 @@ const aceMeetings = {
           </ul>
         </div>
 
-        ${allDone ? `
-          <div class="followup-done-cta">
-            <p class="muted">All follow-up items complete. Ready to schedule the next meeting?</p>
-            <button class="btn-primary" id="scheduleNextBtn">
-              ${window.aceIcons.calendar(15)} Schedule Next Meeting
-            </button>
-          </div>
-        ` : ''}
+        <div class="followup-done-cta">
+          <p class="muted">${allDone
+            ? 'All follow-up items complete. Ready to schedule the next meeting?'
+            : "You can schedule the next cycle's meeting now — the follow-up items above stay tracked here."}</p>
+          <button class="btn-primary" id="scheduleNextBtn">
+            ${window.aceIcons.calendar(15)} Schedule Next Meeting
+          </button>
+        </div>
       </div>
     `;
 

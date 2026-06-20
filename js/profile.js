@@ -151,10 +151,14 @@ const aceProfile = {
     candidates.sort((a, b) => a.days - b.days);
     const next = candidates[0];
 
-    let label;
-    if (next.days < 0) label = `${next.label}: overdue by ${Math.abs(next.days)} days`;
-    else if (next.days === 0) label = `${next.label}: due today`;
-    else label = `${next.label}: ${next.days} days`;
+    // Explicit "Due" labeling + the actual date so this reads unambiguously as a
+    // due date, never a scheduled meeting time.
+    const dateStr = window.aceUtils.formatLongDate(next.date);
+    let when;
+    if (next.days < 0) when = `overdue by ${Math.abs(next.days)} days`;
+    else if (next.days === 0) when = 'due today';
+    else when = `in ${next.days} days`;
+    const label = `${next.label} Due: ${dateStr} · ${when}`;
 
     return {
       html: `<div class="profile-deadline urgency-${next.urgency}">${label}</div>`
