@@ -169,9 +169,8 @@ const aceCaseload = {
             <span class="status-dot dot-gray"></span>
           </div>
           <div class="caseload-card-meta">
-            <span>${escapeHtml(s.grade)}</span>
-            <span class="dot-sep">·</span>
-            <span>${escapeHtml(s.primary_disability)}</span>
+            <span class="caseload-card-grade">${escapeHtml(s.grade)}</span>
+            <span class="caseload-card-disability">${escapeHtml(s.primary_disability)}</span>
           </div>
           <div class="caseload-card-pill">
             <span class="ace-pill ace-pill-neutral">Archived</span>
@@ -198,9 +197,8 @@ const aceCaseload = {
           <span class="status-dot dot-${state.dot}"></span>
         </div>
         <div class="caseload-card-meta">
-          <span>${escapeHtml(s.grade)}</span>
-          <span class="dot-sep">·</span>
-          <span>${escapeHtml(s.primary_disability)}</span>
+          <span class="caseload-card-grade">${escapeHtml(s.grade)}</span>
+          <span class="caseload-card-disability">${escapeHtml(s.primary_disability)}</span>
         </div>
         <div class="caseload-card-pill">
           <span class="ace-pill ${pillClass}">${escapeHtml(state.pillLabel)}</span>
@@ -221,6 +219,14 @@ const aceCaseload = {
     return m ? m[1] : d;
   },
 
+  // Compact grade for the dense list (e.g., "10 (Sophomore)" → "Gr 10") so it
+  // never wraps; full grade stays available via the title attribute.
+  _gradeShort(g) {
+    if (!g) return '';
+    const m = String(g).match(/\d+/);
+    return m ? `Gr ${m[0]}` : String(g);
+  },
+
   // Dense one-row-per-student rendering for the list view (Part 4).
   studentRowHTML(s, activeMeeting) {
     const esc = window.aceUtils.escapeHtml;
@@ -230,7 +236,7 @@ const aceCaseload = {
         <div class="caseload-row archived" data-id="${s.id}">
           <span class="status-dot dot-gray"></span>
           <span class="caseload-row-name">${esc(s.first_name)} ${esc(s.last_initial)}.</span>
-          <span class="caseload-row-grade">${esc(s.grade)}</span>
+          <span class="caseload-row-grade" title="${esc(s.grade || '')}">${esc(this._gradeShort(s.grade))}</span>
           <span class="caseload-row-disability" title="${esc(s.primary_disability || '')}">${esc(this._disabilityAbbrev(s.primary_disability))}</span>
           <span class="caseload-row-status"><span class="ace-pill ace-pill-neutral">Archived</span></span>
         </div>
@@ -244,7 +250,7 @@ const aceCaseload = {
       <div class="caseload-row" data-id="${s.id}">
         <span class="status-dot dot-${state.dot}"></span>
         <span class="caseload-row-name">${esc(s.first_name)} ${esc(s.last_initial)}.${s.has_bip ? ' <span class="caseload-row-bip">BIP</span>' : ''}</span>
-        <span class="caseload-row-grade">${esc(s.grade)}</span>
+        <span class="caseload-row-grade" title="${esc(s.grade || '')}">${esc(this._gradeShort(s.grade))}</span>
         <span class="caseload-row-disability" title="${esc(s.primary_disability || '')}">${esc(this._disabilityAbbrev(s.primary_disability))}</span>
         <span class="caseload-row-status"><span class="ace-pill ${pillClass}">${esc(state.pillLabel)}</span></span>
       </div>

@@ -2302,7 +2302,11 @@ h3 { font-size: 18px; }
   font-size: 14px; font-weight: 600; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.caseload-row-grade { flex: 0 0 auto; width: 58px; font-size: 13px; color: var(--text-muted); }
+.caseload-row-grade {
+  flex: 0 0 auto; width: 64px;
+  font-size: 13px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .caseload-row-disability {
   flex: 0 0 auto; width: 130px;
   font-size: 12.5px; color: var(--text-muted);
@@ -2359,14 +2363,17 @@ h3 { font-size: 18px; }
   font-size: 12.5px;
   color: var(--text-muted);
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  column-gap: 8px;
+  row-gap: 2px;
   flex-wrap: wrap;
 }
 
-.caseload-card-meta .dot-sep {
-  opacity: 0.4;
-}
+/* Grade and disability are independent flex items: they sit inline with a gap
+   when they fit and wrap onto separate lines when they don't — no literal "·"
+   separator to dangle (3.17.1). */
+.caseload-card-grade { white-space: nowrap; }
+.caseload-card-disability { min-width: 0; }
 
 .caseload-card-pill {
   margin-top: 4px;
@@ -3071,12 +3078,14 @@ textarea:focus {
   font-weight: 600;
   color: var(--text);
   margin-top: 8px;
+  text-wrap: pretty;
 }
 
 .attention-subline {
   font-size: 12.5px;
   color: var(--text-muted);
   margin-top: 3px;
+  text-wrap: pretty;
 }
 
 /* Override the older .attention-reasons block — Phase 2.6 doesn't use it */
