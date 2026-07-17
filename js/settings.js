@@ -10,6 +10,7 @@ const aceSettings = {
 
     const profile = await window.aceAuth.getProfile();
     const user = await window.aceAuth.getUser();
+    const org = await window.aceAuth.getOrg();
 
     const fullName = profile?.full_name || 'Case Manager';
     const schoolName = profile?.school_name || '—';
@@ -94,16 +95,18 @@ const aceSettings = {
       window.aceRouter.toLogin();
     });
 
-    this.initNonSchoolDays(profile);
+    this.initNonSchoolDays(org);
     await this.renderArchivedList();
   },
 
   // ---- District non-school days editor (Phase 3.13) -----------
-  initNonSchoolDays(profile) {
-    const stored = profile && profile.non_school_days;
+  // Phase 4a.2: the calendar is org-level, shared by everyone in the district —
+  // it reads and writes organizations.non_school_days, not the profile.
+  initNonSchoolDays(org) {
+    const stored = org && org.non_school_days;
     const seeded = Array.isArray(window.D219_NON_SCHOOL_DAYS_SEED) ? window.D219_NON_SCHOOL_DAYS_SEED : [];
-    // Working copy: the saved list when present, otherwise the seed (so the
-    // editor is pre-populated and a first Save persists the seed).
+    // Working copy: the org's saved list when present, otherwise the seed (so the
+    // editor is pre-populated and a first Save persists the seed to the org).
     this._nsd = (Array.isArray(stored) && stored.length) ? stored.slice() : seeded.slice();
     this._nsdUsingSeed = !(Array.isArray(stored) && stored.length);
     this._sortNsd();
@@ -157,11 +160,13 @@ const aceSettings = {
     const saveBtn = document.getElementById('nsdSaveBtn');
     if (saveBtn) { saveBtn.disabled = true; }
     this._setNsdStatus('Saving…');
-    const { error } = await window.aceAuth.updateProfile({ non_school_days: this._nsd });
+    // Writes to the org row. RLS allows this for org admins only — a non-admin's
+    // attempt comes back as an error, which we surface rather than fail silently.
+    const { error } = await window.aceAuth.updateOrg({ non_school_days: this._nsd });
     if (saveBtn) saveBtn.disabled = false;
     if (error) {
       console.error('Failed to save non-school days:', error);
-      this._setNsdStatus('Could not save — try again.');
+      this._setNsdStatus('Could not save — you may not have permission to edit the district calendar.');
       if (window.aceToast) window.aceToast.error('Could not save non-school days');
       return;
     }

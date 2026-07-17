@@ -8,17 +8,27 @@
 // changes the query string and browsers can't serve stale JS/CSS.
 // The deploy script matches the assignment below by pattern, so keep it on its
 // own line with a digits-only value. Run `node bump-version.js` each deploy.
-window.BUILD_VERSION = '20260624015934';
+window.BUILD_VERSION = '20260717191355';
 
 const SUPABASE_URL = 'https://npihodfemfpmhhooqtyl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waWhvZGZlbWZwbWhob29xdHlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzUwMzIsImV4cCI6MjA5NjQ1MTAzMn0.KDSh5GeGtbw-45-HK9gBg5Wkb-k2NQY5ui40Ln3H5ZI';
 
+// Branding fallbacks. The real values live on organizations.branding; these are
+// only used when the org row (or an individual field) is missing, so the app can
+// never render blank branding. Keep in sync with the CSS --purple-primary token
+// default in css/styles.css.
+window.ACE_DEFAULT_BRANDING = {
+  school_name: 'Niles North',
+  logo_url: 'assets/vikings-logo.jpg',
+  accent: '#4c2c7b'
+};
+
 // Seed list of D219 2026-27 non-attendance days (weekday dates; weekends are
-// skipped by the countback logic anyway). Used as the default for the
-// "Send draft to parent by" countback and the Settings editor when the user has
-// not saved their own list (profiles.non_school_days). Editable each school year
-// in Settings — this is only the out-of-the-box seed, not a hardcoded calendar
-// inside the countback. Source: official D219 2026-27 calendar.
+// skipped by the countback logic anyway). The source of truth is now
+// organizations.non_school_days; this seed is only a safety fallback for when
+// the org row is missing or its list is empty, so the countback never silently
+// degrades to "weekends only". Edited each school year in Settings, which writes
+// to the org. Source: official D219 2026-27 calendar.
 window.D219_NON_SCHOOL_DAYS_SEED = [
   '2026-08-10', '2026-09-07', '2026-10-12', '2026-10-23', '2026-11-03',
   '2026-11-25', '2026-11-26', '2026-11-27',

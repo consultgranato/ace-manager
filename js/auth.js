@@ -42,6 +42,7 @@ const aceAuth = {
   },
 
   async signOut() {
+    this._orgPromise = null;
     const { error } = await window.aceSupabase.auth.signOut();
     return { error };
   },
@@ -81,6 +82,65 @@ const aceAuth = {
       .select()
       .single();
     return { data, error };
+  },
+
+  // ---- Organization (Phase 4a.2) ------------------------------
+  // The org row carries everything that is district-specific: the non-school-day
+  // calendar and branding (school name, logo, accent). Fetched once per page load
+  // and shared — every caller awaits the same promise, so concurrent callers
+  // (sidebar, settings, meetings countback) never trigger a second request.
+
+  _orgPromise: null,
+
+  getOrg() {
+    if (!this._orgPromise) this._orgPromise = this._fetchOrg();
+    return this._orgPromise;
+  },
+
+  async _fetchOrg() {
+    const profile = await this.getProfile();
+    if (!profile || !profile.org_id) return null;
+    const { data, error } = await window.aceSupabase
+      .from('organizations')
+      .select('*')
+      .eq('id', profile.org_id)
+      .single();
+    if (error) {
+      console.error('Organization fetch error:', error);
+      return null;
+    }
+    return data;
+  },
+
+  // Update the current user's org. RLS permits this for org_admin only; a
+  // non-admin gets an error back, which callers surface rather than swallow.
+  async updateOrg(updates) {
+    const org = await this.getOrg();
+    if (!org) return { error: { message: 'No organization for this account' } };
+    const { data, error } = await window.aceSupabase
+      .from('organizations')
+      .update(updates)
+      .eq('id', org.id)
+      .select()
+      .single();
+    if (!error && data) this._orgPromise = Promise.resolve(data);
+    return { data, error };
+  },
+
+  // Branding with per-field fallback to ACE_DEFAULT_BRANDING, so a missing org
+  // row or a half-populated branding object still renders the current look.
+  async getBranding() {
+    const defaults = window.ACE_DEFAULT_BRANDING || {};
+    let branding = {};
+    try {
+      const org = await this.getOrg();
+      if (org && org.branding && typeof org.branding === 'object') branding = org.branding;
+    } catch (e) { /* fall through to defaults */ }
+    return {
+      school_name: branding.school_name || defaults.school_name || '',
+      logo_url: branding.logo_url || defaults.logo_url || '',
+      accent: branding.accent || defaults.accent || ''
+    };
   },
 
   onAuthChange(callback) {

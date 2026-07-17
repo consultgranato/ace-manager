@@ -2,6 +2,18 @@
 // Ace Manager — Main App Entry Point
 // =============================================================
 
+// Paint the org's accent onto the primary token before anything renders.
+// Only --purple-primary is org-driven today; the deep/warm/tint shades stay as
+// authored in css/styles.css. Deriving those shades (and the gradients that use
+// them) from a single accent is a later refinement needed for real second-org
+// onboarding — until then a non-purple accent would clash with the fixed shades.
+async function applyOrgBranding() {
+  const branding = await window.aceAuth.getBranding();
+  if (branding.accent) {
+    document.documentElement.style.setProperty('--purple-primary', branding.accent);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Ace Manager initializing...');
 
@@ -15,6 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!allowed) return;
 
   if (window.aceRouter.isProtectedPage()) {
+    // One org fetch per load; everything downstream reads the cached row.
+    await applyOrgBranding();
+
     const sidebarHost = document.getElementById('sidebarHost');
     if (sidebarHost && window.aceSidebar) {
       await window.aceSidebar.render(sidebarHost);

@@ -9,7 +9,13 @@ const aceSidebar = {
 
     const profile = await window.aceAuth.getProfile();
     const fullName = profile?.full_name || 'Case Manager';
-    const schoolName = profile?.school_name || '';
+
+    // School name and logo are org-level, not per-user. logo_url is stored
+    // relative to the app root ("assets/…"), so it resolves through basePath()
+    // exactly like the nav links do from any page depth.
+    const branding = await window.aceAuth.getBranding();
+    const schoolName = branding.school_name;
+    const logoSrc = this.basePath() + String(branding.logo_url).replace(/^\/+/, '');
 
     const path = window.location.pathname;
     const isHome = path.endsWith('index.html') || path.endsWith('/ace-manager/') || path.endsWith('/ace-manager');
@@ -19,7 +25,7 @@ const aceSidebar = {
     targetEl.innerHTML = `
       <aside class="ace-sidebar" id="aceSidebar">
         <div class="sidebar-brand">
-          <img src="${this.basePath()}assets/vikings-logo.jpg" alt="Niles North Vikings" class="brand-logo" />
+          <img src="${this.escapeHtml(logoSrc)}" alt="${this.escapeHtml(schoolName)}" class="brand-logo" />
           <div class="brand-text">
             <div class="brand-name">ACE MANAGER</div>
             <div class="brand-school">${this.escapeHtml(schoolName)}</div>

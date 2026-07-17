@@ -172,19 +172,20 @@ const aceMeetings = {
   // -------------------------------------------------------------
   // Phase 3.13 — "Send draft to parent by" prep item (manual check, auto date).
   // The date is 3 SCHOOL days before the meeting, skipping weekends and the
-  // district non-school days (the user's saved list, else the D219 seed). The
+  // district non-school days (the organization's calendar, else the D219 seed). The
   // computed date is stored on the prep item (send_by) so it renders without
   // recomputation; 3.12b's edit refreshes it when scheduled_date changes.
   // -------------------------------------------------------------
 
   SEND_DRAFT_LABEL: 'Send draft to parent by',
 
-  // The effective non-school-days list: the user's saved list when non-empty,
-  // otherwise the seeded D219 2026-27 calendar.
+  // The effective non-school-days list: the organization's calendar, falling back
+  // to the D219 seed only when the org row is missing or its list is empty (so a
+  // failed fetch never quietly turns the countback into weekends-only).
   async _effectiveNonSchoolDays() {
     try {
-      const profile = window.aceAuth ? await window.aceAuth.getProfile() : null;
-      const stored = profile && profile.non_school_days;
+      const org = window.aceAuth ? await window.aceAuth.getOrg() : null;
+      const stored = org && org.non_school_days;
       if (Array.isArray(stored) && stored.length) return stored;
     } catch (e) { /* fall through to seed */ }
     return Array.isArray(window.D219_NON_SCHOOL_DAYS_SEED) ? window.D219_NON_SCHOOL_DAYS_SEED : [];
