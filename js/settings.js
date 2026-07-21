@@ -70,13 +70,29 @@ const aceSettings = {
           </div>
         </section>
 
+        ${profile?.role === 'org_admin' ? `
+        <section class="settings-section">
+          <h2 class="settings-section-title">Organization data export</h2>
+          <div class="settings-card">
+            <p class="muted settings-note" style="margin-top:0;">
+              Download your organization's complete dataset as a single JSON file —
+              students, meetings, feedback, goals, services, and team. This is the
+              SOPPA "hand the district their data" export. Treat the file as
+              confidential student records.
+            </p>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button class="btn-secondary" id="orgExportBtn" type="button">${window.aceIcons.fileText(15)} Export organization data</button>
+              <span id="orgExportStatus" class="muted" style="font-size:13px;"></span>
+            </div>
+          </div>
+        </section>` : ''}
+
         <section class="settings-section">
           <h2 class="settings-section-title">Coming Soon</h2>
           <div class="settings-card settings-card-disabled">
             <ul class="settings-coming-soon">
               <li>${window.aceIcons.rotateCcw(14)} Replay onboarding tour</li>
               <li>${window.aceIcons.settings(14)} Change password</li>
-              <li>${window.aceIcons.fileText(14)} Export caseload as CSV</li>
               <li>${window.aceIcons.x(14)} Delete account</li>
             </ul>
           </div>
@@ -96,7 +112,35 @@ const aceSettings = {
     });
 
     this.initNonSchoolDays(org);
+    this.initOrgExport();
     await this.renderArchivedList();
+  },
+
+  // ---- Org data export (SOPPA) — org_admin only; RPC enforces the role ----
+  initOrgExport() {
+    const btn = document.getElementById('orgExportBtn');
+    const status = document.getElementById('orgExportStatus');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      if (status) status.textContent = 'Building export…';
+      const { data, error } = await window.aceSupabase.rpc('export_my_org_data');
+      btn.disabled = false;
+      if (error) {
+        console.error('Org export failed:', error);
+        if (status) status.textContent = 'Export failed.';
+        if (window.aceToast) window.aceToast.error(error.message || 'Could not export');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `ace-manager-export-${window.aceUtils.todayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (status) status.textContent = 'Downloaded.';
+      if (window.aceToast) window.aceToast.success('Export downloaded');
+    });
   },
 
   // ---- District non-school days editor (Phase 3.13) -----------

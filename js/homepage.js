@@ -134,6 +134,30 @@ const aceHomepage = {
     flagged.sort((a, b) => window.aceStatus.dotOrder(b.state.dot) - window.aceStatus.dotOrder(a.state.dot));
 
     container.innerHTML = flagged.map(({ student, state }) => this.attentionCardHTML(student, state)).join('');
+
+    // Prepend Indicator-11 cards for any student whose 60-school-day initial
+    // evaluation clock is running (consent signed, no completed eligibility
+    // meeting). Additive and non-blocking; renders ahead of the regular cards.
+    if (window.aceCompliance) {
+      const withConsent = students.filter(s => s.consent_date);
+      for (const s of withConsent) {
+        try {
+          const st = await window.aceCompliance.initialEvalStatus(s);
+          if (!st) continue;
+          const esc = window.aceUtils.escapeHtml;
+          const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
+          const cls = st.level === 'overdue' ? 'attention-critical' : st.level === 'critical' ? 'attention-approaching' : 'attention-clear';
+          container.insertAdjacentHTML('afterbegin', `
+            <a href="${basePath}pages/student-profile.html?id=${s.id}" class="attention-card ${cls}">
+              <div class="attention-name">${esc(s.first_name)} ${esc(s.last_initial)}.</div>
+              <div class="attention-meta">${esc(s.grade)}</div>
+              <div class="attention-headline">Initial evaluation — day ${st.used} of 60</div>
+              <div class="attention-subline">${st.left < 0 ? `Overdue by ${Math.abs(st.left)} school days` : `${st.left} school days left · due ${window.aceUtils.formatLongDate(st.deadline)}`}</div>
+              <div class="attention-action">Open profile</div>
+            </a>`);
+        } catch (e) { console.error('Compliance card failed:', e); }
+      }
+    }
   },
 
   attentionCardHTML(s, state) {

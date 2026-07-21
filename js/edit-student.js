@@ -108,6 +108,17 @@ const aceEditStudent = {
           </label>
         </div>
 
+        <div class="form-row two-col">
+          <label>
+            <span class="label-text">Referral Date <span class="muted">(initial evals only)</span></span>
+            <input type="date" id="editReferralDate" value="${esc(s.referral_date || '')}" />
+          </label>
+          <label>
+            <span class="label-text">Consent Signed <span class="muted">(starts 60-school-day clock)</span></span>
+            <input type="date" id="editConsentDate" value="${esc(s.consent_date || '')}" />
+          </label>
+        </div>
+
         <div class="form-row">
           <label>
             <span class="label-text">Classes</span>
@@ -173,6 +184,8 @@ const aceEditStudent = {
         service_minutes: serviceMinutes,
         annual_review_date: annualReviewDate,
         reeval_due_date: reevalDueDate,
+        referral_date: drawerBody.querySelector('#editReferralDate').value || null,
+        consent_date: drawerBody.querySelector('#editConsentDate').value || null,
         courses: this._courseSelector ? this._courseSelector.getCourses() : (student.courses || [])
       })
       .eq('id', student.id)

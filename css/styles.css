@@ -4159,3 +4159,105 @@ textarea:focus {
 .hard-delete-label { display: block; font-size: 14px; color: var(--text); margin-bottom: 8px; }
 .hard-delete-input { width: 100%; }
 .hard-delete-error { color: var(--critical); font-size: 13px; min-height: 18px; margin-top: 8px; }
+
+/* ===== Phase 5 — Goals, Services, Documents, Compliance ===== */
+
+/* Goal builder drawer */
+.goalb select, .goalb input[type="text"], .goalb input[type="number"], .goalb textarea {
+  width: 100%; margin-bottom: 4px;
+}
+.goalb .iep-label { margin-top: 14px; }
+.goalb-hint { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+.goalb-type-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.goalb-type {
+  flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: #fff; font-size: 13.5px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+}
+.goalb-type.selected { border-color: var(--purple-primary); color: var(--purple-primary); background: var(--purple-tint); }
+.goalb-crit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.goalb-crit-row input[type="number"] { width: 84px; margin-bottom: 0; }
+.goalb-crit-row select { flex: 1; margin-bottom: 0; }
+.goalb-crit-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.goalb-verb-warning {
+  background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+  border-radius: var(--radius-md); padding: 8px 10px; font-size: 13px; margin-top: 6px;
+}
+.goalb-meter { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.goalb-meter-item {
+  font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 12px;
+  border: 1px solid var(--border); color: var(--text-muted); background: #fff;
+}
+.goalb-meter-item.ok { border-color: var(--success); color: var(--success); background: #ecfdf5; }
+.goalb-preview {
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg);
+  padding: 12px 14px; font-size: 14px; line-height: 1.55; color: var(--text); min-height: 44px;
+}
+
+/* Goals card */
+.goals-group-label, .goals-suggest-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 12px 0 6px; }
+.goal-row { border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff; padding: 10px 12px; margin-bottom: 8px; }
+.goal-row-met { opacity: 0.75; }
+.goal-row-discontinued { opacity: 0.55; }
+.goal-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.goal-domain-chip {
+  font-size: 11.5px; font-weight: 700; color: var(--purple-primary); background: var(--purple-tint);
+  border-radius: 10px; padding: 2px 9px; white-space: nowrap;
+}
+.goal-status-select { font-size: 12.5px; padding: 2px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; color: var(--text-muted); }
+.goal-text { font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.goal-baseline, .goal-progress-line { font-size: 12.5px; margin-top: 5px; }
+.goal-met-chip { font-size: 11px; font-weight: 700; color: var(--success); background: #ecfdf5; border-radius: 10px; padding: 1px 7px; margin: 0 2px; }
+.goal-chart { display: block; margin-top: 8px; }
+.goal-chart-line { fill: none; stroke: var(--purple-primary); stroke-width: 1.8; }
+.goal-chart circle { fill: var(--purple-primary); }
+.goal-chart-target { stroke: var(--success); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.goal-row-actions { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.goal-mini-btn {
+  font-size: 12px; font-weight: 600; padding: 4px 9px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: #fff; color: var(--text-muted); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.goal-mini-btn:hover { border-color: var(--purple-primary); color: var(--purple-primary); }
+.goal-mini-danger:hover { border-color: var(--critical); color: var(--critical); }
+.goals-suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.goal-suggest-chip {
+  font-size: 12.5px; font-weight: 600; padding: 5px 11px; border: 1px dashed var(--purple-primary);
+  border-radius: 14px; background: #fff; color: var(--purple-primary); cursor: pointer;
+}
+.goal-suggest-chip:hover { background: var(--purple-tint); }
+.goal-history-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.goal-history-date { white-space: nowrap; color: var(--text-muted); width: 88px; flex-shrink: 0; }
+.goal-history-value { font-weight: 600; width: 80px; flex-shrink: 0; }
+.goal-history-note { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-history-del { flex-shrink: 0; }
+
+/* Services card */
+.svc-owed {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  color: var(--warning); background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: var(--radius-md); padding: 5px 10px; margin-bottom: 10px;
+}
+.svc-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff; padding: 10px 12px; margin-bottom: 8px; }
+.svc-info { min-width: 0; }
+.svc-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.svc-meta { font-size: 12.5px; margin-top: 3px; }
+.svc-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Documents card */
+.doc-row {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff;
+  padding: 10px 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: inherit;
+}
+.doc-row:hover { border-color: var(--purple-primary); }
+.doc-row-label { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.doc-row-hint { font-size: 12px; }
+.doc-textarea { width: 100%; font-family: inherit; font-size: 13.5px; line-height: 1.55; resize: vertical; }
+
+/* Accommodations editor */
+.accomm-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+.accomm-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  background: var(--purple-tint); color: var(--purple-primary); border-radius: 14px; padding: 4px 10px;
+}
+.accomm-chip-x { border: none; background: none; cursor: pointer; color: var(--purple-primary); font-size: 14px; line-height: 1; padding: 0; }

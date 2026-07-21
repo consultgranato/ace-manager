@@ -35,6 +35,17 @@ const aceProfile = {
     this.renderHeader();
     this.renderCards();
     this.renderNotesDrawer();
+    this.renderComplianceChip();
+  },
+
+  // Initial-eval (Indicator 11) chip appears under the header deadline chip
+  // whenever the 60-school-day clock is running. Async and non-blocking.
+  async renderComplianceChip() {
+    if (!window.aceCompliance) return;
+    const status = await window.aceCompliance.initialEvalStatus(this.state.student);
+    if (!status) return;
+    const anchor = document.querySelector('.profile-identity-main .profile-deadline');
+    if (anchor) anchor.insertAdjacentHTML('afterend', window.aceCompliance.chipHTML(status));
   },
 
   renderHeader() {
@@ -190,16 +201,6 @@ const aceProfile = {
         statusDot: 'gray',
         actionLabel: 'Open IEP Builder',
         actionDisabled: false
-      },
-      {
-        id: 'data',
-        icon: window.aceIcons.barChart(18),
-        title: 'Data Collection',
-        status: 'No trackers active',
-        statusDot: 'gray',
-        actionLabel: 'View Trackers',
-        actionDisabled: true,
-        comingSoon: 'Phase 4'
       }
     ];
 
@@ -215,7 +216,6 @@ const aceProfile = {
         <button class="card-action" ${c.actionDisabled ? 'disabled' : ''}>
           ${c.actionLabel}
         </button>
-        ${c.comingSoon ? `<div class="card-coming-soon">Coming in ${c.comingSoon}</div>` : ''}
       </div>
     `).join('');
 
@@ -227,6 +227,23 @@ const aceProfile = {
         const bp = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
         window.location.href = `${bp}pages/iep-builder.html?id=${this.state.student.id}`;
       });
+    }
+
+    // Append the Goals & Progress card — live, custom content
+    const goalsCard = document.createElement('div');
+    goalsCard.className = 'profile-card profile-card-goals';
+    goalsCard.dataset.card = 'goals';
+    goalsCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.barChart(18)}</div>
+        <div class="card-title">Goals &amp; Progress</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="goalsHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
+    `;
+    host.appendChild(goalsCard);
+    if (window.aceGoals) {
+      window.aceGoals.render(document.getElementById('goalsHost'), this.state.student);
     }
 
     // Append the Meeting Notes card — it has custom dynamic content
@@ -315,6 +332,40 @@ const aceProfile = {
 
     if (window.aceTransition) {
       window.aceTransition.render(document.getElementById('transitionHost'), this.state.student);
+    }
+
+    // Append the Services & Minutes card — live, custom content
+    const svcCard = document.createElement('div');
+    svcCard.className = 'profile-card profile-card-services';
+    svcCard.dataset.card = 'services';
+    svcCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.settings(18)}</div>
+        <div class="card-title">Related Services</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="servicesHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
+    `;
+    host.appendChild(svcCard);
+    if (window.aceServices) {
+      window.aceServices.render(document.getElementById('servicesHost'), this.state.student);
+    }
+
+    // Append the Documents card — generators for the recurring paperwork
+    const docCard = document.createElement('div');
+    docCard.className = 'profile-card profile-card-documents';
+    docCard.dataset.card = 'documents';
+    docCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.fileText(18)}</div>
+        <div class="card-title">Documents</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div id="documentsHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
+    `;
+    host.appendChild(docCard);
+    if (window.aceDocuments) {
+      window.aceDocuments.render(document.getElementById('documentsHost'), this.state.student);
     }
   },
 
