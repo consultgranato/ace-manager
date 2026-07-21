@@ -43,6 +43,7 @@ const aceAuth = {
 
   async signOut() {
     this._orgPromise = null;
+    this._profilePromise = null;
     const { error } = await window.aceSupabase.auth.signOut();
     return { error };
   },
@@ -70,6 +71,21 @@ const aceAuth = {
       return null;
     }
     return data;
+  },
+
+  // Cached profile for the current page load — role/org gating (sidebar, Team
+  // page, hard-delete visibility, the unassigned holding screen) all read this,
+  // so we fetch the row once. Cleared on signOut.
+  _profilePromise: null,
+
+  getProfileCached() {
+    if (!this._profilePromise) this._profilePromise = this.getProfile();
+    return this._profilePromise;
+  },
+
+  async isOrgAdmin() {
+    const p = await this.getProfileCached();
+    return !!p && p.role === 'org_admin';
   },
 
   async updateProfile(updates) {

@@ -6,7 +6,8 @@ const aceProfile = {
 
   state: {
     studentId: null,
-    student: null
+    student: null,
+    isAdmin: false
   },
 
   async render() {
@@ -30,6 +31,7 @@ const aceProfile = {
     }
 
     this.state.student = data;
+    this.state.isAdmin = await window.aceAuth.isOrgAdmin();
     this.renderHeader();
     this.renderCards();
     this.renderNotesDrawer();
@@ -72,6 +74,10 @@ const aceProfile = {
                   ? `<button class="profile-menu-item" data-action="restore">${window.aceIcons.rotateCcw(14)} Restore Student</button>`
                   : `<button class="profile-menu-item profile-menu-danger" data-action="archive">${window.aceIcons.archive(14)} Archive Student</button>`
                 }
+                ${this.state.isAdmin ? `
+                  <div class="profile-menu-sep"></div>
+                  <button class="profile-menu-item profile-menu-danger" data-action="hard-delete">${window.aceIcons.x(14)} Permanently Delete…</button>
+                ` : ''}
               </div>
             </div>
           </div>
@@ -119,6 +125,8 @@ const aceProfile = {
               this.state.student.archived = false;
               this.renderHeader();
             }
+          } else if (action === 'hard-delete') {
+            await window.aceHardDeleteStudent.confirm(this.state.student);
           }
         });
       });

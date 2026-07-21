@@ -7,8 +7,9 @@ const aceSidebar = {
   async render(targetEl) {
     if (!targetEl) return;
 
-    const profile = await window.aceAuth.getProfile();
+    const profile = await window.aceAuth.getProfileCached();
     const fullName = profile?.full_name || 'Case Manager';
+    const isAdmin = profile?.role === 'org_admin';
 
     // School name and logo are org-level, not per-user. logo_url is stored
     // relative to the app root ("assets/…"), so it resolves through basePath()
@@ -21,6 +22,7 @@ const aceSidebar = {
     const isHome = path.endsWith('index.html') || path.endsWith('/ace-manager/') || path.endsWith('/ace-manager');
     const isCaseload = path.endsWith('caseload.html');
     const isSettings = path.endsWith('settings.html');
+    const isTeam = path.endsWith('team.html');
 
     targetEl.innerHTML = `
       <aside class="ace-sidebar" id="aceSidebar">
@@ -54,6 +56,11 @@ const aceSidebar = {
         </button>
 
         <div class="sidebar-footer">
+          ${isAdmin ? `
+          <a href="${this.basePath()}pages/team.html" class="nav-item ${isTeam ? 'active' : ''}">
+            <span class="nav-icon">${window.aceIcons.usersRound(17)}</span>
+            <span class="nav-label">Team</span>
+          </a>` : ''}
           <a href="${this.basePath()}pages/settings.html" class="nav-item ${isSettings ? 'active' : ''}">
             <span class="nav-icon">${window.aceIcons.settings(17)}</span>
             <span class="nav-label">Settings</span>

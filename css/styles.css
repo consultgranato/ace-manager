@@ -4124,3 +4124,38 @@ textarea:focus {
 .iep-assess-remove-btn:hover { color: #dc2626; }
 
 .iep-textarea { resize: vertical; font-family: inherit; }
+
+/* ===== Phase 4a.4 — Team, unassigned holding, hard-delete ===== */
+
+.ace-btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Profile menu separator + reused for the hard-delete item */
+.profile-menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Unassigned holding screen (app-wide when profile.org_id is NULL) */
+.holding-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--bg); }
+.holding-card { max-width: 440px; width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 32px; text-align: center; }
+.holding-badge { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; background: var(--purple-tint); color: var(--purple-primary); display: flex; align-items: center; justify-content: center; }
+.holding-card h1 { font-size: 20px; margin: 0 0 10px; color: var(--text); }
+.holding-card p { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin: 0 0 22px; }
+
+/* Team page */
+.team-add-row { display: flex; gap: 8px; align-items: center; }
+.team-add-row input { flex: 1; min-width: 0; }
+.team-status { margin-top: 10px; font-size: 13px; min-height: 18px; }
+.team-status-ok { color: var(--success); }
+.team-status-error { color: var(--critical); }
+.team-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: white; margin-bottom: 8px; }
+.team-info { min-width: 0; }
+.team-name { font-weight: 600; color: var(--text); }
+.team-meta { font-size: 13px; margin-top: 2px; }
+.team-you { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--purple-primary); background: var(--purple-tint); border-radius: 10px; padding: 1px 7px; vertical-align: middle; }
+.team-remove-btn { flex-shrink: 0; }
+
+/* Hard-delete confirmation (in a drawer) */
+.hard-delete-warning { display: flex; gap: 10px; align-items: flex-start; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: var(--radius-md); padding: 14px; margin-bottom: 18px; }
+.hard-delete-warning strong { display: block; margin-bottom: 6px; }
+.hard-delete-warning p { margin: 0; font-size: 13px; line-height: 1.5; }
+.hard-delete-label { display: block; font-size: 14px; color: var(--text); margin-bottom: 8px; }
+.hard-delete-input { width: 100%; }
+.hard-delete-error { color: var(--critical); font-size: 13px; min-height: 18px; margin-top: 8px; }
