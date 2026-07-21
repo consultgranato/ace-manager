@@ -312,7 +312,11 @@ const aceGoalBuilder = {
     if (p.condition) sentence += this._trimDot(p.condition) + ', ';
     sentence += `${name} will ${this._trimDot(p.behavior || '…')}`;
     if (c.target != null && !isNaN(c.target)) {
-      sentence += `, achieving ${c.target} ${c.metric_label || ''}`.replace(/\s+/g, ' ');
+      // "80" + "% accuracy" reads as "80% accuracy", not "80 % accuracy".
+      const label = c.metric_label || '';
+      sentence += (label.startsWith('%')
+        ? `, achieving ${c.target}${label}`
+        : `, achieving ${c.target} ${label}`).replace(/ {2,}/g, ' ');
       if (c.trials_x && c.trials_y) sentence += ` in ${c.trials_x} of ${c.trials_y} trials`;
     }
     if (p.measurement_method) sentence += `, as measured by ${p.measurement_method}`;

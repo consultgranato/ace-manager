@@ -49,8 +49,16 @@ const aceSettings = {
           <h2 class="settings-section-title">District non-school days (D219 2026-27) — edit each school year</h2>
           <div class="settings-card">
             <p class="muted settings-note" style="margin-top:0;">
-              Used to calculate each meeting's “Send draft to parent by” date (3 school days before the meeting), skipping weekends and these dates.
+              Used to calculate each meeting's “Send draft to parent by” date (3 school days before the meeting)
+              and the 60-school-day initial evaluation clock, skipping weekends and these dates.
             </p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+              <span style="font-size:13.5px;font-weight:600;">School year:</span>
+              <input type="date" id="syStart" value="${esc(org?.settings?.school_years?.[0]?.start || '')}" />
+              <span class="muted" style="font-size:13px;">to</span>
+              <input type="date" id="syEnd" value="${esc(org?.settings?.school_years?.[0]?.end || '')}" />
+              <span class="muted" style="font-size:12.5px;">days outside this range don't count as school days</span>
+            </div>
             <div class="nsd-add-row" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
               <input type="date" id="nsdNewDate" />
               <button class="btn-secondary" id="nsdAddBtn" type="button">${window.aceIcons.plus(14)} Add date</button>
@@ -206,7 +214,14 @@ const aceSettings = {
     this._setNsdStatus('Saving…');
     // Writes to the org row. RLS allows this for org admins only — a non-admin's
     // attempt comes back as an error, which we surface rather than fail silently.
-    const { error } = await window.aceAuth.updateOrg({ non_school_days: this._nsd });
+    const updates = { non_school_days: this._nsd };
+    const syStart = document.getElementById('syStart')?.value;
+    const syEnd = document.getElementById('syEnd')?.value;
+    if (syStart && syEnd) {
+      const org = await window.aceAuth.getOrg();
+      updates.settings = { ...(org?.settings || {}), school_years: [{ start: syStart, end: syEnd }] };
+    }
+    const { error } = await window.aceAuth.updateOrg(updates);
     if (saveBtn) saveBtn.disabled = false;
     if (error) {
       console.error('Failed to save non-school days:', error);
