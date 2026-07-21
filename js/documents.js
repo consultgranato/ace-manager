@@ -157,10 +157,11 @@ ${ctx.school}`;
       } else {
         const first = Number(pts[0].value), last = Number(pts[pts.length - 1].value);
         const unit = c.unit || '';
-        const target = c.target != null ? `${c.target} ${unit}`.trim() : 'the criterion';
+        const fmt = (v) => unit === '%' ? `${v}%` : unit ? `${v} ${unit}` : `${v}`;
+        const target = c.target != null ? fmt(c.target) : 'the criterion';
         const trend = last > first ? 'an increasing trend' : last < first ? 'a decreasing trend' : 'a stable trend';
         const at = c.target != null && last >= Number(c.target);
-        progress = `Across ${pts.length} data point${pts.length === 1 ? '' : 's'}, performance moved from ${first} ${unit} to ${last} ${unit}, showing ${trend}. `
+        progress = `Across ${pts.length} data point${pts.length === 1 ? '' : 's'}, performance moved from ${fmt(first)} to ${fmt(last)}, showing ${trend}. `
           + (g.status === 'met' ? 'This goal has been met.'
              : at ? `${ctx.name.replace(/\.$/, '')}. is currently performing at the goal criterion of ${target}.`
                   : `The goal criterion is ${target}; progress is ${last >= first ? 'being made toward' : 'not yet on track for'} this criterion.`);

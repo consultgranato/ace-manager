@@ -14,6 +14,12 @@
 
 const aceGoals = {
 
+  // "79" + "%" -> "79%"; "30" + "min" -> "30 min"
+  _fmtVal(v, unit) {
+    if (v == null) return '\u2014';
+    return unit === '%' ? `${v}%` : unit ? `${v} ${unit}` : `${v}`;
+  },
+
   _cache: {},   // studentId -> { goals, entriesByGoal }
 
   async render(host, student) {
@@ -101,12 +107,12 @@ const aceGoals = {
     let progressLine = '';
     if (g.goal_type !== 'transition') {
       if (latest) {
-        progressLine = `Latest: <strong>${esc(String(latest.value))}${c.unit ? ' ' + esc(c.unit) : ''}</strong>
-          · target ${esc(String(c.target ?? '—'))}${c.unit ? ' ' + esc(c.unit) : ''}
+        progressLine = `Latest: <strong>${esc(this._fmtVal(latest.value, c.unit))}</strong>
+          · target ${esc(this._fmtVal(c.target, c.unit))}
           ${met ? '<span class="goal-met-chip">at target</span>' : ''}
           · ${valued.length} data point${valued.length === 1 ? '' : 's'}`;
       } else {
-        progressLine = `No data yet · target ${esc(String(c.target ?? '—'))}${c.unit ? ' ' + esc(c.unit) : ''}`;
+        progressLine = `No data yet · target ${esc(this._fmtVal(c.target, c.unit))}`;
       }
     }
 
@@ -214,7 +220,7 @@ const aceGoals = {
           ${entries.slice().reverse().map(e => `
             <div class="goal-history-row" data-entry-id="${e.id}">
               <span class="goal-history-date">${window.aceUtils.formatShortDate(e.entry_date)}</span>
-              <span class="goal-history-value">${e.value != null ? esc(String(e.value)) + (c.unit ? ' ' + esc(c.unit) : '') : '—'}</span>
+              <span class="goal-history-value">${esc(this._fmtVal(e.value, c.unit))}</span>
               <span class="goal-history-note muted">${esc(e.note || '')}</span>
               <button class="goal-mini-btn goal-mini-danger goal-history-del" data-entry-id="${e.id}">×</button>
             </div>`).join('') || '<p class="muted">No entries.</p>'}`,
