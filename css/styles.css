@@ -4052,13 +4052,10 @@ textarea:focus {
 .iep-func-group-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--purple-primary); border-bottom: 1px solid var(--purple-tint); padding-bottom: 6px; margin-bottom: 14px; }
 .iep-func-domain { margin-bottom: 18px; }
 .iep-func-label { font-size: 13.5px; font-weight: 600; margin-bottom: 8px; }
-.iep-func-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
-@media (max-width: 600px) { .iep-func-cards { grid-template-columns: 1fr 1fr; } }
-.iep-func-card { padding: 9px 8px; font-size: 12.5px; font-weight: 600; text-align: center; background: white; border: 1.5px solid var(--border-input); border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; color: var(--text-muted); transition: all var(--t-fast) var(--ease); }
-.iep-func-card:hover { border-color: var(--purple-primary); color: var(--purple-primary); }
-.iep-func-card.selected { background: var(--purple-primary); border-color: var(--purple-primary); color: white; }
-.iep-func-extra { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
-@media (max-width: 600px) { .iep-func-extra { grid-template-columns: 1fr; } }
+.iep-func-detail { margin: 10px 0 4px 12px; padding: 10px 12px; border-left: 2px solid var(--purple-tint); }
+.iep-func-detail-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 8px 0 6px; }
+.iep-func-detail-label:first-child { margin-top: 0; }
+.iep-func-detail .iep-text-sm { margin-top: 8px; width: 100%; }
 
 /* Goals */
 .iep-goals-list { display: flex; flex-direction: column; gap: 8px; }
@@ -4242,12 +4239,20 @@ textarea:focus {
 .goal-history-note { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .goal-history-del { flex-shrink: 0; }
 
-/* Services card */
-.svc-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff; padding: 10px 12px; margin-bottom: 8px; }
-.svc-info { min-width: 0; }
-.svc-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
-.svc-meta { font-size: 12.5px; margin-top: 3px; }
-.svc-actions { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+/* Services card — reference-only chip toggles (Phase 5.1a) */
+.svc-hint { font-size: 12.5px; margin: 0 0 10px; }
+.svc-chipgrid { display: flex; flex-wrap: wrap; gap: 6px; }
+.svc-chip {
+  display: inline-flex; align-items: center; gap: 5px; font-family: inherit; font-size: 12.5px;
+  font-weight: 500; color: var(--text); background: #fff; border: 1px solid var(--border);
+  border-radius: 14px; padding: 5px 11px; cursor: pointer;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.svc-chip:hover { border-color: var(--purple-primary); background: var(--purple-tint); }
+.svc-chip.selected { background: var(--purple-primary); border-color: var(--purple-primary); color: #fff; font-weight: 600; }
+.svc-note-label { margin-top: 12px; }
+.svc-note { width: 100%; font-family: inherit; font-size: 13px; line-height: 1.5; resize: vertical; }
+.svc-note-status { font-size: 12px; min-height: 16px; margin-top: 3px; }
 
 /* Documents card */
 .doc-row {
@@ -4259,6 +4264,9 @@ textarea:focus {
 .doc-row-label { font-size: 13.5px; font-weight: 600; color: var(--text); }
 .doc-row-hint { font-size: 12px; }
 .doc-textarea { width: 100%; font-family: inherit; font-size: 13.5px; line-height: 1.55; resize: vertical; }
+.doc-attach-row { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; margin: 0 0 10px; cursor: pointer; }
+.doc-attach-row input { accent-color: var(--purple-primary); width: 15px; height: 15px; }
+.doc-attach-disabled { opacity: 0.6; cursor: default; }
 
 /* Accommodations editor */
 .accomm-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }

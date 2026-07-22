@@ -16,8 +16,10 @@ const aceDocuments = {
     if (!host) return;
     this._host = host; this._student = student;
     const docs = [
-      { id: 'accomm',  label: 'Accommodations one-pager',   hint: 'for gen-ed teachers' },
-      { id: 'progress',label: 'Quarterly progress report',  hint: 'from goal data' }
+      { id: 'accomm',      label: 'Accommodations one-pager',    hint: 'for gen-ed teachers' },
+      { id: 'cm-intro',    label: 'Intro letter to teachers',    hint: 'introduce yourself · can attach accommodations' },
+      { id: 'parent-intro',label: 'Intro letter to family',      hint: 'start-of-year hello' },
+      { id: 'progress',    label: 'Quarterly progress report',   hint: 'from goal data' }
     ];
     host.innerHTML = docs.map(d => `
       <button class="doc-row" data-doc="${d.id}">
@@ -30,24 +32,34 @@ const aceDocuments = {
   },
 
   async _context() {
-    const [profile, branding] = await Promise.all([
+    const [profile, branding, user, year] = await Promise.all([
       window.aceAuth.getProfileCached(),
-      window.aceAuth.getBranding()
+      window.aceAuth.getBranding(),
+      window.aceAuth.getUser(),
+      window.aceUtils.currentSchoolYearLabel()
     ]);
     return {
       s: this._student,
       name: `${this._student.first_name} ${this._student.last_initial}.`,
+      first: this._student.first_name,
       cm: (profile && profile.full_name) || 'Case Manager',
+      email: (user && user.email) || '',
       school: branding.school_name || 'our school',
+      year,
       today: window.aceUtils.formatLongDate(window.aceUtils.todayISO())
     };
   },
 
   async _open(docId) {
     if (docId === 'accomm') return this._openAccommodations();
-    if (docId !== 'progress') return;
+    if (docId === 'cm-intro') return this._openCmIntro();
     const ctx = await this._context();
-    await this._showDoc('Quarterly progress report', await this._progressReport(ctx));
+    if (docId === 'parent-intro') {
+      return this._showDoc('Intro letter to family', this._parentIntroLetter(ctx));
+    }
+    if (docId === 'progress') {
+      return this._showDoc('Quarterly progress report', await this._progressReport(ctx));
+    }
   },
 
   async _showDoc(title, text) {
@@ -66,6 +78,131 @@ const aceDocuments = {
   },
 
   // ---- templates --------------------------------------------------------
+
+  // Shared body for the accommodations one-pager, used standalone and as the
+  // appendix to the teacher intro letter. Returns '' when there is nothing on
+  // file — callers omit the section rather than print a placeholder.
+  _accommodationsText(ctx) {
+    const list = Array.isArray(ctx.s.accommodations) ? ctx.s.accommodations.filter(Boolean) : [];
+    if (!list.length) return '';
+    return `CLASSROOM ACCOMMODATIONS — ${ctx.name}
+
+Prepared ${ctx.today} by ${ctx.cm} (case manager) · ${ctx.school}
+For teachers of ${ctx.first} — Grade ${ctx.s.grade}
+
+${ctx.first} has an IEP. The accommodations below are REQUIRED in all classes:
+
+${list.map(a => `  •  ${a}`).join('\n')}
+
+Notes for teachers:
+  •  Accommodations are not optional supports — they are part of the IEP and legally required.
+  •  If an accommodation isn't working in your class, don't drop it — contact me and we'll problem-solve.
+  •  Questions, concerns, or anything you're noticing (good or bad): ${ctx.cm}${ctx.email ? ` (${ctx.email})` : ''}.`;
+  },
+
+  // Case manager → the student's general education teachers. Warm, brief,
+  // professional. Can carry the accommodations one-pager as an appendix so it
+  // goes out as one piece (see _openCmIntro).
+  _cmIntroLetter(ctx, attachAccommodations) {
+    const reach = ctx.email
+      ? `The fastest way to reach me is email: ${ctx.email}.`
+      : `You can reach me through the ${ctx.school} main office.`;
+    const yearPhrase = ctx.year ? ` this school year (${ctx.year})` : ' this school year';
+    const accomm = attachAccommodations ? this._accommodationsText(ctx) : '';
+
+    let letter = `Hello,
+
+My name is ${ctx.cm}, and I'm the special education case manager for ${ctx.name}, who is in one of your classes${yearPhrase}. I wanted to introduce myself so you know who to come to with anything related to ${ctx.first}'s learning plan.
+
+As ${ctx.first}'s case manager, I coordinate the IEP: I monitor progress, keep accommodations current, and make sure the plan actually works in your classroom. Here's what you can expect from me during the year:
+
+  •  Short feedback requests before IEP meetings — a few minutes of your observations, which genuinely shape the plan.
+  •  Updates whenever ${ctx.first}'s accommodations or supports change.
+  •  Invitations to IEP meetings when your perspective is needed.
+
+In return, please don't wait for a formal request to flag something. If you're seeing anything — academic, behavioral, or just a gut feeling that something is off — I'd rather hear about it early. Good news is welcome too; it goes straight into the strengths section of the IEP.
+
+${reach}
+
+Thank you for everything you do for ${ctx.first}. I'm looking forward to working with you.
+
+${ctx.cm}
+Case Manager, ${ctx.school}`;
+
+    if (accomm) {
+      letter += `
+
+————————————————————————————————————————
+
+${accomm}`;
+    }
+    return letter;
+  },
+
+  // Case manager → the student's family. Rebuilt for Phase 5.1b: warm,
+  // plain-language, and parent-ready — sentences with no data behind them are
+  // omitted entirely.
+  _parentIntroLetter(ctx) {
+    const yearPhrase = ctx.year ? `the ${ctx.year} school year` : 'this school year';
+    const reach = ctx.email
+      ? `The easiest way to reach me is email: ${ctx.email}. I check it throughout the school day and will get back to you within one school day.`
+      : `You can reach me anytime through the ${ctx.school} main office.`;
+
+    return `Dear ${ctx.first}'s family,
+
+My name is ${ctx.cm}, and I'm delighted to be ${ctx.first}'s case manager at ${ctx.school} for ${yearPhrase}. I wanted to reach out early so you know who I am and how to find me.
+
+As ${ctx.first}'s case manager, I'm your main point of contact for everything related to the IEP. My job is to:
+
+  •  Make sure ${ctx.first}'s accommodations and services are in place in every class.
+  •  Track progress on IEP goals and share updates with you throughout the year.
+  •  Coordinate ${ctx.first}'s annual review and any other IEP meetings, and prepare with you and ${ctx.first} beforehand.
+  •  Be the person you call first with a question or concern — big or small.
+
+You know ${ctx.first} better than anyone, and the plan works best when we build it together. If anything comes up at home — something that's working, something that isn't, or a question about anything school-related — please don't hesitate to reach out.
+
+${reach}
+
+I'm looking forward to a great year with ${ctx.first}.
+
+Warmly,
+
+${ctx.cm}
+Case Manager, ${ctx.school}`;
+  },
+
+  // Drawer for the teacher intro letter: an attach toggle regenerates the text
+  // with or without the accommodations appendix, so sending both as one piece
+  // is a single checkbox — no copy-paste assembly.
+  async _openCmIntro() {
+    const ctx = await this._context();
+    const hasAccomm = Array.isArray(ctx.s.accommodations) && ctx.s.accommodations.filter(Boolean).length > 0;
+    const esc = window.aceUtils.escapeHtml;
+
+    await window.aceModal.openDrawer({
+      title: 'Intro letter to teachers',
+      saveLabel: 'Copy to clipboard', cancelLabel: 'Close',
+      bodyHTML: `
+        <label class="doc-attach-row ${hasAccomm ? '' : 'doc-attach-disabled'}">
+          <input type="checkbox" id="docAttachAccomm" ${hasAccomm ? 'checked' : 'disabled'} />
+          <span>Attach ${esc(ctx.first)}'s accommodations one-pager${hasAccomm ? '' : ' <span class="muted">(none on file yet)</span>'}</span>
+        </label>
+        <p class="muted" style="font-size:13px;margin:0 0 10px;">Edit freely — Copy takes the current text. Toggling the attachment regenerates the letter.</p>
+        <textarea id="docText" class="doc-textarea" rows="22">${esc(this._cmIntroLetter(ctx, hasAccomm))}</textarea>`,
+      afterRender: (body) => {
+        const box = body.querySelector('#docAttachAccomm');
+        if (!box || box.disabled) return;
+        box.addEventListener('change', () => {
+          body.querySelector('#docText').value = this._cmIntroLetter(ctx, box.checked);
+        });
+      },
+      onSave: async (body) => {
+        await navigator.clipboard.writeText(body.querySelector('#docText').value);
+        window.aceToast?.success('Copied to clipboard');
+        return false;   // keep the drawer open so repeated copies work
+      }
+    });
+  },
 
   async _progressReport(ctx) {
     const { data: goals } = await window.aceSupabase.from('iep_goals').select('*')
@@ -170,22 +307,12 @@ ${ctx.cm}`;
 
     if (r && r.confirmed) {
       const ctx = await this._context();
-      const list = accommodations.length
-        ? accommodations.map(a => `  •  ${a}`).join('\n')
-        : '  •  [No accommodations entered]';
-      await this._showDoc('Accommodations one-pager', `CLASSROOM ACCOMMODATIONS — ${ctx.name}
-
-Prepared ${ctx.today} by ${ctx.cm} (case manager) · ${ctx.school}
-For teachers of ${ctx.name.replace(/\.$/, '')} — Grade ${ctx.s.grade}
-
-${ctx.name.replace(/\.$/, '')} has an IEP. The accommodations below are REQUIRED in all classes:
-
-${list}
-
-Notes for teachers:
-  •  Accommodations are not optional supports — they are part of the IEP and legally required.
-  •  If an accommodation isn't working in your class, don't drop it — contact me and we'll problem-solve.
-  •  Questions, concerns, or anything you're noticing (good or bad): ${ctx.cm}.`);
+      const text = this._accommodationsText(ctx);
+      if (!text) {
+        window.aceToast?.error('Add at least one accommodation first');
+        return;
+      }
+      await this._showDoc('Accommodations one-pager', text);
     }
   }
 };

@@ -19,8 +19,94 @@ const aceIepBuilder = {
     { id: 'func-advocacy',   label: 'Self-advocacy',                   group: 'Social-Emotional' }
   ],
 
-  FUNC_LEVELS: ['Significant Difficulty', 'Moderate Difficulty', 'Mild Difficulty', 'Age Appropriate'],
-  FUNC_SETTINGS: ['Across all settings','Academic classes primarily','Unstructured time (lunch, passing periods, transitions)','Both structured and unstructured settings','Testing situations'],
+  // Stored values keep the original long strings (the engine and any saved
+  // drafts key on them); the chip labels are short so a rating is one glance,
+  // one click.
+  FUNC_LEVELS: [
+    { value: 'Significant Difficulty', label: 'Significant' },
+    { value: 'Moderate Difficulty',    label: 'Moderate' },
+    { value: 'Mild Difficulty',        label: 'Mild' },
+    { value: 'Age Appropriate',        label: 'Age appropriate' }
+  ],
+  FUNC_SETTINGS: [
+    { value: 'Across all settings',                                       label: 'All settings' },
+    { value: 'Academic classes primarily',                                label: 'Academic classes' },
+    { value: 'Unstructured time (lunch, passing periods, transitions)',   label: 'Unstructured time' },
+    { value: 'Both structured and unstructured settings',                 label: 'Structured & unstructured' },
+    { value: 'Testing situations',                                        label: 'Testing' }
+  ],
+
+  // 5.1c — Quick-select observations per functional domain. Each is a gerund
+  // phrase so the engine can weave any combination into one natural sentence
+  // ("This most often looks like X, Y, and Z."). Free text still exists for
+  // anything the chips don't cover, but a typical domain is now three clicks:
+  // level, setting, observation.
+  FUNC_OBS: {
+    'func-org': [
+      'arriving to class without needed materials',
+      'losing track of assignments and due dates',
+      'keeping a binder or backpack disorganized to the point of losing work',
+      'struggling to break multi-day projects into steps',
+      'forgetting to turn in completed work',
+      'relying on adult reminders to use a planner or task list'
+    ],
+    'func-init': [
+      'delaying the start of work well after directions are given',
+      'waiting for individual prompting before beginning tasks',
+      'starting tasks only after watching peers begin',
+      'shutting down when a task feels difficult at the outset',
+      'needing directions repeated one-on-one before starting',
+      'starting quickly on preferred tasks but stalling on non-preferred ones'
+    ],
+    'func-attn': [
+      'drifting off-task during independent work',
+      'being drawn off-task by phones or peers',
+      'losing the thread of multi-step instruction',
+      'needing frequent redirection to return to the task at hand',
+      'fatiguing quickly during sustained reading or writing',
+      'missing key directions when they are given verbally'
+    ],
+    'func-directions': [
+      'completing only the first step of multi-step directions',
+      'needing directions rephrased or chunked one step at a time',
+      'benefiting from written or visual directions alongside verbal ones',
+      'asking peers what to do after whole-class directions',
+      'mis-sequencing steps in longer tasks',
+      'losing later steps when directions are given only once'
+    ],
+    'func-reg': [
+      'becoming visibly frustrated when work is challenging',
+      'needing time and space to de-escalate after a conflict',
+      'shutting down rather than asking for help when overwhelmed',
+      'reacting strongly to unexpected changes in routine',
+      'leaving the classroom to regain composure',
+      'recovering slowly from setbacks during class'
+    ],
+    'func-social': [
+      'preferring to work alone rather than in groups',
+      'misreading peers’ tone, humor, or social cues',
+      'coming into conflict with peers during group work',
+      'interacting comfortably with adults but less so with peers',
+      'withdrawing during unstructured social time',
+      'dominating conversations or struggling with turn-taking'
+    ],
+    'func-work': [
+      'leaving classwork unfinished without adult check-ins',
+      'completing work in class but not returning homework',
+      'rushing through work at the cost of accuracy',
+      'abandoning tasks when the first attempt fails',
+      'producing strong work only with one-on-one support',
+      'underestimating how long assignments will take'
+    ],
+    'func-advocacy': [
+      'rarely asking for help even when clearly stuck',
+      'not using accommodations unless a teacher initiates them',
+      'having difficulty explaining what supports they need',
+      'advocating with familiar adults but not in general education classes',
+      'waiting until after class to ask questions',
+      'accepting confusion rather than requesting clarification'
+    ]
+  },
 
   ACADEMIC_STRENGTHS: ['Verbal/oral participation','Visual learning','1:1 performance','Math computation','Memorization/recall','Hands-on/project-based tasks','Technology use','Reading comprehension','Creative writing','Science/lab work'],
   FUNCTIONAL_STRENGTHS: ['Peer relationships','Routine-following','Self-advocacy','Punctuality/attendance','Vocational/work skills','Independent task completion','Communication with adults','Artistic/creative expression','Athletic ability','Community involvement'],
@@ -403,6 +489,11 @@ const aceIepBuilder = {
     `;
   },
 
+  // 5.1c — Speed-first redesign. Rating a domain is one click; picking a
+  // difficulty reveals a detail row (setting + quick-select observations +
+  // optional free text). "Age appropriate" needs nothing more and untouched
+  // domains are simply skipped, so the section costs clicks only where the
+  // student actually has needs.
   functionalSectionHTML() {
     const esc = window.aceUtils.escapeHtml;
     const groups = {};
@@ -411,15 +502,13 @@ const aceIepBuilder = {
     const domainHTML = (d) => `
       <div class="iep-func-domain" data-funcdomain="${d.id}">
         <div class="iep-func-label">${esc(d.label)}</div>
-        <div class="iep-func-cards">
-          ${this.FUNC_LEVELS.map(l => `<button type="button" class="iep-func-card" data-level="${esc(l)}">${esc(l)}</button>`).join('')}
-        </div>
-        <div class="iep-func-extra">
-          <select id="${d.id}-setting" class="iep-select iep-select-sm">
-            <option value="">Most evident in…</option>
-            ${this.FUNC_SETTINGS.map(o => `<option>${esc(o)}</option>`).join('')}
-          </select>
-          <input type="text" id="${d.id}-obs" class="iep-text iep-text-sm" placeholder="Specific observation (optional)" />
+        ${this.chipRadios(d.id + '-level', this.FUNC_LEVELS)}
+        <div class="iep-func-detail" id="${d.id}-detail" style="display:none;">
+          <div class="iep-func-detail-label">Most evident in</div>
+          ${this.chipRadios(d.id + '-setting', this.FUNC_SETTINGS)}
+          <div class="iep-func-detail-label">What it looks like <span class="goalb-hint">select any — these become the narrative</span></div>
+          ${this.chipChecks(d.id + '-obs', this.FUNC_OBS[d.id] || [])}
+          <input type="text" id="${d.id}-obsfree" class="iep-text iep-text-sm" placeholder="Add your own observation (optional)" />
         </div>
       </div>
     `;
@@ -427,6 +516,7 @@ const aceIepBuilder = {
     return `
       <section class="iep-section" id="sec-functional">
         <h2 class="iep-section-title">Functional Performance</h2>
+        <p class="iep-section-hint muted">Rate only the areas you have something to say about — one click each. Picking a difficulty opens quick-select observations; skip any area that isn't relevant.</p>
         ${Object.keys(groups).map(g => `
           <div class="iep-func-group">
             <div class="iep-func-group-title">${esc(g)}</div>
@@ -513,14 +603,20 @@ const aceIepBuilder = {
     }
   },
 
+  // The detail row appears only while a difficulty level is selected — "Age
+  // appropriate" and unrated domains stay one line tall.
   wireFuncCards(host) {
+    const DIFFICULT = ['Significant Difficulty', 'Moderate Difficulty', 'Mild Difficulty'];
     host.querySelectorAll('.iep-func-domain').forEach(domain => {
-      domain.querySelectorAll('.iep-func-card').forEach(card => {
-        card.addEventListener('click', () => {
-          domain.querySelectorAll('.iep-func-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-        });
-      });
+      const id = domain.dataset.funcdomain;
+      const detail = domain.querySelector('#' + id + '-detail');
+      const sync = () => {
+        const sel = domain.querySelector(`input[name="${id}-level"]:checked`);
+        if (detail) detail.style.display = (sel && DIFFICULT.includes(sel.value)) ? '' : 'none';
+      };
+      domain.querySelectorAll(`input[name="${id}-level"]`).forEach(r =>
+        r.addEventListener('change', sync));
+      sync();
     });
   },
 
@@ -1261,16 +1357,13 @@ const aceIepBuilder = {
       return { key: s.key, label: s.label, level: radioVal('acad-perf-' + s.key), barriers };
     });
 
-    const functionalDomains = this.FUNC_DOMAINS.map(d => {
-      const wrap = document.querySelector(`[data-funcdomain="${d.id}"]`);
-      const sel = wrap ? wrap.querySelector('.iep-func-card.selected') : null;
-      return {
-        id: d.id, label: d.label, group: d.group,
-        level: sel ? sel.dataset.level : '',
-        setting: gv(d.id + '-setting'),
-        obs: (gv(d.id + '-obs') || '').trim()
-      };
-    });
+    const functionalDomains = this.FUNC_DOMAINS.map(d => ({
+      id: d.id, label: d.label, group: d.group,
+      level: radioVal(d.id + '-level'),
+      setting: radioVal(d.id + '-setting'),
+      obsChips: checkVals(d.id + '-obs'),
+      obs: (gv(d.id + '-obsfree') || '').trim()
+    }));
 
     const student = this.state.student || {};
     return {
@@ -1465,9 +1558,11 @@ const aceIepBuilder = {
     })[d.attLevel] || '';
   },
 
-  // (4) Functional performance — leads with the case manager's own written
-  //     observations (-obs) for each area that has them; TF1 behavioral signals
-  //     then corroborate, de-duped against the shared `stated` tracker.
+  // (4) Functional performance — 5.1c: surfaces every domain the case manager
+  //     RATED as a difficulty (quick-select observation chips supply the
+  //     specifics; free text adds anything beyond them), opens with an
+  //     age-appropriate strengths sentence, and keeps the TF1 corroboration +
+  //     shared `stated` de-dup exactly as before.
   narrFunctional(d, stated) {
     const name = d.name || 'This student';
     const hasBip = d.bip === 'Yes';
@@ -1477,27 +1572,49 @@ const aceIepBuilder = {
       'Moderate Difficulty':   'moderate difficulty',
       'Mild Difficulty':       'mild difficulty'
     };
+    // Setting phrases read as prose, not as pasted option labels.
+    const SETTING_PHRASE = {
+      'Across all settings': 'observed across all settings',
+      'Academic classes primarily': 'most evident in academic classes',
+      'Unstructured time (lunch, passing periods, transitions)': 'most evident during unstructured times such as lunch, passing periods, and transitions',
+      'Both structured and unstructured settings': 'observed in both structured and unstructured settings',
+      'Testing situations': 'most evident in testing situations'
+    };
 
-    // Surface only the functional areas where the case manager entered an
-    // observation. Areas with no -obs text are skipped (do not invent).
-    const withObs = (d.functionalDomains || []).filter(x => x.obs && x.obs.trim());
+    const all = d.functionalDomains || [];
+    const rated = all.filter(x => DIFFICULTY[x.level]);
+    const ageApp = all.filter(x => x.level === 'Age Appropriate');
 
-    const sentences = withObs.map(x => {
+    const sentences = [];
+
+    // Strengths first: one sentence covering every age-appropriate area.
+    if (ageApp.length) {
+      sentences.push(`${name} demonstrates age-appropriate skills in ${this._naturalList(ageApp.map(x => x.label.toLowerCase()))}.`);
+    }
+
+    rated.forEach(x => {
       const concept = CONCEPT_BY_FUNC[x.id];
-      const obs = x.obs.trim();
-      const obsText = this._upperFirst(obs) + (/[.!?]$/.test(obs) ? '' : '.');
       let lead;
       if (concept && stated.has(concept)) {
         // Concept already described earlier — back-reference, then surface the
-        // case manager's specific observation (which is unique content).
+        // specific observations (which are unique content).
         lead = `Consistent with the above, ${x.label.toLowerCase()} remains an area of need for ${name}`;
       } else {
-        const diff = DIFFICULTY[x.level] ? ` is an area of ${DIFFICULTY[x.level]}` : ' is an area of need';
-        lead = `${x.label}${diff} for ${name}`;
+        lead = `${x.label} is an area of ${DIFFICULTY[x.level]} for ${name}`;
         if (concept) stated.add(concept);
       }
-      if (x.setting) lead += `, particularly ${x.setting.toLowerCase()}`;
-      return `${lead}. ${obsText}`;
+      if (x.setting && SETTING_PHRASE[x.setting]) lead += `, ${SETTING_PHRASE[x.setting]}`;
+      let s = lead + '.';
+
+      const chips = (x.obsChips || []).filter(Boolean);
+      if (chips.length) {
+        s += ` This most often looks like ${this._naturalList(chips)}.`;
+      }
+      if (x.obs && x.obs.trim()) {
+        const obs = x.obs.trim();
+        s += ' ' + this._upperFirst(obs) + (/[.!?]$/.test(obs) ? '' : '.');
+      }
+      sentences.push(s);
     });
 
     let p = sentences.join(' ');

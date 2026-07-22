@@ -1,18 +1,30 @@
 // =============================================================
 // Ace Manager — Related Services card (student profile)
 // =============================================================
-// A reference list of the related services a student receives: what it is,
-// how much, and who delivers it. Reference only — no scheduling, no session
-// logging, no compensatory-minutes math. The system of record for service
-// delivery stays elsewhere; this is here so a case manager can see a
-// student's service picture at a glance while working the profile.
+// Reference only, deliberately minimal: which related services does this
+// student receive? A chip per service type — click to toggle on or off —
+// plus one optional note. No minutes, no frequency, no provider; the system
+// of record for service delivery stays elsewhere. Each selected type is one
+// row in `services` (service_type only); the note lives on the student row.
 
 const aceServices = {
 
   SERVICE_TYPES: [
-    'Resource / Academic Support', 'Speech-Language', 'Social Work / Counseling',
-    'Occupational Therapy', 'Physical Therapy', 'Vision', 'Hearing',
-    'Adaptive PE', 'Transportation', 'Other'
+    'Speech-Language',
+    'Occupational Therapy',
+    'Physical Therapy',
+    'Social Work',
+    'Counseling',
+    'School Psychologist',
+    'Nursing / Health',
+    'Vision Services',
+    'Hearing / Audiology',
+    'Orientation & Mobility',
+    'Assistive Technology',
+    'Behavioral Support (BCBA)',
+    'Adaptive PE',
+    'Transportation',
+    'Interpreting Services'
   ],
 
   async render(host, student) {
@@ -20,7 +32,7 @@ const aceServices = {
     this._host = host; this._student = student;
 
     const { data, error } = await window.aceSupabase.from('services').select('*')
-      .eq('student_id', student.id).order('created_at', { ascending: true });
+      .eq('student_id', student.id);
 
     if (error) {
       console.error('Services load failed:', error);
@@ -28,95 +40,81 @@ const aceServices = {
       return;
     }
 
-    this._services = data || [];
+    // One chip per distinct type; rowsByType lets toggle-off delete any
+    // duplicate rows left over from the pre-simplification card.
+    this._rowsByType = {};
+    (data || []).forEach(r => {
+      (this._rowsByType[r.service_type] = this._rowsByType[r.service_type] || []).push(r);
+    });
     this._paint();
+  },
+
+  _selectedTypes() {
+    return Object.keys(this._rowsByType);
   },
 
   _paint() {
     const host = this._host;
     const esc = window.aceUtils.escapeHtml;
+    const selected = new Set(this._selectedTypes());
 
-    const amount = (s) => [
-      s.minutes_per_week ? `${s.minutes_per_week} min/week` : '',
-      s.frequency ? esc(s.frequency) : ''
-    ].filter(Boolean).join(' · ');
+    // Legacy rows may carry a type no longer on the standard list (e.g.
+    // "Resource / Academic Support") — keep showing them so nothing silently
+    // disappears; they can be toggled off like any other.
+    const legacy = this._selectedTypes().filter(t => !this.SERVICE_TYPES.includes(t));
+    const all = this.SERVICE_TYPES.concat(legacy);
 
     host.innerHTML = `
-      ${this._services.length === 0
-        ? '<p class="muted" style="font-size:13px;margin:0 0 10px;">No related services recorded.</p>'
-        : ''}
-      ${this._services.map(s => `
-        <div class="svc-row" data-id="${s.id}">
-          <div class="svc-info">
-            <div class="svc-name">${esc(s.service_type)}${s.provider ? ` <span class="muted">· ${esc(s.provider)}</span>` : ''}</div>
-            ${amount(s) ? `<div class="svc-meta muted">${amount(s)}</div>` : ''}
-          </div>
-          <div class="svc-actions">
-            <button class="goal-mini-btn" data-svc-action="edit" data-id="${s.id}">Edit</button>
-            <button class="goal-mini-btn goal-mini-danger" data-svc-action="delete" data-id="${s.id}">Remove</button>
-          </div>
-        </div>`).join('')}
-      <button class="card-action" id="svcAddBtn">${window.aceIcons.plus(14)} Add Service</button>
+      <p class="muted svc-hint">Which related services does this student receive? Click to toggle. Reference only.</p>
+      <div class="svc-chipgrid">
+        ${all.map(t => `
+          <button type="button" class="svc-chip ${selected.has(t) ? 'selected' : ''}" data-type="${esc(t)}">
+            ${selected.has(t) ? window.aceIcons.check(12) + ' ' : ''}${esc(t)}
+          </button>`).join('')}
+      </div>
+      <label class="iep-label svc-note-label">Note <span class="goalb-hint">optional — providers, context, anything worth remembering</span></label>
+      <textarea id="svcNote" class="svc-note" rows="2"
+        placeholder="Speech twice a week with Ms. Alvarez; OT is consult-only.">${esc(this._student.related_services_note || '')}</textarea>
+      <div class="svc-note-status muted" id="svcNoteStatus"></div>
     `;
 
-    host.querySelector('#svcAddBtn').addEventListener('click', () => this._openForm(null));
-    host.querySelectorAll('[data-svc-action]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const svc = this._services.find(s => s.id === btn.dataset.id);
-        if (btn.dataset.svcAction === 'edit') this._openForm(svc);
-        else this._delete(svc);
-      });
+    host.querySelectorAll('.svc-chip').forEach(chip => {
+      chip.addEventListener('click', () => this._toggle(chip.dataset.type));
+    });
+
+    // Debounced auto-save for the note — same pattern as profile quick notes.
+    const note = host.querySelector('#svcNote');
+    const status = host.querySelector('#svcNoteStatus');
+    let timer = null;
+    note.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const value = note.value;
+        const { error } = await window.aceSupabase.from('students')
+          .update({ related_services_note: value }).eq('id', this._student.id);
+        if (error) { status.textContent = 'Could not save note'; return; }
+        this._student.related_services_note = value;
+        status.textContent = 'Saved';
+        setTimeout(() => { if (status.textContent === 'Saved') status.textContent = ''; }, 2000);
+      }, 900);
     });
   },
 
-  async _openForm(existing) {
-    const esc = window.aceUtils.escapeHtml;
-    const s = existing || {};
-    const r = await window.aceModal.openDrawer({
-      title: existing ? 'Edit service' : 'Add service',
-      saveLabel: existing ? 'Save' : 'Add service',
-      bodyHTML: `
-        <label class="iep-label">Service</label>
-        <select id="svcType">${this.SERVICE_TYPES.map(t =>
-          `<option ${s.service_type === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
-        <label class="iep-label">Minutes per week <span class="goalb-hint">optional</span></label>
-        <input type="number" id="svcMinutes" min="0" max="3000" value="${s.minutes_per_week ?? ''}" placeholder="60" />
-        <label class="iep-label">Frequency <span class="goalb-hint">optional</span></label>
-        <input type="text" id="svcFrequency" value="${esc(s.frequency || '')}" placeholder="2× 30 min sessions" />
-        <label class="iep-label">Provider <span class="goalb-hint">optional</span></label>
-        <input type="text" id="svcProvider" value="${esc(s.provider || '')}" placeholder="Name or role" />
-        <div id="svcError" class="hard-delete-error"></div>`,
-      onSave: async (body) => {
-        const raw = body.querySelector('#svcMinutes').value.trim();
-        const row = {
-          student_id: this._student.id,
-          service_type: body.querySelector('#svcType').value,
-          minutes_per_week: raw === '' ? 0 : Number(raw),
-          frequency: body.querySelector('#svcFrequency').value.trim(),
-          provider: body.querySelector('#svcProvider').value.trim()
-        };
-        const resp = existing
-          ? await window.aceSupabase.from('services').update(row).eq('id', existing.id)
-          : await window.aceSupabase.from('services').insert(row);
-        if (resp.error) { body.querySelector('#svcError').textContent = resp.error.message; return false; }
-        return true;
-      }
-    });
-    if (r && r.confirmed) await this.render(this._host, this._student);
-  },
-
-  async _delete(svc) {
-    if (!svc) return;
-    const ok = await window.aceModal.openModal({
-      title: `Remove ${svc.service_type}?`,
-      message: 'This removes the service from the student\'s reference list.',
-      confirmLabel: 'Remove service', variant: 'danger',
-      onConfirm: async () => {
-        const { error } = await window.aceSupabase.from('services').delete().eq('id', svc.id);
-        if (error) throw error;
-      }
-    });
-    if (ok) { window.aceToast?.success('Service removed'); await this.render(this._host, this._student); }
+  async _toggle(type) {
+    const rows = this._rowsByType[type];
+    if (rows && rows.length) {
+      const { error } = await window.aceSupabase.from('services').delete()
+        .in('id', rows.map(r => r.id));
+      if (error) { window.aceToast?.error('Could not update services'); return; }
+      delete this._rowsByType[type];
+    } else {
+      const { data, error } = await window.aceSupabase.from('services')
+        .insert({ student_id: this._student.id, service_type: type })
+        .select().single();
+      if (error) { window.aceToast?.error('Could not update services'); return; }
+      this._rowsByType[type] = [data];
+    }
+    this._paint();
   }
 };
 
