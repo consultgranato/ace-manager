@@ -3,9 +3,9 @@
 // =============================================================
 // Generates the recurring paperwork as editable text in a drawer with one
 // Copy button — the same copy-out workflow as the PLAAFP (the system of
-// record stays Embrace; Ace Manager does the drafting). Every template pulls
-// live data: student, case manager, org branding, next meeting, goals +
-// progress entries, services, accommodations.
+// record stays Embrace; Ace Manager does the drafting). Both templates pull
+// live data: student, case manager, org branding, goals + progress entries,
+// accommodations.
 //
 // The accommodations one-pager doubles as the editor for the underlying
 // students.accommodations list (chips, saved on generate).
@@ -16,11 +16,8 @@ const aceDocuments = {
     if (!host) return;
     this._host = host; this._student = student;
     const docs = [
-      { id: 'intro',   label: 'Parent introduction letter', hint: 'start-of-year hello from the case manager' },
-      { id: 'notice',  label: 'Meeting notice',             hint: '10-day parent notification for the next meeting' },
       { id: 'accomm',  label: 'Accommodations one-pager',   hint: 'for gen-ed teachers' },
-      { id: 'progress',label: 'Quarterly progress report',  hint: 'from goal data' },
-      { id: 'pwn',     label: 'Prior Written Notice',       hint: 'template with student data filled in' }
+      { id: 'progress',label: 'Quarterly progress report',  hint: 'from goal data' }
     ];
     host.innerHTML = docs.map(d => `
       <button class="doc-row" data-doc="${d.id}">
@@ -33,48 +30,24 @@ const aceDocuments = {
   },
 
   async _context() {
-    const [profile, branding, meetingsResp] = await Promise.all([
+    const [profile, branding] = await Promise.all([
       window.aceAuth.getProfileCached(),
-      window.aceAuth.getBranding(),
-      window.aceSupabase.from('meetings').select('*')
-        .eq('student_id', this._student.id).eq('completed', false)
-        .gte('scheduled_date', window.aceUtils.todayISO())
-        .order('scheduled_date', { ascending: true }).limit(1)
+      window.aceAuth.getBranding()
     ]);
     return {
       s: this._student,
       name: `${this._student.first_name} ${this._student.last_initial}.`,
       cm: (profile && profile.full_name) || 'Case Manager',
       school: branding.school_name || 'our school',
-      nextMeeting: (meetingsResp.data && meetingsResp.data[0]) || null,
       today: window.aceUtils.formatLongDate(window.aceUtils.todayISO())
     };
   },
 
   async _open(docId) {
     if (docId === 'accomm') return this._openAccommodations();
+    if (docId !== 'progress') return;
     const ctx = await this._context();
-    let title = '', text = '';
-
-    if (docId === 'intro') {
-      title = 'Parent introduction letter';
-      text = this._introLetter(ctx);
-    } else if (docId === 'notice') {
-      title = 'Meeting notice';
-      if (!ctx.nextMeeting) {
-        window.aceToast?.error('No upcoming meeting is scheduled');
-        return;
-      }
-      text = this._meetingNotice(ctx);
-    } else if (docId === 'progress') {
-      title = 'Quarterly progress report';
-      text = await this._progressReport(ctx);
-    } else if (docId === 'pwn') {
-      title = 'Prior Written Notice';
-      text = this._pwn(ctx);
-    }
-
-    await this._showDoc(title, text);
+    await this._showDoc('Quarterly progress report', await this._progressReport(ctx));
   },
 
   async _showDoc(title, text) {
@@ -93,48 +66,6 @@ const aceDocuments = {
   },
 
   // ---- templates --------------------------------------------------------
-
-  _introLetter(ctx) {
-    return `Dear Parent/Guardian,
-
-My name is ${ctx.cm}, and I am pleased to be ${ctx.name.replace(/\.$/, '')}'s case manager at ${ctx.school} for the ${window.aceUtils.currentSchoolYear()} school year.
-
-As case manager, I coordinate your student's IEP services, monitor progress toward IEP goals, and serve as your main point of contact with the school. Please reach out any time with questions or concerns about your student's program, schedule, or progress — I'm glad to help.
-
-Over the coming weeks I will be gathering input from your student's teachers as we prepare for this year's annual review. You will receive a link to share your own perspective as well; your input is an important part of the IEP.
-
-I look forward to partnering with you this year.
-
-Sincerely,
-${ctx.cm}
-${ctx.school}`;
-  },
-
-  _meetingNotice(ctx) {
-    const m = ctx.nextMeeting;
-    const when = window.aceUtils.formatLongDate(m.scheduled_date) + (m.scheduled_time ? ` at ${m.scheduled_time}` : '');
-    return `NOTIFICATION OF CONFERENCE
-
-Date of notice: ${ctx.today}
-Student: ${ctx.name}
-Meeting type: ${m.meeting_type}
-
-Dear Parent/Guardian,
-
-You are invited to attend an IEP meeting for ${ctx.name.replace(/\.$/, '')} scheduled for ${when} at ${ctx.school}.
-
-The purpose of this meeting is: ${m.meeting_type}.
-
-The following people are expected to attend: ${m.attendees || '[list team members]'}.
-
-You have the right to bring anyone with knowledge or special expertise about your student. If you cannot attend at this time, or if you need an interpreter or other accommodation, please contact me and we will make arrangements.
-
-This notice is being provided at least 10 days before the meeting. Enclosed you will find a copy of your procedural safeguards; please contact me with any questions about your rights.
-
-Sincerely,
-${ctx.cm}
-${ctx.school}`;
-  },
 
   async _progressReport(ctx) {
     const { data: goals } = await window.aceSupabase.from('iep_goals').select('*')
@@ -183,35 +114,6 @@ ${sections.join('\n\n')}
 Measurement methods are listed in each goal. Please contact me with any questions about this report.
 
 ${ctx.cm}`;
-  },
-
-  _pwn(ctx) {
-    return `PRIOR WRITTEN NOTICE
-
-Date: ${ctx.today}
-Student: ${ctx.name}
-School: ${ctx.school}
-Case manager: ${ctx.cm}
-
-1. Action proposed or refused by the district:
-[Describe the action the district proposes or refuses to initiate/change — e.g., evaluation, eligibility, placement, or provision of FAPE.]
-
-2. Explanation of why the district proposes or refuses the action:
-[State the reasons.]
-
-3. Description of each evaluation procedure, assessment, record, or report used as a basis for this decision:
-[List data sources — e.g., teacher input, progress monitoring data, evaluations.]
-
-4. Other options considered and why they were rejected:
-[List options and reasons.]
-
-5. Other factors relevant to the decision:
-[Note any.]
-
-Your rights: As the parent/guardian of a student with a disability, you are protected by procedural safeguards under the IDEA. A copy of the Illinois procedural safeguards is available from the school at any time and is enclosed with this notice. If you have questions, or if you disagree with this decision, please contact me — you also have the right to pursue mediation or a due process hearing.
-
-${ctx.cm}
-${ctx.school}`;
   },
 
   // ---- accommodations one-pager (with inline list editor) ----------------

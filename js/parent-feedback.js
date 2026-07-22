@@ -4,13 +4,11 @@
 
 const aceParentFeedback = {
   makeToken() {
-    const arr = new Uint8Array(18);
-    crypto.getRandomValues(arr);
-    return 'pf-' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    return window.aceUtils.makeShareToken('pf');
   },
 
-  cycleLabel(student) {
-    const yr = window.aceUtils.currentSchoolYear ? window.aceUtils.currentSchoolYear() : '';
+  async cycleLabel(student) {
+    const yr = await window.aceUtils.currentSchoolYearLabel();
     let kind = 'Feedback';
     if (student.annual_review_date) kind = 'Annual Review';
     else if (student.reeval_due_date) kind = 'Re-evaluation';
@@ -18,8 +16,7 @@ const aceParentFeedback = {
   },
 
   linkURL(token) {
-    const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
-    return `${window.location.origin}${basePath}pages/parent-form.html?t=${token}`;
+    return window.aceUtils.shareLinkURL(token);
   },
 
   async getActiveLink(studentId) {
@@ -60,7 +57,7 @@ const aceParentFeedback = {
         case_manager_id: user.id,
         meeting_id: meetingId,
         token,
-        cycle_label: this.cycleLabel(student),
+        cycle_label: await this.cycleLabel(student),
         active: true,
         status: 'pending'
       })

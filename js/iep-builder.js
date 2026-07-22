@@ -25,9 +25,16 @@ const aceIepBuilder = {
   ACADEMIC_STRENGTHS: ['Verbal/oral participation','Visual learning','1:1 performance','Math computation','Memorization/recall','Hands-on/project-based tasks','Technology use','Reading comprehension','Creative writing','Science/lab work'],
   FUNCTIONAL_STRENGTHS: ['Peer relationships','Routine-following','Self-advocacy','Punctuality/attendance','Vocational/work skills','Independent task completion','Communication with adults','Artistic/creative expression','Athletic ability','Community involvement'],
 
-  ATT_RATE: ['Satisfactory (fewer than 5% of days missed)','Mild concern (5–9% of days missed)','Chronic absenteeism (10–19% of days missed)','Severe chronic absenteeism (20%+ of days missed)'],
-  ATT_PATTERN: ['No notable pattern','Primarily excused (illness/medical)','Primarily unexcused','Mixed excused and unexcused','Improving — was higher earlier in year'],
-  ATT_IMPACT: ['Minimal impact','Moderate — gaps in instruction noted','Significant — major gaps affecting multiple areas','Severe — attendance is a primary barrier to progress'],
+  // Attendance is one pick, not three. The absenteeism band is the objective
+  // fact; the instructional impact follows from it (see narrAttendance), so
+  // asking a case manager to restate that impact in two more dropdowns bought
+  // nothing. Bands follow the Illinois chronic-absenteeism definition (10%).
+  ATT_LEVELS: [
+    { value: 'Satisfactory (fewer than 5% of days missed)',        label: 'Satisfactory',        hint: '<5% missed' },
+    { value: 'Mild concern (5–9% of days missed)',                 label: 'Mild concern',        hint: '5–9% missed' },
+    { value: 'Chronic absenteeism (10–19% of days missed)',        label: 'Chronic',             hint: '10–19% missed' },
+    { value: 'Severe chronic absenteeism (20%+ of days missed)',   label: 'Severe chronic',      hint: '20%+ missed' }
+  ],
 
   GOAL_AREAS: [
     { id: 'goal-reading', label: 'Reading' },
@@ -207,10 +214,51 @@ const aceIepBuilder = {
     `;
   },
 
-  checkGrid(name, options) {
+  // ---- chip inputs --------------------------------------------
+  // Both helpers render a native input wrapped in a label, so selection is
+  // handled by the browser (click, keyboard, and screen readers all work with
+  // no JS) and the value is read exactly the way the narrative engine already
+  // reads checkboxes and radios. The chip is the <span>; the input is visually
+  // hidden but still the thing that holds state.
+
+  // Multi-select. `options` are plain strings or {id, value, label, tag}.
+  chipChecks(name, options, extraClass = '') {
     const esc = window.aceUtils.escapeHtml;
-    return `<div class="iep-check-grid" data-group="${name}">
-      ${options.map(o => `<label class="iep-check"><input type="checkbox" name="${name}" value="${esc(o)}" /><span>${esc(o)}</span></label>`).join('')}
+    return `<div class="iep-chipgrid" data-chipgroup="${esc(name)}">
+      ${options.map(o => {
+        const value = typeof o === 'string' ? o : o.value;
+        const label = typeof o === 'string' ? o : (o.label || o.value);
+        const id = (typeof o === 'object' && o.id) ? ` id="${esc(o.id)}"` : '';
+        const hasTag = typeof o === 'object' && o.tag;
+        const tag = hasTag ? ` <span class="iep-chip-tag">${esc(o.tag)}</span>` : '';
+        return `<label class="iep-chip${hasTag ? ' iep-chip-suggested' : ''}"><input type="checkbox"${id} name="${esc(name)}" value="${esc(value)}" class="${esc(extraClass)}" /><span>${esc(label)}${tag}</span></label>`;
+      }).join('')}
+    </div>`;
+  },
+
+  // Single-select — radios, so picking a second option clears the first for
+  // free. Read with `input[name="…"]:checked`, not getElementById.
+  chipRadios(name, options) {
+    const esc = window.aceUtils.escapeHtml;
+    return `<div class="iep-chiprow" data-chipradio="${esc(name)}">
+      ${options.map(o => {
+        const value = typeof o === 'string' ? o : o.value;
+        const label = typeof o === 'string' ? o : (o.label || o.value);
+        const hint = (typeof o === 'object' && o.hint) ? `<span class="iep-chip-hint">${esc(o.hint)}</span>` : '';
+        return `<label class="iep-chip"><input type="radio" name="${esc(name)}" value="${esc(value)}" /><span>${esc(label)}${hint}</span></label>`;
+      }).join('')}
+    </div>`;
+  },
+
+  // A free-text box the case manager can use to add a strength that isn't on
+  // the list. What they type becomes another selected chip in the same group,
+  // so custom entries and preset ones reach the narrative through one array
+  // instead of a parallel "other" field the engine had to special-case.
+  customAddHTML(group, placeholder) {
+    const esc = window.aceUtils.escapeHtml;
+    return `<div class="iep-chip-add" data-addfor="${esc(group)}">
+      <input type="text" class="iep-text iep-text-sm" placeholder="${esc(placeholder)}" autocomplete="off" />
+      <button type="button" class="iep-chip-add-btn">Add</button>
     </div>`;
   },
 
@@ -221,15 +269,15 @@ const aceIepBuilder = {
         ${this.strengthsParentNoteHTML()}
         <div class="iep-field">
           <label class="iep-label">Academic strengths</label>
-          ${this.checkGrid('ac-strength', this.ACADEMIC_STRENGTHS)}
-          <input type="text" id="str-ac-other" class="iep-text" placeholder="Any academic strengths not listed" />
-          ${this.strengthChipsHTML('ac-strength', 'str-ac-other')}
+          ${this.chipChecks('ac-strength', this.ACADEMIC_STRENGTHS)}
+          ${this.customAddHTML('ac-strength', 'Add another academic strength')}
+          ${this.strengthChipsHTML('ac-strength')}
         </div>
         <div class="iep-field">
           <label class="iep-label">Functional &amp; transitional strengths</label>
-          ${this.checkGrid('fn-strength', this.FUNCTIONAL_STRENGTHS)}
-          <input type="text" id="str-fn-other" class="iep-text" placeholder="Any functional strengths not listed" />
-          ${this.strengthChipsHTML('fn-strength', 'str-fn-other')}
+          ${this.chipChecks('fn-strength', this.FUNCTIONAL_STRENGTHS)}
+          ${this.customAddHTML('fn-strength', 'Add another functional strength')}
+          ${this.strengthChipsHTML('fn-strength')}
         </div>
       </section>
     `;
@@ -238,13 +286,13 @@ const aceIepBuilder = {
   // 3.15 — Suggestion chips drawn from TA1 studentStrengths. Advisory only:
   // nothing is inserted unless the case manager clicks a chip (see
   // wireStrengths). Renders nothing when no TA1 / no strengths on file.
-  strengthChipsHTML(group, otherId) {
+  strengthChipsHTML(group) {
     const ta = this.state.ta1;
     if (!ta || !Array.isArray(ta.studentStrengths) || !ta.studentStrengths.length) return '';
     const esc = window.aceUtils.escapeHtml;
     const chips = ta.studentStrengths.map(v => `
       <span class="iep-strength-chip">
-        <button type="button" class="iep-strength-chip-add" data-group="${esc(group)}" data-other="${esc(otherId)}" data-value="${esc(v)}">+ ${esc(v)}</button>
+        <button type="button" class="iep-strength-chip-add" data-group="${esc(group)}" data-value="${esc(v)}">+ ${esc(v)}</button>
         <button type="button" class="iep-strength-chip-x" title="Dismiss suggestion" aria-label="Dismiss suggestion">&times;</button>
       </span>`).join('');
     return `<div class="iep-strength-suggest">
@@ -266,46 +314,44 @@ const aceIepBuilder = {
     </div>`;
   },
 
-  // 3.15 — Wire the strength suggestion chips. A chip acts ONLY on an explicit
-  // click: it checks the matching preset box when the value maps to one, else
-  // appends to the section's "other" text field (additive, de-duped, never
-  // clobbering existing text). The × dismisses a suggestion without inserting.
-  // Both actions remove the chip; ignored chips stay visible and inert.
+  // Select a strength in `group` by value: check the matching preset chip when
+  // there is one, otherwise mint a new selected chip for it. Either way the
+  // value ends up in the group's checked set, which is the single thing the
+  // narrative engine reads. De-duped case-insensitively. Returns false when
+  // the value was already selected.
+  selectStrength(section, group, value) {
+    const v = (value || '').trim();
+    if (!v) return false;
+
+    const existing = Array.from(section.querySelectorAll(`input[name="${group}"]`));
+    const match = existing.find(box => box.value.trim().toLowerCase() === v.toLowerCase());
+    if (match) {
+      if (match.checked) return false;
+      match.checked = true;
+      return true;
+    }
+
+    const grid = section.querySelector(`[data-chipgroup="${group}"]`);
+    if (!grid) return false;
+    const esc = window.aceUtils.escapeHtml;
+    const label = document.createElement('label');
+    label.className = 'iep-chip';
+    label.innerHTML = `<input type="checkbox" name="${esc(group)}" value="${esc(v)}" checked /><span>${esc(v)}</span>`;
+    grid.appendChild(label);
+    return true;
+  },
+
+  // 3.15 — Wire the strength suggestion chips, plus the custom-add box. A
+  // suggestion acts ONLY on an explicit click; the × dismisses it without
+  // selecting anything. Both actions remove the chip; ignored chips stay
+  // visible and inert.
   wireStrengths(host) {
     const section = host.querySelector('#sec-strengths');
     if (!section) return;
 
     section.querySelectorAll('.iep-strength-chip-add').forEach(btn => {
       btn.addEventListener('click', () => {
-        const value = (btn.dataset.value || '').trim();
-        const group = btn.dataset.group;
-        const otherId = btn.dataset.other;
-        if (!value) return;
-
-        // Prefer an exact preset checkbox match (case-insensitive).
-        let matched = false;
-        section.querySelectorAll(`input[name="${group}"]`).forEach(box => {
-          if (box.value.trim().toLowerCase() === value.toLowerCase()) {
-            box.checked = true;
-            matched = true;
-          }
-        });
-
-        // Otherwise append to the "other" text field without clobbering or
-        // duplicating what is already there.
-        if (!matched) {
-          const other = document.getElementById(otherId);
-          if (other) {
-            const parts = other.value.trim()
-              ? other.value.split(',').map(s => s.trim()).filter(Boolean)
-              : [];
-            if (!parts.some(p => p.toLowerCase() === value.toLowerCase())) {
-              parts.push(value);
-              other.value = parts.join(', ');
-            }
-          }
-        }
-
+        this.selectStrength(section, btn.dataset.group, btn.dataset.value);
         const chip = btn.closest('.iep-strength-chip');
         if (chip) chip.remove();
       });
@@ -315,6 +361,19 @@ const aceIepBuilder = {
       btn.addEventListener('click', () => {
         const chip = btn.closest('.iep-strength-chip');
         if (chip) chip.remove();
+      });
+    });
+
+    section.querySelectorAll('.iep-chip-add').forEach(wrap => {
+      const group = wrap.dataset.addfor;
+      const input = wrap.querySelector('input');
+      const commit = () => {
+        if (this.selectStrength(section, group, input.value)) input.value = '';
+        input.focus();
+      };
+      wrap.querySelector('.iep-chip-add-btn').addEventListener('click', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
       });
     });
   },
@@ -336,9 +395,10 @@ const aceIepBuilder = {
     return `
       <section class="iep-section" id="sec-attendance">
         <h2 class="iep-section-title">Attendance</h2>
-        ${this.selectField('att-rate', 'Current absenteeism rate', this.ATT_RATE)}
-        ${this.selectField('att-pattern', 'Absence pattern', this.ATT_PATTERN)}
-        ${this.selectField('att-impact', 'Impact of attendance on performance', this.ATT_IMPACT)}
+        <div class="iep-field">
+          <label class="iep-label">Absenteeism this year</label>
+          ${this.chipRadios('att-level', this.ATT_LEVELS)}
+        </div>
       </section>
     `;
   },
@@ -941,27 +1001,34 @@ const aceIepBuilder = {
       }
     ];
 
-    const barrierChecks = (key, items, suggested = new Set()) => items.map(b => {
-      const s = suggested.has(b.id);
-      return `<label class="iep-check${s ? ' iep-check-suggested' : ''}">
-        <input type="checkbox" id="bar-${key}-${b.id}" value="${esc(b.value)}" class="acad-barrier" />
-        <span>${esc(b.label)}</span>${s ? ' <span class="iep-barrier-suggest-tag">suggested</span>' : ''}
-      </label>`;
-    }).join('');
+    // One barrier list per subject. Common and subject-specific barriers were
+    // two separate grids, but the engine never distinguished them — a barrier
+    // is a barrier, and only the id suffix (attention/organization/behavior)
+    // carries the cross-cutting meaning. Merging them halves the fields
+    // without changing a single thing the narrative reads.
+    const barrierChips = (key, items, suggested) => this.chipChecks(
+      'bar-' + key,
+      items.map(b => ({
+        id: `bar-${key}-${b.id}`,
+        value: b.value,
+        label: b.label,
+        tag: suggested.has(b.id) ? 'suggested' : ''
+      })),
+      'acad-barrier'
+    );
 
     const subjectBlock = (s) => {
       const suggestions = computeSuggestions(s.key);
-      return `<div class="iep-acad-block">
+      return `<div class="iep-acad-block" data-acadblock="${esc(s.key)}">
         <div class="iep-acad-block-title">${esc(s.label)}</div>
-        ${this.selectField('acad-perf-' + s.key, 'Performance Level', perfOptions)}
-        ${refPanelHTML(s.key)}
         <div class="iep-field">
-          <label class="iep-label">Common barriers</label>
-          <div class="iep-check-grid">${barrierChecks(s.key, commonBarriers, suggestions)}</div>
+          <label class="iep-label">Performance level</label>
+          ${this.chipRadios('acad-perf-' + s.key, perfOptions)}
         </div>
-        <div class="iep-field">
-          <label class="iep-label">Subject-specific barriers</label>
-          <div class="iep-check-grid">${barrierChecks(s.key, s.specific)}</div>
+        ${refPanelHTML(s.key)}
+        <div class="iep-field iep-acad-barriers">
+          <label class="iep-label">Barriers</label>
+          ${barrierChips(s.key, commonBarriers.concat(s.specific), suggestions)}
         </div>
       </div>`;
     };
@@ -969,63 +1036,28 @@ const aceIepBuilder = {
     return `
       <section class="iep-section" id="sec-academic">
         <h2 class="iep-section-title">Academic Performance</h2>
-        <p class="iep-section-hint muted">Select a performance level and any relevant barriers for each subject area.</p>
+        <p class="iep-section-hint muted">Pick a performance level for each subject that applies — barriers appear once you do. Skip any subject you have nothing to record for.</p>
         ${subjects.map(subjectBlock).join('')}
         <div class="iep-field">
-          <div class="iep-acad-assess-header">
-            <label class="iep-label" style="margin-bottom:0;">Assessment Data</label>
-            <button type="button" id="addAssessmentBtn" class="iep-acad-add-btn">+ Add Assessment</button>
-          </div>
-          <div id="assessmentRows"></div>
-        </div>
-        <div class="iep-field">
-          <label class="iep-label">Evaluation Results</label>
-          <textarea id="eval-results" rows="4" class="iep-text iep-textarea" placeholder="Summarize any recent evaluation findings — psych, speech, OT, etc. Reference report date if known."></textarea>
-          <p class="iep-section-hint muted" style="margin-top:5px;">e.g., Triennial re-evaluation, psych report, speech evaluation, OT assessment</p>
+          <label class="iep-label">Evaluation results <span class="goalb-hint">optional</span></label>
+          <textarea id="eval-results" rows="3" class="iep-text iep-textarea" placeholder="Recent evaluation findings — psych, speech, OT. Include the report date if you have it."></textarea>
+          <p class="iep-section-hint muted" style="margin-top:5px;">Written into the academic narrative as-is, so phrase it the way you want it to read.</p>
         </div>
       </section>`;
   },
 
+  // Barriers stay out of the way until the subject is actually in play — a
+  // performance level is what says "this subject matters for this student".
   wireAcademic(host) {
-    const SCORE_TYPES = ['Percentile','Grade Equivalent','Standard Score','Lexile','Scale Score','Raw Score','Other'];
-    const addRow = () => {
-      const container = host.querySelector('#assessmentRows');
-      if (!container) return;
-      const row = document.createElement('div');
-      row.className = 'assessment-row iep-assess-row';
-      row.innerHTML = `
-        <div class="iep-assess-name-wrap">
-          <input type="text" class="assess-name iep-text iep-text-sm" placeholder="e.g., Star Reading, MAP, iReady" />
-        </div>
-        <div class="iep-assess-score-wrap">
-          <input type="text" class="assess-score iep-text iep-text-sm iep-assess-score-input" placeholder="Score" />
-          <span class="assess-interp iep-assess-interp hidden"></span>
-        </div>
-        <select class="assess-type iep-select iep-select-sm">
-          <option value="">Type...</option>
-          ${SCORE_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
-        </select>
-        <input type="date" class="assess-date iep-text iep-text-sm" />
-        <button type="button" class="iep-assess-remove-btn" aria-label="Remove">&times;</button>`;
-      const scoreEl = row.querySelector('.assess-score');
-      const typeEl = row.querySelector('.assess-type');
-      const interpEl = row.querySelector('.assess-interp');
-      const updateInterp = () => {
-        const val = parseInt(scoreEl.value);
-        if (typeEl.value === 'Percentile' && !isNaN(val) && val >= 1 && val <= 99) {
-          interpEl.textContent = val <= 24 ? 'Below Average Range' : val <= 74 ? 'Average Range' : 'Above Average Range';
-          interpEl.classList.remove('hidden');
-        } else {
-          interpEl.classList.add('hidden');
-        }
+    host.querySelectorAll('[data-acadblock]').forEach(block => {
+      const sync = () => {
+        const picked = !!block.querySelector('input[type="radio"]:checked');
+        block.classList.toggle('acad-active', picked);
       };
-      scoreEl.addEventListener('input', updateInterp);
-      typeEl.addEventListener('change', updateInterp);
-      row.querySelector('.iep-assess-remove-btn').addEventListener('click', () => row.remove());
-      container.appendChild(row);
-    };
-    const addBtn = host.querySelector('#addAssessmentBtn');
-    if (addBtn) addBtn.addEventListener('click', addRow);
+      block.querySelectorAll('input[type="radio"]').forEach(r =>
+        r.addEventListener('change', sync));
+      sync();
+    });
   },
 
   // =============================================================
@@ -1211,6 +1243,9 @@ const aceIepBuilder = {
     const g = id => document.getElementById(id);
     const gv = id => (g(id) || {}).value || '';
     const checkVals = name => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el => el.value);
+    // Chip rows are radio groups, so the selected value comes off the group,
+    // not off an element id the way a <select> did.
+    const radioVal = name => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || '';
 
     const ACAD = [
       { key: 'literacy', label: 'Literacy' },
@@ -1223,7 +1258,7 @@ const aceIepBuilder = {
       const barriers = Array.from(document.querySelectorAll('input.acad-barrier'))
         .filter(cb => cb.checked && cb.id.startsWith(prefix))
         .map(cb => ({ concept: cb.id.slice(prefix.length), value: cb.value }));
-      return { key: s.key, label: s.label, level: gv('acad-perf-' + s.key), barriers };
+      return { key: s.key, label: s.label, level: radioVal('acad-perf-' + s.key), barriers };
     });
 
     const functionalDomains = this.FUNC_DOMAINS.map(d => {
@@ -1244,11 +1279,10 @@ const aceIepBuilder = {
       disability: gv('disability').trim(),
       secondaryDisability: gv('secondaryDisability'),
       acStrengths: checkVals('ac-strength'),
-      acStrengthsOther: gv('str-ac-other').trim(),
       fnStrengths: checkVals('fn-strength'),
-      fnStrengthsOther: gv('str-fn-other').trim(),
       academicSubjects,
-      attRate: gv('att-rate'), attPattern: gv('att-pattern'), attImpact: gv('att-impact'),
+      evalResults: gv('eval-results').trim(),
+      attLevel: radioVal('att-level'),
       functionalDomains,
       bip: student.has_bip ? 'Yes' : 'No',
       // disability sub-blocks
@@ -1285,6 +1319,8 @@ const aceIepBuilder = {
     add('academic',   this.narrSnapshot(d));                       // snapshot/eligibility intro
     add('strengths',  this.narrStrengths(d));                      // strengths
     add('academic',   this.narrAcademic(d, stated));               // academic domains + attributed TF1 + IL Standards
+    add('academic',   this.narrEvaluation(d));                     // evaluation summary, verbatim
+    add('academic',   this.narrAttendance(d));                     // attendance present level + its instructional impact
     add('impact',     this.narrAdverseImpactAcademic(d, stated));  // adverse impact (academic) → Impact only
     add('functional', this.narrFunctional(d, stated));             // functional obs + TF1 corroboration + BIP
     add('impact',     this.narrAdverseImpactFunctional(d, stated));// adverse impact (functional) → Impact only
@@ -1318,8 +1354,8 @@ const aceIepBuilder = {
   // (2) Strengths (TA1-sourced strengths arrive in 3.10b)
   narrStrengths(d) {
     const name = d.name || 'This student';
-    const ac = [...(d.acStrengths || []), d.acStrengthsOther].filter(Boolean);
-    const fn = [...(d.fnStrengths || []), d.fnStrengthsOther].filter(Boolean);
+    const ac = (d.acStrengths || []).filter(Boolean);
+    const fn = (d.fnStrengths || []).filter(Boolean);
     if (ac.length && fn.length) {
       return `${name} demonstrates a range of academic and functional strengths, including ${this._naturalList(ac.map(s => s.toLowerCase()))}. Beyond the classroom, they also show strengths in ${this._naturalList(fn.map(s => s.toLowerCase()))}.`;
     }
@@ -1399,6 +1435,34 @@ const aceIepBuilder = {
       }
       return s;
     });
+  },
+
+  // (3b) Evaluation summary, in the case manager's own words. Passed through
+  // with nothing but a closing period added — this is clinical content, and
+  // rephrasing it risks changing what a report actually said.
+  narrEvaluation(d) {
+    const t = (d.evalResults || '').trim();
+    if (!t) return '';
+    return /[.!?]$/.test(t) ? t : t + '.';
+  },
+
+  // (3c) Attendance present level. The absenteeism band carries its own
+  // instructional consequence, so a single selection produces both the fact
+  // and its impact — which is what the three old dropdowns were asking the
+  // case manager to spell out by hand. Bands follow the Illinois chronic-
+  // absenteeism definition (10% of enrolled days, excused or not).
+  narrAttendance(d) {
+    const name = d.name || 'This student';
+    return ({
+      'Satisfactory (fewer than 5% of days missed)':
+        `${name}'s attendance is consistent and does not present a barrier to accessing instruction.`,
+      'Mild concern (5–9% of days missed)':
+        `${name}'s attendance is generally consistent, though absences have periodically required re-teaching of missed content.`,
+      'Chronic absenteeism (10–19% of days missed)':
+        `${name} meets the State definition of chronic absenteeism, having missed 10–19% of school days. These absences produce gaps in instruction that compound across content areas and reduce opportunities for the repeated practice ${name} needs to build fluency.`,
+      'Severe chronic absenteeism (20%+ of days missed)':
+        `${name} has missed 20% or more of school days. At this level, attendance is a primary barrier to progress: sustained access to instruction has to be established for the supports described above to take effect.`
+    })[d.attLevel] || '';
   },
 
   // (4) Functional performance — leads with the case manager's own written

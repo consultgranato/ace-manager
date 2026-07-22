@@ -73,7 +73,7 @@ const aceHomepage = {
 
     if (subtitleEl) {
       const today = window.aceUtils.formatLongDate(new Date());
-      const sy = window.aceUtils.currentSchoolYear();
+      const sy = await window.aceUtils.currentSchoolYearLabel();
       subtitleEl.textContent = `${today}  ·  ${sy} school year`;
     }
   },

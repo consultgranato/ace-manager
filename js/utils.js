@@ -115,14 +115,76 @@ const aceUtils = {
     return `${y}-${m}-${day}`;
   },
 
-  // Current school year as "2025–2026" based on today
-  currentSchoolYear() {
-    const d = new Date();
-    const month = d.getMonth(); // 0 = January
+  // Fallback school-year label for when the org has no calendar configured. A
+  // school year is named for the calendar year it starts in and rolls over in
+  // June, once the previous one has ended — so a summer date reports the
+  // UPCOMING year (what a case manager is preparing for), never the one that
+  // just finished.
+  currentSchoolYear(todayISO) {
+    const d = todayISO ? this.parseLocalDate(todayISO) : new Date();
     const year = d.getFullYear();
-    // School year flips in August (month 7)
-    if (month >= 7) return `${year}–${year + 1}`;
-    return `${year - 1}–${year}`;
+    return d.getMonth() >= 5 ? `${year}–${year + 1}` : `${year - 1}–${year}`;
+  },
+
+  // School-year label from the org's configured [{start, end}] bounds — the
+  // same single source of truth the compliance clock counts school days
+  // against. In session: that year. Between years: the next one to start.
+  // No bounds on file: the date heuristic above.
+  schoolYearLabelFrom(years, todayISO) {
+    const today = todayISO || this.todayISO();
+    const ranges = (Array.isArray(years) ? years : [])
+      .filter(y => y && y.start && y.end)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    const label = (r) =>
+      `${this.parseLocalDate(r.start).getFullYear()}–${this.parseLocalDate(r.end).getFullYear()}`;
+
+    const inSession = ranges.find(r => today >= r.start && today <= r.end);
+    if (inSession) return label(inSession);
+    const upcoming = ranges.find(r => r.start > today);
+    if (upcoming) return label(upcoming);
+    return this.currentSchoolYear(today);
+  },
+
+  // Current school year as "2026–2027", read from the org calendar. Every
+  // user-facing school-year string goes through here so the app never shows
+  // two different years on two different screens.
+  async currentSchoolYearLabel() {
+    let years = [];
+    try {
+      const org = window.aceAuth ? await window.aceAuth.getOrg() : null;
+      const sy = org && org.settings && org.settings.school_years;
+      if (Array.isArray(sy)) years = sy;
+      else if (org && org.settings && org.settings.school_year) years = [org.settings.school_year];
+    } catch (e) { /* fall through to the date heuristic */ }
+    return this.schoolYearLabelFrom(years);
+  },
+
+  // URL-safe random token for an unauthenticated share link. These links are
+  // the only thing between the public internet and student PII, so the bytes
+  // come from crypto and the length stays well clear of guessing range: 14
+  // base62 characters is ~83 bits. Rejection sampling (bytes >= 248 are
+  // discarded) keeps the distribution uniform — a plain modulo would bias the
+  // first four letters of the alphabet.
+  makeShareToken(prefix, length = 14) {
+    const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const limit = 256 - (256 % ALPHABET.length);
+    const buf = new Uint8Array(length * 2);
+    let out = '';
+    while (out.length < length) {
+      crypto.getRandomValues(buf);
+      for (let i = 0; i < buf.length && out.length < length; i++) {
+        if (buf[i] < limit) out += ALPHABET[buf[i] % ALPHABET.length];
+      }
+    }
+    return prefix ? `${prefix}-${out}` : out;
+  },
+
+  // Short share URL. /f.html routes to the right form off the token prefix, so
+  // the path a teacher or parent receives stays short. Links minted before
+  // this (pointing straight at pages/*-form.html) keep working untouched.
+  shareLinkURL(token) {
+    const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
+    return `${window.location.origin}${basePath}f.html?t=${token}`;
   },
 
   // HTML escape helper

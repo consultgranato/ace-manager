@@ -4,19 +4,16 @@
 
 const aceTransition = {
   makeToken() {
-    const arr = new Uint8Array(18);
-    crypto.getRandomValues(arr);
-    return 'ta-' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    return window.aceUtils.makeShareToken('ta');
   },
 
-  cycleLabel(student) {
-    const yr = window.aceUtils.currentSchoolYear ? window.aceUtils.currentSchoolYear() : '';
+  async cycleLabel() {
+    const yr = await window.aceUtils.currentSchoolYearLabel();
     return `${yr ? yr + ' ' : ''}Transition`.trim();
   },
 
   linkURL(token) {
-    const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
-    return `${window.location.origin}${basePath}pages/transition-form.html?t=${token}`;
+    return window.aceUtils.shareLinkURL(token);
   },
 
   // Get the most recent assessment for the student (active or the latest completed)
@@ -58,7 +55,7 @@ const aceTransition = {
         case_manager_id: user.id,
         meeting_id: meetingId,
         token,
-        cycle_label: this.cycleLabel(student),
+        cycle_label: await this.cycleLabel(),
         active: true,
         status: 'pending'
       })

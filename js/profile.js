@@ -246,14 +246,14 @@ const aceProfile = {
       window.aceGoals.render(document.getElementById('goalsHost'), this.state.student);
     }
 
-    // Append the Meeting Notes card — it has custom dynamic content
+    // Append the Meeting Info card — it has custom dynamic content
     const meetingCard = document.createElement('div');
     meetingCard.className = 'profile-card profile-card-meetings';
     meetingCard.dataset.card = 'meetings';
     meetingCard.innerHTML = `
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.calendar(18)}</div>
-        <div class="card-title">Meeting Notes</div>
+        <div class="card-title">Meeting Info</div>
         <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="meetingSectionHost">

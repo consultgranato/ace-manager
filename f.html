@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Opening your form…</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260722023607" />
+</head>
+<body>
+  <div class="page-content" style="max-width:520px;margin:80px auto;padding:0 20px;">
+    <div class="ace-card" id="linkCard">
+      <h2>Opening your form…</h2>
+      <p class="muted">One moment.</p>
+    </div>
+  </div>
+
+  <script>
+    // Short share links land here: /f.html?t=tf-XXXXXXXXXXXXXX
+    // The token prefix says which form to open, so the shareable URL stays
+    // short without every form needing its own vanity path. Links minted
+    // before this pointed straight at pages/*-form.html and still work — this
+    // page only ever forwards, it never validates. The form itself resolves
+    // the token and shows the real "link not found" state.
+    (function () {
+      var FORMS = {
+        'tf': 'pages/teacher-form.html',
+        'pf': 'pages/parent-form.html',
+        'ta': 'pages/transition-form.html'
+      };
+      var token = new URLSearchParams(window.location.search).get('t') || '';
+      var dest = FORMS[token.split('-')[0]];
+
+      if (token && dest) {
+        // replace() so the short link doesn't sit in history behind the form.
+        window.location.replace(dest + '?t=' + encodeURIComponent(token));
+        return;
+      }
+
+      document.getElementById('linkCard').innerHTML =
+        '<h2>This link isn\'t valid</h2>' +
+        '<p class="muted">The address may have been cut off in an email or message. ' +
+        'Ask the case manager who sent it for a fresh link.</p>';
+    })();
+  </script>
+</body>
+</html>

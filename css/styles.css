@@ -1044,26 +1044,19 @@ h3 { font-size: 18px; }
   color: var(--text);
 }
 
-/* Suggested barrier highlights */
-.iep-check-suggested {
+/* Barriers the teacher feedback points at. Amber only while unselected — once
+   the case manager picks it, it reads as a normal selected chip. */
+.iep-chip-suggested > span {
   background: #fffbeb;
-  border-color: #fde68a !important;
+  border-color: #fde68a;
 }
-
-.iep-barrier-suggest-tag {
-  display: inline-block;
-  font-size: 9.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.iep-chip-suggested input:not(:checked) + span .iep-chip-tag {
   color: #92400e;
   background: #fef3c7;
   border: 1px solid #fde68a;
   padding: 1px 5px;
   border-radius: 999px;
   white-space: nowrap;
-  margin-left: 4px;
-  vertical-align: middle;
 }
 
 /* 3.15 — Strength suggestion chips (TA1) + parent reference note (PF1) */
@@ -4110,20 +4103,38 @@ textarea:focus {
 .iep-acad-block { padding: 16px 18px; background: var(--bg-subtle); border: 1px solid var(--border); border-left: 4px solid var(--purple-tint); border-radius: var(--radius-md); margin-bottom: 14px; }
 .iep-acad-block-title { font-size: 13.5px; font-weight: 700; color: var(--purple-primary); margin-bottom: 14px; }
 
-.iep-acad-assess-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.iep-acad-add-btn { font-size: 12px; font-weight: 700; color: var(--purple-primary); background: white; border: 1px solid var(--purple-tint); border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: inherit; transition: background var(--t-fast) var(--ease); }
-.iep-acad-add-btn:hover { background: var(--purple-tint); }
-
-.iep-assess-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; padding: 10px 12px; background: white; border: 1px solid var(--border); border-radius: var(--radius-md); }
-.iep-assess-name-wrap { flex: 1; min-width: 140px; }
-.iep-assess-score-wrap { display: flex; align-items: center; gap: 6px; }
-.iep-assess-score-input { width: 76px; }
-.iep-assess-interp { font-size: 10px; font-weight: 700; color: var(--purple-primary); white-space: nowrap; }
-.iep-assess-interp.hidden { display: none; }
-.iep-assess-remove-btn { background: none; border: none; cursor: pointer; font-size: 20px; line-height: 1; color: var(--text-faint); padding: 0 4px; font-family: inherit; }
-.iep-assess-remove-btn:hover { color: #dc2626; }
-
 .iep-textarea { resize: vertical; font-family: inherit; }
+
+/* ============================================================
+   Phase 4b.1 — chip inputs for present-levels entry
+   The input stays in the DOM (it holds the state and keeps the
+   control keyboard- and screen-reader-accessible); the visible
+   chip is the adjacent span.
+   ============================================================ */
+
+.iep-chiprow, .iep-chipgrid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+.iep-chip { display: inline-flex; position: relative; cursor: pointer; }
+.iep-chip input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.iep-chip > span {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 7px 13px; border: 1px solid var(--border); border-radius: 999px;
+  background: white; font-size: 13px; color: var(--text);
+  transition: all var(--t-fast) var(--ease);
+}
+.iep-chip:hover > span { border-color: var(--purple-primary); background: var(--purple-tint); }
+.iep-chip input:checked + span { background: var(--purple-primary); border-color: var(--purple-primary); color: white; font-weight: 600; }
+.iep-chip input:focus-visible + span { outline: 2px solid var(--purple-primary); outline-offset: 2px; }
+.iep-chip-hint { font-size: 11px; opacity: 0.7; }
+.iep-chip-tag { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+
+.iep-chip-add { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.iep-chip-add input { flex: 1; min-width: 0; }
+.iep-chip-add-btn { font-size: 12px; font-weight: 700; color: var(--purple-primary); background: white; border: 1px solid var(--purple-tint); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; font-family: inherit; transition: background var(--t-fast) var(--ease); }
+.iep-chip-add-btn:hover { background: var(--purple-tint); }
+
+/* A subject's barriers only matter once it has a performance level. */
+.iep-acad-barriers { display: none; }
+.iep-acad-block.acad-active .iep-acad-barriers { display: block; }
 
 /* ===== Phase 4a.4 — Team, unassigned holding, hard-delete ===== */
 
@@ -4232,11 +4243,6 @@ textarea:focus {
 .goal-history-del { flex-shrink: 0; }
 
 /* Services card */
-.svc-owed {
-  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
-  color: var(--warning); background: #fffbeb; border: 1px solid #fde68a;
-  border-radius: var(--radius-md); padding: 5px 10px; margin-bottom: 10px;
-}
 .svc-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff; padding: 10px 12px; margin-bottom: 8px; }
 .svc-info { min-width: 0; }
 .svc-name { font-size: 13.5px; font-weight: 600; color: var(--text); }

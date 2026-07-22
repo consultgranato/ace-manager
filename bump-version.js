@@ -14,7 +14,7 @@
 //   1. Generates a new BUILD_VERSION (UTC timestamp, YYYYMMDDHHMMSS).
 //   2. Writes it into js/config.js  ->  window.BUILD_VERSION = '<version>';
 //   3. Refreshes ?v=<BUILD_VERSION> on every LOCAL <script src> and stylesheet
-//      <link href> in index.html and pages/*.html.
+//      <link href> in every root-level *.html and pages/*.html.
 //
 // The CDN Supabase tag is a full https:// URL, so the local-path regex below
 // (js/… or css/… only) never matches it — it is left untouched, as required.
@@ -38,7 +38,9 @@ fs.writeFileSync(configPath, config);
 
 // 3. Refresh ?v= on local js/ and css/ refs across all HTML pages.
 const htmlFiles = [
-  path.join(__dirname, 'index.html'),
+  ...fs.readdirSync(__dirname)
+    .filter(f => f.endsWith('.html'))
+    .map(f => path.join(__dirname, f)),
   ...fs.readdirSync(path.join(__dirname, 'pages'))
     .filter(f => f.endsWith('.html'))
     .map(f => path.join(__dirname, 'pages', f)),
