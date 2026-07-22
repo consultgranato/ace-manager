@@ -4254,6 +4254,29 @@ textarea:focus {
 .svc-note { width: 100%; font-family: inherit; font-size: 13px; line-height: 1.5; resize: vertical; }
 .svc-note-status { font-size: 12px; min-height: 16px; margin-top: 3px; }
 
+/* Transition plan page (Phase 5.2) */
+.tp-page { max-width: 860px; margin: 0 auto; }
+.tp-header { margin-bottom: 22px; }
+.tp-header h1 { font-size: 24px; margin: 10px 0 6px; }
+.tp-save-status { font-size: 12px; color: var(--purple-primary); font-weight: 600; }
+.tp-ta-warn { display: flex; align-items: center; gap: 7px; margin-top: 10px; font-size: 13px; font-weight: 600; color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; border-radius: var(--radius-md); padding: 9px 12px; }
+.tp-gate-card { margin-top: 16px; }
+.tp-area { margin-bottom: 20px; }
+.tp-area-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.tp-area-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--purple-primary); display: block; margin-bottom: 8px; }
+.tp-area-head .tp-area-title { margin-bottom: 0; }
+.tp-goal-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff; padding: 10px 12px; margin-bottom: 8px; }
+.tp-goal-text { font-size: 13.5px; line-height: 1.5; }
+.tp-empty { font-size: 13px; margin: 0 0 8px; }
+.tp-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; margin: 6px 0; cursor: pointer; }
+.tp-check input { accent-color: var(--purple-primary); width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
+.tp-il-considered { margin-top: 8px; }
+.tp-checklist { display: flex; flex-direction: column; gap: 6px; }
+.tp-checklist-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; padding: 7px 10px; border-radius: var(--radius-sm); }
+.tp-checklist-row.ok { background: #ecfdf5; color: #065f46; }
+.tp-checklist-row.missing { background: #fef2f2; color: #991b1b; }
+.tp-checklist-icon { flex-shrink: 0; margin-top: 1px; }
+
 /* Documents card */
 .doc-row {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;

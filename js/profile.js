@@ -334,6 +334,31 @@ const aceProfile = {
       window.aceTransition.render(document.getElementById('transitionHost'), this.state.student);
     }
 
+    // Append the Transition Plan card (Phase 5.2) — gate-aware entry point
+    const tpCard = document.createElement('div');
+    tpCard.className = 'profile-card profile-card-transition-plan';
+    tpCard.dataset.card = 'transition-plan';
+    const tpEligible = window.aceTransitionPlan
+      ? window.aceTransitionPlan.isEligible(this.state.student) : false;
+    tpCard.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon">${window.aceIcons.compass(18)}</div>
+        <div class="card-title">Transition Plan</div>
+        <div class="card-status-dot dot-gray"></div>
+      </div>
+      <div class="card-status-text">${tpEligible
+        ? 'Postsecondary goals, services, courses of study & Indicator 13 checklist'
+        : 'Not required yet — unlocks at age 14½'}</div>
+      <button class="card-action" ${tpEligible ? '' : 'disabled'}>Open Transition Plan</button>
+    `;
+    host.appendChild(tpCard);
+    const tpBtn = tpCard.querySelector('.card-action');
+    if (tpBtn && tpEligible) {
+      tpBtn.addEventListener('click', () => {
+        window.location.href = `${this.basePath()}pages/transition-plan.html?id=${this.state.student.id}`;
+      });
+    }
+
     // Append the Services & Minutes card — live, custom content
     const svcCard = document.createElement('div');
     svcCard.className = 'profile-card profile-card-services';
