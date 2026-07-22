@@ -4146,6 +4146,24 @@ textarea:focus {
 .holding-badge { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; background: var(--purple-tint); color: var(--purple-primary); display: flex; align-items: center; justify-content: center; }
 .holding-card h1 { font-size: 20px; margin: 0 0 10px; color: var(--text); }
 .holding-card p { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin: 0 0 22px; }
+.holding-join { margin-bottom: 16px; text-align: left; }
+.holding-join input { text-transform: uppercase; letter-spacing: 0.08em; }
+.holding-newdistrict-toggle { border: none; background: none; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--purple-primary); cursor: pointer; padding: 0; margin-bottom: 14px; }
+.holding-newdistrict { display: flex; flex-direction: column; gap: 8px; text-align: left; margin-bottom: 16px; }
+.holding-card .btn-secondary { margin-top: 4px; }
+
+/* Org admin: branding, catalog, danger zone (Phase 5.4) */
+.org-brand-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+@media (max-width: 640px) { .org-brand-grid { grid-template-columns: 1fr; } }
+.org-brand-grid .label-text { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 4px; }
+.org-brand-grid input[type="color"] { width: 52px; height: 36px; padding: 2px; border: 1px solid var(--border-input); border-radius: var(--radius-sm); background: #fff; cursor: pointer; }
+.team-code-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.team-code { font-size: 17px; font-weight: 700; letter-spacing: 0.14em; background: var(--purple-tint); color: var(--purple-primary); border-radius: var(--radius-sm); padding: 7px 14px; }
+.settings-danger-card { border-color: #fecaca; }
+.settings-danger-card .label-text { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 4px; }
+.settings-danger-btn { color: #b91c1c; border-color: #fecaca; }
+.settings-danger-btn:hover:not(:disabled) { background: #fef2f2; border-color: #b91c1c; }
+.settings-danger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Team page */
 .team-add-row { display: flex; gap: 8px; align-items: center; }

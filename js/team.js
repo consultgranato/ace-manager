@@ -49,6 +49,23 @@ const aceTeam = {
         </section>
 
         <section class="settings-section">
+          <h2 class="settings-section-title">District join code</h2>
+          <div class="settings-card">
+            <p class="muted settings-note" style="margin-top:0;">
+              Anyone who creates an Ace Manager account can join your organization as a
+              case manager by entering this code — at signup or from the waiting screen.
+              Rotate it any time; the old code stops working immediately.
+            </p>
+            <div class="team-code-row">
+              <code class="team-code" id="teamJoinCode">${window.aceUtils.escapeHtml(await this._currentJoinCode()) || '— not generated yet —'}</code>
+              <button class="btn-secondary" id="teamCodeCopyBtn" type="button">${window.aceIcons.copy(14)} Copy</button>
+              <button class="btn-secondary" id="teamCodeRotateBtn" type="button">${window.aceIcons.rotateCcw(14)} ${await this._currentJoinCode() ? 'Rotate' : 'Generate'}</button>
+            </div>
+            <div id="teamCodeStatus" class="team-status muted"></div>
+          </div>
+        </section>
+
+        <section class="settings-section">
           <h2 class="settings-section-title">Members</h2>
           <div id="teamList" class="settings-card-list">
             <div class="muted">Loading team…</div>
@@ -62,7 +79,54 @@ const aceTeam = {
     if (addBtn) addBtn.addEventListener('click', () => this.addMember());
     if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.addMember(); });
 
+    this._wireJoinCode();
     await this.loadTeam();
+  },
+
+  async _currentJoinCode() {
+    if (this._joinCode === undefined) {
+      const org = await window.aceAuth.getOrg();
+      this._joinCode = (org && org.join_code) || '';
+    }
+    return this._joinCode;
+  },
+
+  _wireJoinCode() {
+    const copyBtn = document.getElementById('teamCodeCopyBtn');
+    const rotateBtn = document.getElementById('teamCodeRotateBtn');
+    const codeEl = document.getElementById('teamJoinCode');
+    const status = document.getElementById('teamCodeStatus');
+
+    if (copyBtn) copyBtn.addEventListener('click', async () => {
+      const code = this._joinCode;
+      if (!code) { status.textContent = 'Generate a code first.'; return; }
+      try { await navigator.clipboard.writeText(code); window.aceToast?.success('Code copied'); }
+      catch (e) { status.textContent = 'Could not copy — select the code text instead.'; }
+    });
+
+    if (rotateBtn) rotateBtn.addEventListener('click', async () => {
+      const hadCode = !!this._joinCode;
+      const go = !hadCode || await window.aceModal.openModal({
+        title: 'Rotate the join code?',
+        message: 'The current code stops working immediately. Anyone you have already added keeps their access — this only affects new joins.',
+        confirmLabel: 'Rotate code', onConfirm: async () => {}
+      });
+      if (!go) return;
+      rotateBtn.disabled = true;
+      const { data, error } = await window.aceSupabase.rpc('rotate_my_org_join_code');
+      rotateBtn.disabled = false;
+      if (error || !data || !data.success) {
+        status.className = 'team-status team-status-error';
+        status.textContent = (error && error.message) || 'Could not rotate the code.';
+        return;
+      }
+      this._joinCode = data.join_code;
+      if (codeEl) codeEl.textContent = data.join_code;
+      rotateBtn.innerHTML = `${window.aceIcons.rotateCcw(14)} Rotate`;
+      status.className = 'team-status team-status-ok';
+      status.textContent = hadCode ? 'Code rotated.' : 'Code generated — share it with your team.';
+      window.aceToast?.success(hadCode ? 'Join code rotated' : 'Join code generated');
+    });
   },
 
   async loadTeam() {

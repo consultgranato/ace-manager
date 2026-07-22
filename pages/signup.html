@@ -25,17 +25,16 @@
           <input type="text" id="fullName" required />
         </label>
         <label>School
-          <select id="schoolName" required>
-            <option value="" disabled selected>Select school...</option>
-            <option value="Niles North High School">Niles North High School</option>
-            <option value="Niles West High School">Niles West High School</option>
-          </select>
+          <input type="text" id="schoolName" required placeholder="Your school's name" autocomplete="organization" />
         </label>
         <label>Email
           <input type="email" id="email" required autocomplete="email" />
         </label>
         <label>Password
           <input type="password" id="password" required minlength="8" autocomplete="new-password" />
+        </label>
+        <label>District code <span style="font-weight:400;color:#888;">(optional — from your district admin)</span>
+          <input type="text" id="joinCode" maxlength="12" autocomplete="off" placeholder="e.g. 7KQ2XM4H" />
         </label>
         <div id="errorMsg" class="error-msg" style="display:none;"></div>
         <div id="successMsg" class="success-msg" style="display:none;"></div>
@@ -71,7 +70,8 @@
         const schoolName = document.getElementById('schoolName').value;
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const { data, error } = await window.aceAuth.signUp(email, password, fullName, schoolName);
+        const joinCode = document.getElementById('joinCode').value;
+        const { data, error } = await window.aceAuth.signUp(email, password, fullName, schoolName, joinCode);
         if (error) {
           errorMsg.textContent = error.message;
           errorMsg.style.display = 'block';

@@ -80,17 +80,78 @@ const aceSettings = {
 
         ${profile?.role === 'org_admin' ? `
         <section class="settings-section">
+          <h2 class="settings-section-title">Organization branding</h2>
+          <div class="settings-card">
+            <p class="muted settings-note" style="margin-top:0;">
+              What everyone in ${esc(org?.name || 'your organization')} sees: school name, logo, and accent color.
+            </p>
+            <div class="org-brand-grid">
+              <label><span class="label-text">School name</span>
+                <input type="text" id="brandSchool" value="${esc(org?.branding?.school_name || org?.school_name || '')}" /></label>
+              <label><span class="label-text">Logo URL</span>
+                <input type="text" id="brandLogo" value="${esc(org?.branding?.logo_url || '')}" placeholder="https://…/logo.png" /></label>
+              <label><span class="label-text">Accent color</span>
+                <input type="color" id="brandAccent" value="${esc(org?.branding?.accent || '#4c2c7b')}" /></label>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+              <button class="btn-primary" id="brandSaveBtn" type="button">Save branding</button>
+              <span id="brandStatus" class="muted" style="font-size:13px;"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2 class="settings-section-title">Course catalog</h2>
+          <div class="settings-card">
+            <p class="muted settings-note" style="margin-top:0;">
+              The classes available in the course picker, org-wide.
+              Currently <strong id="catalogCount">${Array.isArray(org?.course_catalog) ? org.course_catalog.length : 0}</strong> courses.
+              Import replaces the whole catalog: paste a JSON array of
+              {name, code, department, is_academic}, or CSV lines in the form
+              <code>name,code,department,academic|nonacademic</code>.
+            </p>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+              <button class="btn-secondary" id="catalogDownloadBtn" type="button">${window.aceIcons.fileText(14)} Download current catalog</button>
+            </div>
+            <textarea id="catalogImportText" class="doc-textarea" rows="6" placeholder='[{"name":"Freshman English","code":"ENYF03","department":"English","is_academic":true}]'></textarea>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+              <button class="btn-primary" id="catalogImportBtn" type="button">Import catalog</button>
+              <span id="catalogStatus" class="muted" style="font-size:13px;"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
           <h2 class="settings-section-title">Organization data export</h2>
           <div class="settings-card">
             <p class="muted settings-note" style="margin-top:0;">
               Download your organization's complete dataset as a single JSON file —
-              students, meetings, feedback, goals, services, and team. This is the
-              SOPPA "hand the district their data" export. Treat the file as
-              confidential student records.
+              students, meetings, feedback, assessments, goals, progress, probes,
+              transition plans, services, and team. This is the SOPPA "hand the
+              district their data" export. Treat the file as confidential student records.
             </p>
             <div style="display:flex;align-items:center;gap:12px;">
               <button class="btn-secondary" id="orgExportBtn" type="button">${window.aceIcons.fileText(15)} Export organization data</button>
               <span id="orgExportStatus" class="muted" style="font-size:13px;"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2 class="settings-section-title">Danger zone — purge organization data</h2>
+          <div class="settings-card settings-danger-card">
+            <p class="muted settings-note" style="margin-top:0;">
+              Permanently deletes <strong>every student record</strong> in
+              ${esc(org?.name || 'your organization')} — students, meetings, feedback,
+              assessments, transition plans, goals, progress data, probes, services,
+              and trackers. Team accounts, branding, the calendar, and the course
+              catalog remain. <strong>This cannot be undone.</strong> Export first.
+            </p>
+            <label><span class="label-text">Type the organization name (<strong>${esc(org?.name || '')}</strong>) to confirm</span>
+              <input type="text" id="purgeConfirmText" autocomplete="off" placeholder="${esc(org?.name || '')}" /></label>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+              <button class="btn-secondary settings-danger-btn" id="purgeBtn" type="button" disabled>Purge all student data</button>
+              <span id="purgeStatus" class="muted" style="font-size:13px;"></span>
             </div>
           </div>
         </section>` : ''}
@@ -121,7 +182,139 @@ const aceSettings = {
 
     this.initNonSchoolDays(org);
     this.initOrgExport();
+    if (profile?.role === 'org_admin') {
+      this.initBranding();
+      this.initCatalog(org);
+      this.initPurge(org);
+    }
     await this.renderArchivedList();
+  },
+
+  // ---- Org branding (Phase 5.4d) — org_admin only; RLS enforces -----------
+  initBranding() {
+    const btn = document.getElementById('brandSaveBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const status = document.getElementById('brandStatus');
+      const branding = {
+        school_name: document.getElementById('brandSchool').value.trim(),
+        logo_url: document.getElementById('brandLogo').value.trim(),
+        accent: document.getElementById('brandAccent').value
+      };
+      btn.disabled = true;
+      if (status) status.textContent = 'Saving…';
+      const { error } = await window.aceAuth.updateOrg({ branding });
+      btn.disabled = false;
+      if (error) {
+        if (status) status.textContent = 'Could not save branding.';
+        window.aceToast?.error(error.message || 'Could not save');
+        return;
+      }
+      if (status) status.textContent = 'Saved — reload to see it everywhere.';
+      window.aceToast?.success('Branding saved');
+      document.documentElement.style.setProperty('--purple-primary', branding.accent);
+    });
+  },
+
+  // ---- Course catalog manager (Phase 5.4a) --------------------------------
+  // Accepts a JSON array or CSV (name,code,department,academic|nonacademic).
+  _parseCatalog(text) {
+    const t = text.trim();
+    if (!t) return { error: 'Paste a catalog first.' };
+    if (t.startsWith('[')) {
+      let arr;
+      try { arr = JSON.parse(t); } catch (e) { return { error: 'That JSON does not parse: ' + e.message }; }
+      if (!Array.isArray(arr)) return { error: 'Expected a JSON array.' };
+      const bad = arr.findIndex(c => !c || typeof c.name !== 'string' || !c.name.trim());
+      if (bad >= 0) return { error: `Entry ${bad + 1} has no name.` };
+      return {
+        catalog: arr.map(c => ({
+          name: c.name.trim(),
+          code: (typeof c.code === 'string' && c.code.trim()) ? c.code.trim() : null,
+          department: (c.department || 'General').trim(),
+          is_academic: c.is_academic !== false
+        }))
+      };
+    }
+    const rows = t.split('\n').map(l => l.trim()).filter(Boolean);
+    const catalog = [];
+    for (let i = 0; i < rows.length; i++) {
+      const parts = rows[i].split(',').map(p => p.trim());
+      if (!parts[0]) return { error: `Line ${i + 1} has no course name.` };
+      catalog.push({
+        name: parts[0],
+        code: parts[1] || null,
+        department: parts[2] || 'General',
+        is_academic: !/^non/i.test(parts[3] || 'academic')
+      });
+    }
+    return { catalog };
+  },
+
+  initCatalog(org) {
+    const dl = document.getElementById('catalogDownloadBtn');
+    const imp = document.getElementById('catalogImportBtn');
+    const status = document.getElementById('catalogStatus');
+    if (dl) dl.addEventListener('click', () => {
+      const current = Array.isArray(org?.course_catalog) && org.course_catalog.length
+        ? org.course_catalog : (window.aceCourseCatalog || []);
+      const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'course-catalog.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+    if (imp) imp.addEventListener('click', async () => {
+      const parsed = this._parseCatalog(document.getElementById('catalogImportText').value);
+      if (parsed.error) { status.textContent = parsed.error; return; }
+      const ok = await window.aceModal.openModal({
+        title: `Replace the course catalog?`,
+        message: `The current catalog is replaced by the ${parsed.catalog.length} imported courses for everyone in the organization. Students' already-selected classes are unaffected.`,
+        confirmLabel: 'Replace catalog',
+        onConfirm: async () => {
+          const { error } = await window.aceAuth.updateOrg({ course_catalog: parsed.catalog });
+          if (error) throw error;
+        }
+      });
+      if (ok) {
+        window.aceCourseCatalog = parsed.catalog;
+        const count = document.getElementById('catalogCount');
+        if (count) count.textContent = parsed.catalog.length;
+        status.textContent = `Imported ${parsed.catalog.length} courses.`;
+        window.aceToast?.success('Catalog imported');
+      }
+    });
+  },
+
+  // ---- SOPPA purge (Phase 5.4b) — typed-name confirmation, RPC re-verifies -
+  initPurge(org) {
+    const input = document.getElementById('purgeConfirmText');
+    const btn = document.getElementById('purgeBtn');
+    if (!input || !btn) return;
+    input.addEventListener('input', () => {
+      btn.disabled = input.value !== (org?.name || '');
+    });
+    btn.addEventListener('click', async () => {
+      const status = document.getElementById('purgeStatus');
+      const ok = await window.aceModal.openModal({
+        title: 'Purge ALL student data?',
+        message: `Every student record in ${org?.name} will be permanently deleted. There is no undo and no recovery. Only proceed if you have exported the data and the district has requested this.`,
+        confirmLabel: 'Purge permanently', variant: 'danger',
+        onConfirm: async () => {
+          const { data, error } = await window.aceSupabase.rpc('purge_my_org_data', { p_confirm_name: input.value });
+          if (error) throw error;
+          if (!data || !data.success) throw new Error('Purge did not run');
+          const d = data.deleted || {};
+          if (status) status.textContent = `Purged: ${d.students ?? 0} students and all related records.`;
+        }
+      });
+      if (ok) {
+        window.aceToast?.success('Organization data purged');
+        input.value = '';
+        btn.disabled = true;
+      }
+    });
   },
 
   // ---- Org data export (SOPPA) — org_admin only; RPC enforces the role ----

@@ -4,14 +4,17 @@
 
 const aceAuth = {
 
-  async signUp(email, password, fullName, schoolName) {
+  // joinCode (optional) rides in user metadata; the holding screen redeems it
+  // via join_org_with_code on the first authenticated load (Phase 5.4c).
+  async signUp(email, password, fullName, schoolName, joinCode) {
     const { data, error } = await window.aceSupabase.auth.signUp({
       email: email,
       password: password,
       options: {
         data: {
           full_name: fullName,
-          school_name: schoolName
+          school_name: schoolName,
+          join_code: (joinCode || '').trim() || null
         }
       }
     });
