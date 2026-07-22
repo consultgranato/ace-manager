@@ -46,9 +46,9 @@ const htmlFiles = [
     .map(f => path.join(__dirname, 'pages', f)),
 ];
 
-// Matches  src|href="(../)?(js|css)/<file>.(js|css)"  with an optional existing
-// ?v=… suffix that gets replaced. Full-URL CDN refs do not match.
-const refRe = /((?:src|href)="(?:\.\.\/)?(?:js|css)\/[^"?]+\.(?:js|css))(?:\?v=[^"]*)?"/g;
+// Matches  src|href="(../)?(js|css|data)/<file>.(js|css)"  with an optional
+// existing ?v=… suffix that gets replaced. Full-URL CDN refs do not match.
+const refRe = /((?:src|href)="(?:\.\.\/)?(?:js|css|data)\/[^"?]+\.(?:js|css))(?:\?v=[^"]*)?"/g;
 
 for (const file of htmlFiles) {
   const html = fs.readFileSync(file, 'utf8');

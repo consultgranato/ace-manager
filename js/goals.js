@@ -38,20 +38,26 @@ const aceGoals = {
       .order('goal_type', { ascending: true })
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: true });
-    if (error) { console.error('Goals load failed:', error); this._cache[studentId] = { goals: [], entriesByGoal: {} }; return; }
+    if (error) { console.error('Goals load failed:', error); this._cache[studentId] = { goals: [], entriesByGoal: {}, probesByGoal: {} }; return; }
 
     const entriesByGoal = {};
+    const probesByGoal = {};
     if (goals && goals.length) {
-      const { data: entries } = await window.aceSupabase
-        .from('goal_progress_entries')
-        .select('*')
-        .in('goal_id', goals.map(g => g.id))
-        .order('entry_date', { ascending: true });
+      const ids = goals.map(g => g.id);
+      const [{ data: entries }, { data: probes }] = await Promise.all([
+        window.aceSupabase.from('goal_progress_entries').select('*')
+          .in('goal_id', ids).order('entry_date', { ascending: true }),
+        window.aceSupabase.from('probes').select('id, goal_id, token, status, active, kind, score, created_at, items')
+          .in('goal_id', ids).order('created_at', { ascending: true })
+      ]);
       (entries || []).forEach(e => {
         (entriesByGoal[e.goal_id] = entriesByGoal[e.goal_id] || []).push(e);
       });
+      (probes || []).forEach(p => {
+        (probesByGoal[p.goal_id] = probesByGoal[p.goal_id] || []).push(p);
+      });
     }
-    this._cache[studentId] = { goals: goals || [], entriesByGoal };
+    this._cache[studentId] = { goals: goals || [], entriesByGoal, probesByGoal };
   },
 
   _paint() {
@@ -62,9 +68,10 @@ const aceGoals = {
     const annual = goals.filter(g => g.goal_type === 'annual');
     const transition = goals.filter(g => g.goal_type === 'transition');
 
+    const probesByGoal = this._cache[student.id].probesByGoal || {};
     const section = (label, list) => !list.length ? '' : `
       <div class="goals-group-label muted">${label}</div>
-      ${list.map(g => this._goalRowHTML(g, entriesByGoal[g.id] || [])).join('')}`;
+      ${list.map(g => this._goalRowHTML(g, entriesByGoal[g.id] || [], probesByGoal[g.id] || [])).join('')}`;
 
     host.innerHTML = `
       ${goals.length === 0 ? '<p class="muted" style="font-size:13px;margin:0 0 10px;">No goals yet. Add one, or start from a suggestion below.</p>' : ''}
@@ -74,9 +81,10 @@ const aceGoals = {
       <button class="card-action" id="goalAddBtn">${window.aceIcons.plus(14)} New Goal</button>
     `;
 
+    // New Goal opens the bank first (browse → prefill); "Write my own" in the
+    // bank drawer falls through to the empty builder.
     host.querySelector('#goalAddBtn').addEventListener('click', async () => {
-      const r = await window.aceGoalBuilder.open(student);
-      if (r && r.confirmed) await this.render(host, student);
+      await this._openFromBank(null);
     });
 
     host.querySelectorAll('[data-goal-action]').forEach(btn => {
@@ -97,7 +105,82 @@ const aceGoals = {
     this._renderSuggestions();
   },
 
-  _goalRowHTML(g, entries) {
+  // Bank browse → builder prefill. `filter` narrows the bank (domain/search);
+  // `fallbackSeed` is used when the case manager picks "Write my own".
+  async _openFromBank(filter, fallbackSeed) {
+    const student = this._student;
+    let seed = fallbackSeed || null;
+    if (window.aceGoalBankUI) {
+      const pick = await window.aceGoalBankUI.open(student, filter || {});
+      if (pick === null) return;                 // dismissed
+      if (pick && pick !== 'custom') {
+        seed = {
+          goal_type: 'annual',
+          domain: pick.domain,
+          condition: pick.condition,
+          behavior: pick.behavior,
+          criterion: pick.criterion,
+          measurement_method: pick.measurement_method,
+          baseline_placeholder: pick.baseline_prompt,
+          objectives: pick.objectives,
+          bank_id: pick.id,
+          il_standard: pick.il_standard,
+          probe_pool: pick.probe_pool,
+          source_need: (fallbackSeed && fallbackSeed.source_need) || null
+        };
+      }
+    }
+    const r = await window.aceGoalBuilder.open(student, null, seed);
+    if (r && r.confirmed) await this.render(this._host, student);
+  },
+
+  // Probe lifecycle for a goal: waiting on a sent link, inside the two-week
+  // cycle, or due for a fresh probe. Only bank-pooled, active annual goals
+  // probe; everything else logs data manually as before.
+  _probeStatus(g, probes) {
+    if (!g.probe_pool || g.goal_type === 'transition' || g.status !== 'active') return null;
+    if (!window.ACE_PROBE_BANK || !window.ACE_PROBE_BANK.pools[g.probe_pool]) return null;
+    const pending = probes.filter(p => p.status === 'pending' && p.active);
+    if (pending.length) return { state: 'waiting', probe: pending[pending.length - 1] };
+    const completed = probes.filter(p => p.status === 'completed');
+    const last = completed[completed.length - 1];
+    if (last) {
+      const due = new Date(last.created_at);
+      due.setDate(due.getDate() + 14);
+      if (due > new Date()) return { state: 'scheduled', due };
+    }
+    return { state: 'due' };
+  },
+
+  _probeHTML(g, probes) {
+    const st = this._probeStatus(g, probes);
+    if (!st) return '';
+    const esc = window.aceUtils.escapeHtml;
+    const selfReport = window.ACE_PROBE_BANK.pools[g.probe_pool].type === 'self_report';
+    const srTag = selfReport ? ' <span class="probe-sr-tag" title="Scored from student self-report — review before reporting">self-report</span>' : '';
+
+    if (st.state === 'waiting') {
+      return `
+        <div class="probe-box">
+          <div class="probe-label">Probe sent — auto-scores into the graph when ${esc(this._student.first_name)} submits${srTag}</div>
+          <div class="tf-link-row">
+            <input type="text" readonly class="tf-link-input" value="${esc(window.aceUtils.shareLinkURL(st.probe.token))}" />
+            <button class="btn-secondary tf-copy-btn" data-goal-action="probe-copy" data-goal-id="${g.id}" data-token="${esc(st.probe.token)}">${window.aceIcons.copy(13)} Copy</button>
+          </div>
+          <button class="goal-mini-btn" data-goal-action="probe-regen" data-goal-id="${g.id}">${window.aceIcons.rotateCcw(11)} Regenerate with fresh items</button>
+        </div>`;
+    }
+    if (st.state === 'scheduled') {
+      return `<div class="probe-line muted">${window.aceIcons.check(12)} Probe cycle current — next due ${esc(window.aceUtils.formatShortDate(window.aceUtils.dateToISO(st.due)))}${srTag}</div>`;
+    }
+    return `
+      <div class="probe-line probe-due">
+        <span>Probe due — a fresh set of items each cycle${srTag}</span>
+        <button class="goal-mini-btn" data-goal-action="probe-gen" data-goal-id="${g.id}">${window.aceIcons.plus(11)} Generate probe</button>
+      </div>`;
+  },
+
+  _goalRowHTML(g, entries, probes) {
     const esc = window.aceUtils.escapeHtml;
     const c = g.criterion || {};
     const valued = entries.filter(e => e.value != null);
@@ -130,6 +213,7 @@ const aceGoals = {
         ${g.baseline ? `<div class="goal-baseline muted">Baseline: ${esc(g.baseline)}</div>` : ''}
         ${progressLine ? `<div class="goal-progress-line muted">${progressLine}</div>` : ''}
         ${valued.length >= 2 ? this._chartSVG(valued, c) : ''}
+        ${this._probeHTML(g, probes || [])}
         <div class="goal-row-actions">
           ${g.goal_type !== 'transition' ? `<button class="goal-mini-btn" data-goal-action="log" data-goal-id="${g.id}">${window.aceIcons.plus(12)} Log data</button>` : ''}
           ${valued.length ? `<button class="goal-mini-btn" data-goal-action="history" data-goal-id="${g.id}">History</button>` : ''}
@@ -159,12 +243,69 @@ const aceGoals = {
       ${targetLine}<polyline points="${pts}" class="goal-chart-line" />${dots}</svg>`;
   },
 
+  // Sample a fresh probe from the goal's pool: items not used by any prior
+  // probe for this goal come first; once the pool is exhausted the exclusion
+  // resets so cycles keep drawing varied sets. Items are stored on the probe
+  // row WITH their answer keys — the anonymous RPC strips them, and scoring
+  // happens server-side in submit_probe.
+  async _generateProbe(g) {
+    const pool = window.ACE_PROBE_BANK && window.ACE_PROBE_BANK.pools[g.probe_pool];
+    if (!pool) { window.aceToast?.error('No probe pool for this goal'); return; }
+    const probes = (this._cache[this._student.id].probesByGoal || {})[g.id] || [];
+    const used = new Set();
+    probes.forEach(p => (p.items || []).forEach(it => used.add(it.id)));
+
+    const N = Math.min(8, pool.items.length);
+    let candidates = pool.items.filter(it => !used.has(it.id));
+    if (candidates.length < N) candidates = pool.items.slice();
+    const shuffled = candidates.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    const items = shuffled.slice(0, N);
+
+    // Supersede any stale pending probe so exactly one link is live per goal.
+    await window.aceSupabase.from('probes').update({ active: false })
+      .eq('goal_id', g.id).eq('status', 'pending');
+
+    const { error } = await window.aceSupabase.from('probes').insert({
+      student_id: this._student.id,
+      goal_id: g.id,
+      token: window.aceUtils.makeShareToken('pr'),
+      pool_key: g.probe_pool,
+      kind: pool.type,
+      cycle_label: window.aceUtils.todayISO(),
+      items
+    });
+    if (error) { console.error('Probe create failed:', error); window.aceToast?.error('Could not generate the probe'); return; }
+    window.aceToast?.success('Probe generated — copy the link and send it to the student');
+    await this.render(this._host, this._student);
+  },
+
   async _onAction(action, goalId) {
     const student = this._student;
     const g = this._cache[student.id].goals.find(x => x.id === goalId);
     if (!g) return;
 
-    if (action === 'edit') {
+    if (action === 'probe-gen') {
+      await this._generateProbe(g);
+
+    } else if (action === 'probe-copy') {
+      const btn = this._host.querySelector(`[data-goal-action="probe-copy"][data-goal-id="${goalId}"]`);
+      const url = window.aceUtils.shareLinkURL(btn.dataset.token);
+      try { await navigator.clipboard.writeText(url); window.aceToast?.success('Probe link copied'); }
+      catch (e) { window.aceToast?.error('Could not copy — select the link text instead'); }
+
+    } else if (action === 'probe-regen') {
+      const ok = await window.aceModal.openModal({
+        title: 'Regenerate this probe?',
+        message: 'The current link stops working and a fresh set of items is drawn. Any progress the student made on the old link is discarded.',
+        confirmLabel: 'Regenerate', variant: 'default', onConfirm: async () => {}
+      });
+      if (ok) await this._generateProbe(g);
+
+    } else if (action === 'edit') {
       const r = await window.aceGoalBuilder.open(student, g);
       if (r && r.confirmed) await this.render(this._host, student);
 
@@ -322,11 +463,18 @@ const aceGoals = {
     host.querySelectorAll('.goal-suggest-chip').forEach(btn => {
       btn.addEventListener('click', async () => {
         const c = unique[Number(btn.dataset.idx)];
-        const r = await window.aceGoalBuilder.open(this._student, null, {
+        const seed = {
           goal_type: c.goal_type || 'annual', domain: c.domain,
           transition_area: c.transition_area, behavior: c.behavior, source_need: c.need
-        });
-        if (r && r.confirmed) await this.render(this._host, this._student);
+        };
+        // Transition suggestions go straight to the builder (the bank holds
+        // annual goals); annual ones open the bank pre-filtered to the domain.
+        if (seed.goal_type === 'transition') {
+          const r = await window.aceGoalBuilder.open(this._student, null, seed);
+          if (r && r.confirmed) await this.render(this._host, this._student);
+        } else {
+          await this._openFromBank({ domain: c.domain }, seed);
+        }
       });
     });
   }

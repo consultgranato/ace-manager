@@ -19,7 +19,7 @@ const aceGoalBuilder = {
   DOMAINS: [
     'Reading', 'Written Language', 'Math', 'Communication',
     'Social/Emotional', 'Behavior', 'Executive Functioning',
-    'Independent Living', 'Vocational'
+    'Independent Living', 'Vocational', 'Self-Advocacy', 'Motor'
   ],
 
   TRANSITION_AREAS: [
@@ -74,15 +74,22 @@ const aceGoalBuilder = {
   VAGUE_VERBS: ['understand', 'know', 'learn', 'improve', 'be aware', 'appreciate', 'develop', 'work on', 'try', 'get better'],
 
   // Open the builder. `existing` = goal row to edit, or null.
-  // `seed` = optional prefill from a suggestion chip: { goal_type, domain,
-  // transition_area, behavior, source_need } — prefills only; never auto-saves.
+  // `seed` = optional prefill from a suggestion chip or a goal-bank entry:
+  // { goal_type, domain, transition_area, behavior, source_need } plus the
+  // bank fields { condition, criterion, measurement_method,
+  // baseline_placeholder, objectives, bank_id, il_standard, probe_pool } —
+  // prefills only; never auto-saves.
   open(student, existing = null, seed = null) {
     const esc = window.aceUtils.escapeHtml;
     const g = existing || {};
     const s = seed || {};
-    const crit = g.criterion || {};
+    const crit = g.criterion || s.criterion || {};
     const name = `${student.first_name} ${student.last_initial}.`;
     const goalType = g.goal_type || s.goal_type || 'annual';
+    // Objectives: structured, editable. Bank objectives carry a NAME token.
+    const objectives = (Array.isArray(g.objectives) && g.objectives.length ? g.objectives
+      : Array.isArray(s.objectives) ? s.objectives : [])
+      .map(o => String(o).replace(/\bNAME\b/g, student.first_name));
 
     const opt = (list, sel) => list.map(v =>
       `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(v)}</option>`).join('');
@@ -99,7 +106,7 @@ const aceGoalBuilder = {
           <select id="goalDomain">${opt(this.DOMAINS, g.domain || s.domain || this.DOMAINS[0])}</select>
 
           <label class="iep-label">Condition <span class="goalb-hint">the setup — materials, support, setting</span></label>
-          <input type="text" id="goalCondition" list="goalConditionList" placeholder="Given a grade-level text" value="${esc(g.condition || '')}" autocomplete="off" />
+          <input type="text" id="goalCondition" list="goalConditionList" placeholder="Given a grade-level text" value="${esc(g.condition || s.condition || '')}" autocomplete="off" />
           <datalist id="goalConditionList">${this.CONDITION_STARTERS.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
         </div>
 
@@ -133,10 +140,15 @@ const aceGoalBuilder = {
           </div>
 
           <label class="iep-label">As measured by</label>
-          <select id="goalMethod">${opt(this.MEASUREMENT_METHODS, g.measurement_method || this.MEASUREMENT_METHODS[0])}</select>
+          <select id="goalMethod">${opt(this.MEASUREMENT_METHODS, g.measurement_method || s.measurement_method || this.MEASUREMENT_METHODS[0])}</select>
 
           <label class="iep-label">Baseline <span class="goalb-hint">current performance, same metric</span></label>
-          <input type="text" id="goalBaseline" placeholder="Currently 55% accuracy across 3 probes" value="${esc(g.baseline || '')}" />
+          <input type="text" id="goalBaseline" placeholder="${esc(s.baseline_placeholder || 'Currently 55% accuracy across 3 probes')}" value="${esc(g.baseline || '')}" />
+
+          <label class="iep-label" style="margin-top:14px;">Short-term objectives <span class="goalb-hint">optional — stepping stones toward the goal</span></label>
+          <div id="goalObjectives" class="goalb-objectives"></div>
+          <button type="button" class="iep-chip-add-btn" id="goalObjAdd">+ Add objective</button>
+          ${s.il_standard || g.il_standard ? `<p class="goalb-hint" style="margin-top:8px;">Illinois Learning Standards: ${esc(g.il_standard || s.il_standard)}</p>` : ''}
         </div>
 
         <div class="goalb-meter" id="goalMeter"></div>
@@ -151,7 +163,7 @@ const aceGoalBuilder = {
       title: existing ? 'Edit goal' : `New goal for ${name}`,
       bodyHTML,
       saveLabel: existing ? 'Save goal' : 'Add goal',
-      afterRender: (body) => this._wire(body, student),
+      afterRender: (body) => this._wire(body, student, objectives),
       onSave: async (body) => {
         const parts = this._collect(body);
         const errEl = body.querySelector('#goalError');
@@ -175,6 +187,10 @@ const aceGoalBuilder = {
           baseline: parts.baseline,
           goal_text: this.assemble(parts, student),
           source_need: g.source_need || s.source_need || null,
+          objectives: parts.objectives,
+          bank_id: g.bank_id || s.bank_id || null,
+          il_standard: g.il_standard || s.il_standard || null,
+          probe_pool: parts.goal_type === 'transition' ? null : (g.probe_pool || s.probe_pool || null),
           updated_at: new Date().toISOString()
         };
         let resp;
@@ -193,7 +209,26 @@ const aceGoalBuilder = {
     });
   },
 
-  _wire(body, student) {
+  _wire(body, student, objectives) {
+    // Objectives editor: one editable row per objective, structured all the
+    // way to the database (iep_goals.objectives jsonb).
+    const objHost = body.querySelector('#goalObjectives');
+    const addBtn = body.querySelector('#goalObjAdd');
+    if (objHost && addBtn) {
+      const esc = window.aceUtils.escapeHtml;
+      const addRow = (text) => {
+        const row = document.createElement('div');
+        row.className = 'goalb-obj-row';
+        row.innerHTML = `
+          <textarea class="goalb-obj-input" rows="2" placeholder="Given the same condition, ${esc(student.first_name)} will…">${esc(text || '')}</textarea>
+          <button type="button" class="goal-mini-btn goal-mini-danger goalb-obj-del" aria-label="Remove objective">×</button>`;
+        row.querySelector('.goalb-obj-del').addEventListener('click', () => row.remove());
+        objHost.appendChild(row);
+      };
+      (objectives || []).forEach(o => addRow(o));
+      addBtn.addEventListener('click', () => addRow(''));
+    }
+
     const refresh = () => {
       const parts = this._collect(body);
       this._renderMeter(body, parts);
@@ -244,6 +279,9 @@ const aceGoalBuilder = {
       trials_y: v('goalTrialsY') === '' ? null : Number(v('goalTrialsY')),
       timeframe: v('goalTimeframe') || this.TIMEFRAMES[0]
     };
+    const objectives = goal_type === 'transition' ? [] :
+      Array.from(body.querySelectorAll('.goalb-obj-input'))
+        .map(el => el.value.trim()).filter(Boolean);
     return {
       goal_type,
       domain: v('goalDomain'),
@@ -252,7 +290,8 @@ const aceGoalBuilder = {
       behavior: v('goalBehavior'),
       criterion,
       measurement_method: goal_type === 'transition' ? '' : v('goalMethod'),
-      baseline: goal_type === 'transition' ? '' : v('goalBaseline')
+      baseline: goal_type === 'transition' ? '' : v('goalBaseline'),
+      objectives
     };
   },
 

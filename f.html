@@ -26,7 +26,8 @@
       var FORMS = {
         'tf': 'pages/teacher-form.html',
         'pf': 'pages/parent-form.html',
-        'ta': 'pages/transition-form.html'
+        'ta': 'pages/transition-form.html',
+        'pr': 'pages/probe-form.html'
       };
       var token = new URLSearchParams(window.location.search).get('t') || '';
       var dest = FORMS[token.split('-')[0]];

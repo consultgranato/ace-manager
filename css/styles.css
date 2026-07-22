@@ -4254,6 +4254,41 @@ textarea:focus {
 .svc-note { width: 100%; font-family: inherit; font-size: 13px; line-height: 1.5; resize: vertical; }
 .svc-note-status { font-size: 12px; min-height: 16px; margin-top: 3px; }
 
+/* Goal bank browser (Phase 5.3a) */
+.gbank-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-bottom: 8px; }
+@media (max-width: 600px) { .gbank-filters { grid-template-columns: 1fr; } }
+.gbank-count { font-size: 12px; margin-bottom: 8px; }
+.gbank-list { display: flex; flex-direction: column; gap: 8px; }
+.gbank-row {
+  display: block; width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff; padding: 10px 12px;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.gbank-row:hover { border-color: var(--purple-primary); }
+.gbank-row-tags { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 6px; }
+.gbank-subskill { font-size: 11.5px; font-weight: 700; color: var(--text-muted); }
+.gbank-band { font-size: 11.5px; }
+.gbank-fit { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #065f46; background: #ecfdf5; border-radius: 9px; padding: 2px 7px; }
+.gbank-probe { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--purple-primary); background: var(--purple-tint); border-radius: 9px; padding: 2px 7px; }
+.gbank-row-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+
+/* Objectives editor (goal builder) */
+.goalb-objectives { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.goalb-obj-row { display: flex; gap: 6px; align-items: flex-start; }
+.goalb-obj-input { flex: 1; font-family: inherit; font-size: 13px; line-height: 1.45; resize: vertical; }
+
+/* Probes (Phase 5.3b) */
+.probe-box { border: 1px dashed var(--purple-tint); border-radius: var(--radius-md); padding: 9px 10px; margin: 8px 0; }
+.probe-label { font-size: 12.5px; font-weight: 600; margin-bottom: 7px; }
+.probe-box .goal-mini-btn { margin-top: 7px; }
+.probe-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12.5px; margin: 8px 0; }
+.probe-due { font-weight: 600; color: var(--purple-primary); }
+.probe-sr-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #92400e; background: #fef3c7; border-radius: 9px; padding: 1px 6px; }
+.probe-item { margin-bottom: 18px; }
+.probe-item-prompt { font-size: 14px; line-height: 1.5; margin-bottom: 8px; }
+.probe-item-num { font-weight: 700; color: var(--purple-primary); }
+.probe-num-input { width: 140px; }
+
 /* Transition plan page (Phase 5.2) */
 .tp-page { max-width: 860px; margin: 0 auto; }
 .tp-header { margin-bottom: 22px; }

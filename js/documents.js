@@ -58,18 +58,31 @@ const aceDocuments = {
       return this._showDoc('Intro letter to family', this._parentIntroLetter(ctx));
     }
     if (docId === 'progress') {
-      return this._showDoc('Quarterly progress report', await this._progressReport(ctx));
+      // Parent-facing and partly auto-generated (probe data flows in), so
+      // copying requires an explicit case-manager review confirmation —
+      // self-report data especially must not flow through unread.
+      return this._showDoc('Quarterly progress report', await this._progressReport(ctx), { requireReview: true });
     }
   },
 
-  async _showDoc(title, text) {
+  async _showDoc(title, text, opts = {}) {
     await window.aceModal.openDrawer({
       title,
       saveLabel: 'Copy to clipboard', cancelLabel: 'Close',
       bodyHTML: `
         <p class="muted" style="font-size:13px;margin:0 0 10px;">Edit freely — Copy takes the current text.</p>
-        <textarea id="docText" class="doc-textarea" rows="22">${window.aceUtils.escapeHtml(text)}</textarea>`,
+        <textarea id="docText" class="doc-textarea" rows="22">${window.aceUtils.escapeHtml(text)}</textarea>
+        ${opts.requireReview ? `
+          <label class="doc-attach-row" style="margin-top:10px;">
+            <input type="checkbox" id="docReviewed" />
+            <span>I have reviewed this report — including any self-reported data — and it is ready for families</span>
+          </label>` : ''}`,
       onSave: async (body) => {
+        const gate = body.querySelector('#docReviewed');
+        if (gate && !gate.checked) {
+          window.aceToast?.error('Review the report and check the confirmation first');
+          return false;
+        }
         await navigator.clipboard.writeText(body.querySelector('#docText').value);
         window.aceToast?.success('Copied to clipboard');
         return false;   // keep the drawer open so repeated copies work
@@ -216,7 +229,10 @@ Case Manager, ${ctx.school}`;
 
     const sections = goals.map((g, i) => {
       const c = g.criterion || {};
-      const pts = (byGoal[g.id] || []).filter(e => e.value != null);
+      const all = byGoal[g.id] || [];
+      const pts = all.filter(e => e.value != null);
+      const selfReport = pts.some(e => (e.note || '').startsWith('Probe (self-report)'));
+      const probeCount = pts.filter(e => (e.note || '').startsWith('Probe')).length;
       let progress;
       if (g.goal_type === 'transition') {
         progress = g.status === 'met' ? 'This postsecondary goal has been met.' : 'Transition activities are ongoing in support of this goal.';
@@ -233,6 +249,11 @@ Case Manager, ${ctx.school}`;
           + (g.status === 'met' ? 'This goal has been met.'
              : at ? `${ctx.name.replace(/\.$/, '')}. is currently performing at the goal criterion of ${target}.`
                   : `The goal criterion is ${target}; progress is ${last >= first ? 'being made toward' : 'not yet on track for'} this criterion.`);
+        if (probeCount) {
+          progress += selfReport
+            ? ` ${probeCount} of these data point${probeCount === 1 ? ' comes' : 's come'} from student self-report check-ins, which I have reviewed alongside classroom observation.`
+            : ` ${probeCount} of these data point${probeCount === 1 ? ' comes' : 's come'} from independent skills check-ins completed by ${ctx.first}.`;
+        }
       }
       return `GOAL ${i + 1} — ${g.domain}${g.status !== 'active' ? ` (${g.status})` : ''}
 ${g.goal_text}
