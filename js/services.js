@@ -78,26 +78,52 @@ const aceServices = {
       <div class="svc-note-status muted" id="svcNoteStatus"></div>
     `;
 
+    // Toggling a chip repaints this card. Flush any note the case manager has
+    // typed but not yet auto-saved first — the repaint reads the note back from
+    // the student row, so unsaved text used to disappear on the next chip click.
     host.querySelectorAll('.svc-chip').forEach(chip => {
-      chip.addEventListener('click', () => this._toggle(chip.dataset.type));
+      chip.addEventListener('click', async () => {
+        await this._flushNote();
+        this._toggle(chip.dataset.type);
+      });
     });
 
     // Debounced auto-save for the note — same pattern as profile quick notes.
     const note = host.querySelector('#svcNote');
     const status = host.querySelector('#svcNoteStatus');
-    let timer = null;
+    this._noteEl = note;
     note.addEventListener('input', () => {
-      clearTimeout(timer);
-      timer = setTimeout(async () => {
-        const value = note.value;
-        const { error } = await window.aceSupabase.from('students')
-          .update({ related_services_note: value }).eq('id', this._student.id);
-        if (error) { status.textContent = 'Could not save note'; return; }
-        this._student.related_services_note = value;
-        status.textContent = 'Saved';
-        setTimeout(() => { if (status.textContent === 'Saved') status.textContent = ''; }, 2000);
-      }, 900);
+      clearTimeout(this._noteTimer);
+      this._noteTimer = setTimeout(() => this._saveNote(note.value), 900);
     });
+    note.addEventListener('blur', () => this._flushNote());
+  },
+
+  // Persist the current note text now, cancelling any pending debounce.
+  async _flushNote() {
+    clearTimeout(this._noteTimer);
+    this._noteTimer = null;
+    const el = this._noteEl;
+    if (!el) return;
+    const value = el.value;
+    if (value === (this._student.related_services_note || '')) return;
+    await this._saveNote(value);
+  },
+
+  async _saveNote(value) {
+    const status = this._host && this._host.querySelector('#svcNoteStatus');
+    const { error } = await window.aceSupabase.from('students')
+      .update({ related_services_note: value }).eq('id', this._student.id);
+    if (error) {
+      if (status) status.textContent = 'Could not save note';
+      window.aceToast?.error('Could not save the services note');
+      return;
+    }
+    this._student.related_services_note = value;
+    if (status) {
+      status.textContent = 'Saved';
+      setTimeout(() => { if (status.textContent === 'Saved') status.textContent = ''; }, 2000);
+    }
   },
 
   async _toggle(type) {

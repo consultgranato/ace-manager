@@ -4351,3 +4351,124 @@ textarea:focus {
   background: var(--purple-tint); color: var(--purple-primary); border-radius: 14px; padding: 4px 10px;
 }
 .accomm-chip-x { border: none; background: none; cursor: pointer; color: var(--purple-primary); font-size: 14px; line-height: 1; padding: 0; }
+
+/* =============================================================
+   Premium sweep — accessibility, focus, motion, and the pieces
+   that were carrying their styling inline.
+   ============================================================= */
+
+/* Screen-reader-only text (search labels, "already passed" hints). */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Caseload cards and rows are anchors now (keyboard reachable, cmd-clickable);
+   strip the default link look so they render exactly as the old divs did. */
+a.caseload-card,
+a.caseload-row {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Caseload search */
+.caseload-search { flex: 1 1 220px; min-width: 180px; display: flex; }
+.caseload-search-input {
+  width: 100%; padding: 7px 12px; font-family: inherit; font-size: 13.5px;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: #fff;
+  color: var(--text);
+}
+.caseload-search-input::placeholder { color: var(--text-muted); }
+.caseload-search-input::-webkit-search-cancel-button { cursor: pointer; }
+
+/* Toast dismiss */
+.ace-toast-close {
+  margin-left: 4px; border: none; background: none; padding: 2px; cursor: pointer;
+  color: var(--text-muted); line-height: 1; display: inline-flex; border-radius: 4px;
+}
+.ace-toast-close:hover { color: var(--text); background: var(--bg); }
+
+/* Meeting card edit/delete actions (was inline styles in meetings.js). */
+.meeting-actions { display: flex; gap: 6px; }
+.meeting-action-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0;
+  border: 1px solid var(--border); border-radius: 6px; background: #fff;
+  color: var(--text-muted); cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.meeting-action-btn:hover { border-color: var(--purple-primary); color: var(--purple-primary); }
+.meeting-action-btn.meeting-action-danger { color: var(--critical); }
+.meeting-action-btn.meeting-action-danger:hover { border-color: var(--critical); color: var(--critical); }
+
+/* District non-school-day chips (was inline styles in settings.js). */
+.nsd-add-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.nsd-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.nsd-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px; font-size: 13px; background: #fff;
+  border: 1px solid var(--border); border-radius: 14px;
+}
+.nsd-remove {
+  border: none; background: none; cursor: pointer; color: var(--text-muted);
+  line-height: 1; padding: 0; display: inline-flex; border-radius: 4px;
+}
+.nsd-remove:hover { color: var(--critical); }
+
+/* .btn-secondary is display:flex, so the literal space between an icon and its
+   label was being dropped — every icon+label secondary button read as
+   "iconLabel". One gap fixes them all (Add date, Restore, Export, Download…). */
+.btn-secondary { gap: 6px; }
+
+/* Settings rows that were laying themselves out inline. */
+.settings-inline-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.settings-inline-row + .settings-inline-row { margin-top: 12px; }
+.settings-status { font-size: 13px; }
+
+/* ---- Keyboard focus ----------------------------------------------------
+   Inputs already swap the outline for a border + ring; buttons, links, tabs
+   and chips had nothing, so keyboard users could not see where they were. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--purple-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* On the purple sidebar, a purple ring is invisible — use white there. */
+.ace-sidebar a:focus-visible,
+.ace-sidebar button:focus-visible {
+  outline-color: #fff;
+}
+
+/* ---- Reduced motion ---------------------------------------------------
+   The app animates drawers, modals, toasts, cards and status dots. Honor the
+   OS-level preference instead of overriding it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Transforms are deliberately left alone: the closed state of every drawer IS
+     a transform (translateX(100%)), so overriding it would pin panels open.
+     Zeroing the duration already makes open/close instant. */
+}
+
+/* Sidebar student filter — appears only when the caseload is long enough that
+   scanning the list beats scrolling it. */
+.sidebar-filter { padding: 0 12px 8px; }
+.sidebar-filter-input {
+  width: 100%; padding: 6px 10px; font-family: inherit; font-size: 12.5px;
+  color: #fff; background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 8px;
+}
+.sidebar-filter-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+.sidebar-filter-input:focus {
+  outline: none; background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.5);
+}

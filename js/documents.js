@@ -12,6 +12,20 @@
 
 const aceDocuments = {
 
+  // navigator.clipboard rejects on a denied permission or a non-secure context,
+  // and an unhandled rejection here left the case manager believing a letter had
+  // been copied when nothing had. Fall back to selecting the text so ⌘C works.
+  async _copy(textarea) {
+    try {
+      await navigator.clipboard.writeText(textarea.value);
+      window.aceToast?.success('Copied to clipboard');
+    } catch (e) {
+      textarea.focus();
+      textarea.select();
+      window.aceToast?.error('Copy was blocked — the text is selected, press ⌘C / Ctrl+C');
+    }
+  },
+
   async render(host, student) {
     if (!host) return;
     this._host = host; this._student = student;
@@ -83,8 +97,7 @@ const aceDocuments = {
           window.aceToast?.error('Review the report and check the confirmation first');
           return false;
         }
-        await navigator.clipboard.writeText(body.querySelector('#docText').value);
-        window.aceToast?.success('Copied to clipboard');
+        await this._copy(body.querySelector('#docText'));
         return false;   // keep the drawer open so repeated copies work
       }
     });
@@ -210,8 +223,7 @@ Case Manager, ${ctx.school}`;
         });
       },
       onSave: async (body) => {
-        await navigator.clipboard.writeText(body.querySelector('#docText').value);
-        window.aceToast?.success('Copied to clipboard');
+        await this._copy(body.querySelector('#docText'));
         return false;   // keep the drawer open so repeated copies work
       }
     });

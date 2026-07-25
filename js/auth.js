@@ -30,7 +30,12 @@ const aceAuth = {
   },
 
   async resetPassword(email) {
-    const redirectUrl = window.location.origin + '/ace-manager/pages/reset-password.html';
+    // Derive the path the same way aceRouter does instead of hardcoding the
+    // GitHub Pages sub-path, so reset links also work on a custom domain or
+    // when running the app locally.
+    const basePath = (window.aceRouter && window.aceRouter.basePath())
+      || (window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/');
+    const redirectUrl = window.location.origin + basePath + 'pages/reset-password.html';
     const { data, error } = await window.aceSupabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
     });
@@ -151,12 +156,15 @@ const aceAuth = {
   async getBranding() {
     const defaults = window.ACE_DEFAULT_BRANDING || {};
     let branding = {};
+    let org = null;
     try {
-      const org = await this.getOrg();
+      org = await this.getOrg();
       if (org && org.branding && typeof org.branding === 'object') branding = org.branding;
     } catch (e) { /* fall through to defaults */ }
     return {
-      school_name: branding.school_name || defaults.school_name || '',
+      // An org that never filled in branding falls back to its OWN identity
+      // before the product default — never to another district's name.
+      school_name: branding.school_name || (org && (org.school_name || org.name)) || defaults.school_name || '',
       logo_url: branding.logo_url || defaults.logo_url || '',
       accent: branding.accent || defaults.accent || ''
     };

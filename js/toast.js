@@ -19,6 +19,11 @@ const aceToast = {
       host = document.createElement('div');
       host.id = this._hostId;
       host.className = 'ace-toast-host';
+      // Announce to screen readers — confirmations like "Meeting scheduled" and
+      // failures like "Could not save" were previously visual-only.
+      host.setAttribute('role', 'status');
+      host.setAttribute('aria-live', 'polite');
+      host.setAttribute('aria-atomic', 'false');
       document.body.appendChild(host);
     }
     return host;
@@ -34,18 +39,26 @@ const aceToast = {
 
     const toast = document.createElement('div');
     toast.className = `ace-toast ace-toast-${type}`;
+    // Errors interrupt; success/info wait their turn.
+    if (type === 'error') toast.setAttribute('aria-live', 'assertive');
     toast.innerHTML = `
       <span class="ace-toast-icon">${this._iconFor(type)}</span>
       <span class="ace-toast-msg">${this._esc(message)}</span>
+      <button type="button" class="ace-toast-close" aria-label="Dismiss">${window.aceIcons ? window.aceIcons.x(12) : '×'}</button>
     `;
     host.appendChild(toast);
 
     requestAnimationFrame(() => toast.classList.add('open'));
 
-    setTimeout(() => {
+    const dismiss = () => {
+      clearTimeout(timer);
       toast.classList.remove('open');
       setTimeout(() => toast.remove(), 250);
-    }, this._duration);
+    };
+    toast.querySelector('.ace-toast-close').addEventListener('click', dismiss);
+
+    // Errors linger — a "could not save" that vanishes in 3s is easy to miss.
+    const timer = setTimeout(dismiss, type === 'error' ? 6000 : this._duration);
   },
 
   success(message) { this._show(message, 'success'); },

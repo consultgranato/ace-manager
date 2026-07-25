@@ -41,26 +41,28 @@ const aceCalendar = {
       return;
     }
 
-    // For takeover logic: include all meetings (completed + scheduled).
-    // A completed meeting satisfies the deadline; a scheduled meeting before
-    // the deadline supersedes it. Either way the deadline stays hidden.
+    // Takeover logic: only a STILL-OPEN meeting booked on or before a deadline
+    // supersedes that deadline's chip. Completed meetings are deliberately not
+    // considered — completion already advances the clock, so counting them meant
+    // last cycle's meeting permanently suppressed the newly advanced deadline
+    // and the calendar silently stopped showing it.
     const meetingsByStudent = {};
     (meetings || []).forEach(m => {
       if (!meetingsByStudent[m.student_id]) meetingsByStudent[m.student_id] = [];
       meetingsByStudent[m.student_id].push(m);
     });
 
-    // Apply takeover logic per student
+    // Apply takeover logic per student. ISO date strings compare
+    // lexicographically == chronologically, so no Date parsing is needed here.
+    const covered = (studentMeetings, deadlineISO) => studentMeetings.some(m =>
+      !m.completed && m.scheduled_date && m.scheduled_date <= deadlineISO);
+
     students?.forEach(s => {
       const studentMeetings = meetingsByStudent[s.id] || [];
 
-      // Annual review deadline — show only if no scheduled meeting on-or-before it
+      // Annual review deadline — show only if no open meeting is booked on-or-before it
       if (s.annual_review_date) {
-        const deadline = new Date(s.annual_review_date);
-        const hasCoveringMeeting = studentMeetings.some(m => {
-          const md = new Date(m.scheduled_date);
-          return md <= deadline;
-        });
+        const hasCoveringMeeting = covered(studentMeetings, s.annual_review_date);
         if (!hasCoveringMeeting) {
           this.state.events.push({
             date: s.annual_review_date,
@@ -74,11 +76,7 @@ const aceCalendar = {
 
       // Re-eval deadline — same takeover rule
       if (s.reeval_due_date) {
-        const deadline = new Date(s.reeval_due_date);
-        const hasCoveringMeeting = studentMeetings.some(m => {
-          const md = new Date(m.scheduled_date);
-          return md <= deadline;
-        });
+        const hasCoveringMeeting = covered(studentMeetings, s.reeval_due_date);
         if (!hasCoveringMeeting) {
           this.state.events.push({
             date: s.reeval_due_date,

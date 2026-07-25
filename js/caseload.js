@@ -4,12 +4,19 @@
 
 const aceCaseload = {
 
+  VIEW_KEY: 'aceCaseloadView',
+
   state: {
     filter: 'active',  // 'active' | 'archived'
-    view: 'cards'      // 'cards' | 'list' — remembered in-memory for the session
+    view: 'cards',     // 'cards' | 'list' — persisted per browser (VIEW_KEY)
+    query: ''
   },
 
   async render() {
+    try {
+      const saved = localStorage.getItem(this.VIEW_KEY);
+      if (saved === 'cards' || saved === 'list') this.state.view = saved;
+    } catch (e) { /* private mode — fall back to the default view */ }
     await this.renderShell();
     await this.loadAndRenderStudents();
   },
@@ -40,6 +47,12 @@ const aceCaseload = {
               Archived
               <span class="caseload-tab-count" id="archivedCount">0</span>
             </button>
+          </div>
+
+          <div class="caseload-search">
+            <label class="visually-hidden" for="caseloadSearch">Search students</label>
+            <input type="search" id="caseloadSearch" class="caseload-search-input"
+                   placeholder="Search name, grade or eligibility…" autocomplete="off" />
           </div>
 
           <div class="caseload-viewtoggle" role="group" aria-label="View">
@@ -74,12 +87,30 @@ const aceCaseload = {
       btn.addEventListener('click', () => {
         if (this.state.view === btn.dataset.view) return;
         this.state.view = btn.dataset.view;
+        try { localStorage.setItem(this.VIEW_KEY, this.state.view); } catch (e) { /* non-fatal */ }
         document.querySelectorAll('.caseload-view-btn').forEach(b => {
           b.classList.toggle('active', b.dataset.view === this.state.view);
         });
         this.loadAndRenderStudents();
       });
     });
+
+    // Filter in place from the already-loaded rows — no refetch per keystroke.
+    const search = document.getElementById('caseloadSearch');
+    if (search) {
+      search.addEventListener('input', () => {
+        this.state.query = search.value.trim().toLowerCase();
+        this.paintStudents();
+      });
+    }
+  },
+
+  // Does this student match the current search text?
+  _matches(s) {
+    const q = this.state.query;
+    if (!q) return true;
+    return [s.first_name, s.last_initial, s.grade, s.primary_disability, s.secondary_disability]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
   },
 
   updateFilterUI() {
@@ -113,15 +144,10 @@ const aceCaseload = {
 
     if (subtitle) {
       if (this.state.filter === 'active') {
-        subtitle.textContent = `${active.length} of 15 students on your caseload`;
+        subtitle.textContent = `${active.length} active ${active.length === 1 ? 'student' : 'students'} on your caseload`;
       } else {
         subtitle.textContent = archived.length === 0 ? 'No archived students' : `${archived.length} archived ${archived.length === 1 ? 'student' : 'students'}`;
       }
-    }
-
-    if (list.length === 0) {
-      grid.innerHTML = this.emptyStateHTML();
-      return;
     }
 
     // Bulk fetch meetings for the students we're about to render
@@ -138,23 +164,48 @@ const aceCaseload = {
       });
     }
 
+    // Held so search and view changes repaint without another round trip.
+    this._loaded = { list, meetingsByStudent };
+    this.paintStudents();
+  },
+
+  paintStudents() {
+    const grid = document.getElementById('caseloadGrid');
+    if (!grid || !this._loaded) return;
+    const { list, meetingsByStudent } = this._loaded;
+
+    if (list.length === 0) {
+      grid.innerHTML = this.emptyStateHTML();
+      return;
+    }
+
+    const visible = list.filter(s => this._matches(s));
+    if (visible.length === 0) {
+      grid.innerHTML = `
+        <div class="caseload-empty">
+          <div class="caseload-empty-icon">${window.aceIcons.search ? window.aceIcons.search(30) : window.aceIcons.users(30)}</div>
+          <h3>No match</h3>
+          <p class="muted">No ${this.state.filter} student matches “${window.aceUtils.escapeHtml(this.state.query)}”.</p>
+        </div>`;
+      return;
+    }
+
     const isList = this.state.view === 'list';
     grid.classList.toggle('caseload-grid-cards', !isList);
     grid.classList.toggle('caseload-grid-list', isList);
 
-    grid.innerHTML = list.map(s => {
+    grid.innerHTML = visible.map(s => {
       const activeMeeting = window.aceMeetings
         ? window.aceMeetings.computeActiveFromMeetings(meetingsByStudent[s.id] || [])
         : null;
       return isList ? this.studentRowHTML(s, activeMeeting) : this.studentCardHTML(s, activeMeeting);
     }).join('');
+  },
 
-    grid.querySelectorAll('.caseload-card, .caseload-row').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.dataset.id;
-        window.location.href = `${this.basePath()}pages/student-profile.html?id=${id}`;
-      });
-    });
+  // Cards and rows are anchors, not click-handled divs: they were unreachable by
+  // keyboard, unopenable in a new tab, and invisible to assistive tech.
+  _href(s) {
+    return `${this.basePath()}pages/student-profile.html?id=${s.id}`;
   },
 
   studentCardHTML(s, activeMeeting) {
@@ -163,7 +214,7 @@ const aceCaseload = {
     // Archived students always show neutral pill labeled "Archived"
     if (s.archived) {
       return `
-        <div class="caseload-card archived" data-id="${s.id}">
+        <a class="caseload-card archived" href="${this._href(s)}" data-id="${s.id}">
           <div class="caseload-card-header">
             <div class="caseload-card-name">${escapeHtml(s.first_name)} ${escapeHtml(s.last_initial)}.</div>
             <span class="status-dot dot-gray"></span>
@@ -179,7 +230,7 @@ const aceCaseload = {
           <div class="caseload-card-footer">
             <span class="caseload-card-open">Open profile</span>
           </div>
-        </div>
+        </a>
       `;
     }
 
@@ -191,7 +242,7 @@ const aceCaseload = {
     const pillClass = window.aceStatus.pillClassForDot(state.dot);
 
     return `
-      <div class="caseload-card" data-id="${s.id}">
+      <a class="caseload-card" href="${this._href(s)}" data-id="${s.id}">
         <div class="caseload-card-header">
           <div class="caseload-card-name">${escapeHtml(s.first_name)} ${escapeHtml(s.last_initial)}.</div>
           <span class="status-dot dot-${state.dot}"></span>
@@ -207,7 +258,7 @@ const aceCaseload = {
         <div class="caseload-card-footer">
           <span class="caseload-card-open">Open profile</span>
         </div>
-      </div>
+      </a>
     `;
   },
 
@@ -233,13 +284,13 @@ const aceCaseload = {
 
     if (s.archived) {
       return `
-        <div class="caseload-row archived" data-id="${s.id}">
+        <a class="caseload-row archived" href="${this._href(s)}" data-id="${s.id}">
           <span class="status-dot dot-gray"></span>
           <span class="caseload-row-name">${esc(s.first_name)} ${esc(s.last_initial)}.</span>
           <span class="caseload-row-grade" title="${esc(s.grade || '')}">${esc(this._gradeShort(s.grade))}</span>
           <span class="caseload-row-disability" title="${esc(s.primary_disability || '')}">${esc(this._disabilityAbbrev(s.primary_disability))}</span>
           <span class="caseload-row-status"><span class="ace-pill ace-pill-neutral">Archived</span></span>
-        </div>
+        </a>
       `;
     }
 
@@ -247,13 +298,13 @@ const aceCaseload = {
     const pillClass = window.aceStatus.pillClassForDot(state.dot);
 
     return `
-      <div class="caseload-row" data-id="${s.id}">
+      <a class="caseload-row" href="${this._href(s)}" data-id="${s.id}">
         <span class="status-dot dot-${state.dot}"></span>
         <span class="caseload-row-name">${esc(s.first_name)} ${esc(s.last_initial)}.${s.has_bip ? ' <span class="caseload-row-bip">BIP</span>' : ''}</span>
         <span class="caseload-row-grade" title="${esc(s.grade || '')}">${esc(this._gradeShort(s.grade))}</span>
         <span class="caseload-row-disability" title="${esc(s.primary_disability || '')}">${esc(this._disabilityAbbrev(s.primary_disability))}</span>
         <span class="caseload-row-status"><span class="ace-pill ${pillClass}">${esc(state.pillLabel)}</span></span>
-      </div>
+      </a>
     `;
   },
 
@@ -265,7 +316,7 @@ const aceCaseload = {
           <div class="caseload-empty-icon">${window.aceIcons.usersRound(36)}</div>
           <h3>Your caseload is empty</h3>
           <p class="muted">
-            Add your first student to get started. Ace Manager works best with up to 15 students per case manager.
+            Add your first student to get started — deadlines, meetings, goals and paperwork all live on the profile.
           </p>
           <a href="${basePath}pages/add-student.html" class="btn-primary caseload-empty-cta">
             ${window.aceIcons.plus(15)} Add Student

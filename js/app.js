@@ -160,34 +160,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const path = window.location.pathname;
     const isHome = path.endsWith('index.html') || path.endsWith('/ace-manager/') || path.endsWith('/ace-manager');
-    const isProfile = path.endsWith('student-profile.html');
-    const isAddStudent = path.endsWith('add-student.html');
 
-    if (isHome && window.aceHomepage) {
-      await window.aceHomepage.render();
-    }
+    // One page module throwing used to leave the page frozen on its "Loading…"
+    // placeholder with the reason only in the console. Catch it, say so, and
+    // offer the one action that actually helps.
+    const renderPage = async (module, label) => {
+      try {
+        await module.render();
+      } catch (e) {
+        console.error(`${label} failed to render:`, e);
+        const host = document.querySelector('.ace-app-main .page-content');
+        if (host) {
+          host.innerHTML = `
+            <div class="ace-card">
+              <h2>This page didn't load</h2>
+              <p class="muted">Something went wrong while building the ${label} view. Your data is safe —
+                nothing was changed. Reloading usually clears it.</p>
+              <button class="btn-primary" type="button" onclick="window.location.reload()"
+                      style="margin-top:12px;">Reload page</button>
+            </div>`;
+        }
+        if (window.aceToast) window.aceToast.error('Could not load this page');
+      }
+    };
 
-    if (isProfile && window.aceProfile) {
-      await window.aceProfile.render();
-    }
+    const pages = [
+      [isHome, window.aceHomepage, 'home'],
+      [path.endsWith('student-profile.html'), window.aceProfile, 'student profile'],
+      [path.endsWith('add-student.html'), window.aceAddStudent, 'add student'],
+      [path.endsWith('caseload.html'), window.aceCaseload, 'caseload'],
+      [path.endsWith('settings.html'), window.aceSettings, 'settings'],
+      [path.endsWith('team.html'), window.aceTeam, 'team']
+    ];
 
-    if (isAddStudent && window.aceAddStudent) {
-      await window.aceAddStudent.render();
-    }
-
-    const isCaseload = path.endsWith('caseload.html');
-    if (isCaseload && window.aceCaseload) {
-      await window.aceCaseload.render();
-    }
-
-    const isSettings = path.endsWith('settings.html');
-    if (isSettings && window.aceSettings) {
-      await window.aceSettings.render();
-    }
-
-    const isTeam = path.endsWith('team.html');
-    if (isTeam && window.aceTeam) {
-      await window.aceTeam.render();
+    for (const [matches, module, label] of pages) {
+      if (matches && module) await renderPage(module, label);
     }
   }
 });

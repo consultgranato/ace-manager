@@ -28,7 +28,7 @@ const aceHomepage = {
           meetings, parent and teacher feedback, data collection. All in one place.
         </p>
         <p class="welcome-step muted">
-          Start by adding your first student. You can add up to 15.
+          Start by adding your first student — it takes about a minute.
         </p>
         <a href="${basePath}pages/add-student.html" class="btn-primary welcome-cta">
           ${window.aceIcons.plus(16)} Add Your First Student
@@ -50,11 +50,16 @@ const aceHomepage = {
     const isFirstRun = await this.maybeRenderFirstRunState();
     if (isFirstRun) return;
 
-    await this.renderGreeting();
-    await this.renderCalendar();
-    await this.renderNeedsAttention();
-    await this.renderRecentMeetings();
-    await this.renderRecentActivity();
+    // Independent regions — fetch them concurrently instead of one after the
+    // other. Needs Attention paints first because it is what the case manager
+    // came for; a slow calendar no longer holds it up.
+    await Promise.all([
+      this.renderGreeting(),
+      this.renderNeedsAttention(),
+      this.renderRecentMeetings(),
+      this.renderCalendar(),
+      this.renderRecentActivity()
+    ]);
   },
 
   async renderGreeting() {
@@ -110,17 +115,37 @@ const aceHomepage = {
       return;
     }
 
-    // For each student, get their meeting state + status
-    const enriched = await Promise.all(students.map(async (s) => {
-      const meetingActive = window.aceMeetings ? await window.aceMeetings.getActiveMeeting(s.id) : null;
-      const state = window.aceStatus.fullState(s, meetingActive);
-      return { student: s, meetingActive, state };
-    }));
+    // ONE meetings query for the whole caseload, grouped by student — the same
+    // pattern the sidebar and caseload use. Previously this awaited
+    // getActiveMeeting() per student, which is 3 round trips each.
+    const studentIds = students.map(s => s.id);
+    const meetingsByStudent = {};
+    if (window.aceMeetings) {
+      const { data: meetings } = await window.aceSupabase
+        .from('meetings')
+        .select('*')
+        .in('student_id', studentIds);
+      (meetings || []).forEach(m => {
+        (meetingsByStudent[m.student_id] = meetingsByStudent[m.student_id] || []).push(m);
+      });
+    }
+
+    const enriched = students.map((s) => {
+      const meetingActive = window.aceMeetings
+        ? window.aceMeetings.computeActiveFromMeetings(meetingsByStudent[s.id] || [])
+        : null;
+      return { student: s, meetingActive, state: window.aceStatus.fullState(s, meetingActive) };
+    });
+
+    // Indicator-11 cards for any student whose 60-school-day initial evaluation
+    // clock is running. Computed BEFORE anything is painted so they can never
+    // land above an "all caught up" empty state — the two used to show together.
+    const complianceCards = await this.initialEvalCards(students, meetingsByStudent);
 
     // Filter to only students that need attention
     const flagged = enriched.filter(e => e.state.needsAttention);
 
-    if (flagged.length === 0) {
+    if (flagged.length === 0 && complianceCards.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">${window.aceIcons.check(28)}</div>
@@ -133,31 +158,42 @@ const aceHomepage = {
     // Sort by urgency (most urgent first) using the shared dot-based order.
     flagged.sort((a, b) => window.aceStatus.dotOrder(b.state.dot) - window.aceStatus.dotOrder(a.state.dot));
 
-    container.innerHTML = flagged.map(({ student, state }) => this.attentionCardHTML(student, state)).join('');
+    container.innerHTML =
+      complianceCards.join('') +
+      flagged.map(({ student, state }) => this.attentionCardHTML(student, state)).join('');
+  },
 
-    // Prepend Indicator-11 cards for any student whose 60-school-day initial
-    // evaluation clock is running (consent signed, no completed eligibility
-    // meeting). Additive and non-blocking; renders ahead of the regular cards.
-    if (window.aceCompliance) {
-      const withConsent = students.filter(s => s.consent_date);
-      for (const s of withConsent) {
-        try {
-          const st = await window.aceCompliance.initialEvalStatus(s);
-          if (!st) continue;
-          const esc = window.aceUtils.escapeHtml;
-          const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
-          const cls = st.level === 'overdue' ? 'attention-critical' : st.level === 'critical' ? 'attention-approaching' : 'attention-clear';
-          container.insertAdjacentHTML('afterbegin', `
+  // Initial-evaluation (Indicator 11) attention cards, most urgent first.
+  // Reuses the already-fetched meetings so the compliance check adds no queries.
+  async initialEvalCards(students, meetingsByStudent) {
+    if (!window.aceCompliance) return [];
+    const esc = window.aceUtils.escapeHtml;
+    const basePath = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
+    const withConsent = students.filter(s => s.consent_date);
+    const out = [];
+
+    for (const s of withConsent) {
+      try {
+        const completed = (meetingsByStudent[s.id] || []).filter(m => m.completed);
+        const st = await window.aceCompliance.initialEvalStatus(s, completed);
+        if (!st) continue;
+        const cls = st.level === 'overdue' ? 'attention-critical'
+          : st.level === 'critical' ? 'attention-approaching' : 'attention-clear';
+        out.push({
+          left: st.left,
+          html: `
             <a href="${basePath}pages/student-profile.html?id=${s.id}" class="attention-card ${cls}">
               <div class="attention-name">${esc(s.first_name)} ${esc(s.last_initial)}.</div>
               <div class="attention-meta">${esc(s.grade)}</div>
               <div class="attention-headline">Initial evaluation — day ${st.used} of 60</div>
               <div class="attention-subline">${st.left < 0 ? `Overdue by ${Math.abs(st.left)} school days` : `${st.left} school days left · due ${window.aceUtils.formatLongDate(st.deadline)}`}</div>
               <div class="attention-action">Open profile</div>
-            </a>`);
-        } catch (e) { console.error('Compliance card failed:', e); }
-      }
+            </a>`
+        });
+      } catch (e) { console.error('Compliance card failed:', e); }
     }
+
+    return out.sort((a, b) => a.left - b.left).map(c => c.html);
   },
 
   attentionCardHTML(s, state) {
@@ -185,10 +221,11 @@ const aceHomepage = {
     const container = document.getElementById('recentMeetings');
     if (!container) return;
 
-    // Past 21 days of completed meetings
-    const twentyOneDaysAgo = new Date();
-    twentyOneDaysAgo.setDate(twentyOneDaysAgo.getDate() - 21);
-    const cutoffStr = twentyOneDaysAgo.toISOString().split('T')[0];
+    // Past 21 days of completed meetings, measured on the LOCAL day boundary
+    // (toISOString() would roll to tomorrow's date every evening).
+    const cutoffStr = window.aceMeetings
+      ? window.aceMeetings._isoDaysAgo(21)
+      : window.aceUtils.todayISO();
 
     const { data: meetings, error } = await window.aceSupabase
       .from('meetings')

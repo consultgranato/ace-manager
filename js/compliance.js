@@ -71,6 +71,15 @@ const aceCompliance = {
   // Initial-evaluation timeline for one student, or null when not applicable.
   // Active when consent_date is set and no completed Initial Eligibility
   // meeting exists on or after that consent.
+  // meetings.meeting_type stores the CODE ('initial'), not the display label —
+  // matching on the label meant the clock never saw the eligibility meeting and
+  // ran forever. Label kept as an accepted value for any legacy row.
+  INITIAL_TYPES: ['initial', 'Initial Eligibility'],
+
+  _isInitial(m) {
+    return !!m && this.INITIAL_TYPES.includes(m.meeting_type);
+  },
+
   async initialEvalStatus(student, meetings = null) {
     if (!student || !student.consent_date) return null;
 
@@ -78,11 +87,11 @@ const aceCompliance = {
       const { data } = await window.aceSupabase.from('meetings')
         .select('meeting_type, completed, scheduled_date')
         .eq('student_id', student.id).eq('completed', true)
-        .eq('meeting_type', 'Initial Eligibility');
+        .in('meeting_type', this.INITIAL_TYPES);
       meetings = data || [];
     }
     const done = (meetings || []).some(m =>
-      m.meeting_type === 'Initial Eligibility' && m.completed &&
+      this._isInitial(m) && m.completed &&
       m.scheduled_date >= student.consent_date);
     if (done) return null;
 

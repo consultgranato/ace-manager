@@ -28,6 +28,9 @@ const aceIcons = {
   layoutGrid(size)  { return this._svg('<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>', size); },
   list(size)        { return this._svg('<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>', size); },
 
+  search(size)      { return this._svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', size); },
+  lock(size)        { return this._svg('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', size); },
+
   // Actions
   plus(size)        { return this._svg('<path d="M5 12h14"/><path d="M12 5v14"/>', size); },
   check(size)       { return this._svg('<polyline points="20 6 9 17 4 12"/>', size); },

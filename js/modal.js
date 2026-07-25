@@ -16,6 +16,40 @@ const aceModal = {
   _hostId: 'aceModalHost',
   _activeEl: null,
   _keyHandler: null,
+  _restoreFocusTo: null,
+
+  _FOCUSABLE: 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+
+  // Move focus into the panel (first real field, else the first control) and
+  // remember where it came from so it can be handed back on close. The header
+  // comment has promised focus management since day one; this implements it.
+  _takeFocus(panel) {
+    this._restoreFocusTo = document.activeElement;
+    const items = panel.querySelectorAll(this._FOCUSABLE);
+    const preferred = panel.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])');
+    const target = preferred || items[0];
+    if (target) { try { target.focus(); } catch (e) { /* non-fatal */ } }
+  },
+
+  _giveBackFocus() {
+    const el = this._restoreFocusTo;
+    this._restoreFocusTo = null;
+    if (el && typeof el.focus === 'function' && document.contains(el)) {
+      try { el.focus(); } catch (e) { /* non-fatal */ }
+    }
+  },
+
+  // Keep Tab inside the open panel — otherwise keyboard focus walks off into the
+  // page behind the backdrop, which is unreachable by pointer.
+  _trapTab(panel, e) {
+    if (e.key !== 'Tab') return;
+    const items = [...panel.querySelectorAll(this._FOCUSABLE)]
+      .filter(el => el.offsetParent !== null || el === document.activeElement);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  },
 
   _ensureHost() {
     let host = document.getElementById(this._hostId);
@@ -64,6 +98,7 @@ const aceModal = {
         setTimeout(() => {
           if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
           this._removeKeyHandler();
+          this._giveBackFocus();
           resolve(result);
         }, 250);
       };
@@ -97,7 +132,10 @@ const aceModal = {
             }
             close({ confirmed: true, result });
           } catch (e) {
+            // Surface it — a thrown save used to only reach the console, so the
+            // button just came back to life with no explanation.
             console.error('Drawer save error:', e);
+            if (window.aceToast) window.aceToast.error(e && e.message ? e.message : 'Could not save');
             saveBtn.disabled = false;
             saveBtn.textContent = saveLabel;
           }
@@ -106,10 +144,12 @@ const aceModal = {
         }
       });
 
+      const panel = wrapper.querySelector('.ace-drawer');
       this._installKeyHandler(() => {
         if (onCancel) onCancel();
         close({ confirmed: false });
-      });
+      }, panel);
+      this._takeFocus(panel);
 
       this._activeEl = wrapper;
     });
@@ -143,6 +183,7 @@ const aceModal = {
         setTimeout(() => {
           if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
           this._removeKeyHandler();
+          this._giveBackFocus();
           resolve(confirmed);
         }, 200);
       };
@@ -157,7 +198,10 @@ const aceModal = {
             await onConfirm();
             close(true);
           } catch (e) {
+            // A failed archive / delete / purge used to look like a no-op: the
+            // button simply re-enabled with the reason hidden in the console.
             console.error('Modal confirm error:', e);
+            if (window.aceToast) window.aceToast.error(e && e.message ? e.message : 'That action could not be completed');
             confirmBtn.disabled = false;
           }
         } else {
@@ -165,18 +209,22 @@ const aceModal = {
         }
       });
 
-      this._installKeyHandler(() => close(false));
+      const panel = wrapper.querySelector('.ace-modal');
+      this._installKeyHandler(() => close(false), panel);
+      this._takeFocus(panel);
       this._activeEl = wrapper;
     });
   },
 
-  _installKeyHandler(onEscape) {
+  _installKeyHandler(onEscape, panel) {
     this._removeKeyHandler();
     this._keyHandler = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onEscape();
+        return;
       }
+      if (panel) this._trapTab(panel, e);
     };
     document.addEventListener('keydown', this._keyHandler);
   },

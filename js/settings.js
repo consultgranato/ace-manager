@@ -40,13 +40,20 @@ const aceSettings = {
               <div class="settings-value">${esc(schoolName)}</div>
             </div>
           </div>
+          <div class="settings-inline-row" style="margin-top:12px;">
+            <button class="btn-secondary" id="changePasswordBtn" type="button">
+              ${window.aceIcons.lock(14)} Change password
+            </button>
+            <span id="passwordStatus" class="muted settings-status"></span>
+          </div>
           <p class="muted settings-note">
-            Account details can be edited in Phase 5. Contact support to change your email or school for now.
+            To change the name or email on your account, email
+            <a href="mailto:consultgranato@gmail.com">consultgranato@gmail.com</a> — they identify you across the district's records.
           </p>
         </section>
 
         <section class="settings-section">
-          <h2 class="settings-section-title">District non-school days (D219 2026-27) — edit each school year</h2>
+          <h2 class="settings-section-title">${esc(org?.name || 'District')} non-school days — update each school year</h2>
           <div class="settings-card">
             <p class="muted settings-note" style="margin-top:0;">
               Used to calculate each meeting's “Send draft to parent by” date (3 school days before the meeting)
@@ -157,17 +164,6 @@ const aceSettings = {
         </section>` : ''}
 
         <section class="settings-section">
-          <h2 class="settings-section-title">Coming Soon</h2>
-          <div class="settings-card settings-card-disabled">
-            <ul class="settings-coming-soon">
-              <li>${window.aceIcons.rotateCcw(14)} Replay onboarding tour</li>
-              <li>${window.aceIcons.settings(14)} Change password</li>
-              <li>${window.aceIcons.x(14)} Delete account</li>
-            </ul>
-          </div>
-        </section>
-
-        <section class="settings-section">
           <button class="btn-secondary settings-signout" id="settingsSignOutBtn">
             ${window.aceIcons.logOut(15)} Sign Out
           </button>
@@ -180,6 +176,8 @@ const aceSettings = {
       window.aceRouter.toLogin();
     });
 
+    this.initChangePassword();
+
     this.initNonSchoolDays(org);
     this.initOrgExport();
     if (profile?.role === 'org_admin') {
@@ -188,6 +186,48 @@ const aceSettings = {
       this.initPurge(org);
     }
     await this.renderArchivedList();
+  },
+
+  // ---- Change password ----------------------------------------------------
+  // aceAuth.updatePassword already existed; Settings only ever advertised this
+  // as "coming soon". Same 8-character floor the reset-password page enforces.
+  initChangePassword() {
+    const btn = document.getElementById('changePasswordBtn');
+    if (!btn) return;
+    const status = document.getElementById('passwordStatus');
+
+    btn.addEventListener('click', async () => {
+      const r = await window.aceModal.openDrawer({
+        title: 'Change password',
+        saveLabel: 'Update password',
+        bodyHTML: `
+          <p class="muted" style="font-size:13px;margin:0 0 12px;">
+            You'll stay signed in on this device. Any other device you're signed in on keeps its session until it expires.
+          </p>
+          <label class="iep-label">New password</label>
+          <input type="password" id="pwNew" autocomplete="new-password" />
+          <label class="iep-label" style="margin-top:10px;">Confirm new password</label>
+          <input type="password" id="pwConfirm" autocomplete="new-password" />
+          <p class="goalb-hint" style="margin-top:8px;">At least 8 characters.</p>
+          <div id="pwError" class="hard-delete-error"></div>`,
+        onSave: async (body) => {
+          const next = body.querySelector('#pwNew').value;
+          const confirm = body.querySelector('#pwConfirm').value;
+          const err = body.querySelector('#pwError');
+          if (next.length < 8) { err.textContent = 'Use at least 8 characters.'; return false; }
+          if (next !== confirm) { err.textContent = 'Those two passwords do not match.'; return false; }
+          const { error } = await window.aceAuth.updatePassword(next);
+          if (error) { err.textContent = error.message || 'Could not update the password.'; return false; }
+          return true;
+        }
+      });
+
+      if (r && r.confirmed) {
+        if (status) status.textContent = 'Password updated.';
+        window.aceToast?.success('Password updated');
+        setTimeout(() => { if (status && status.textContent === 'Password updated.') status.textContent = ''; }, 4000);
+      }
+    });
   },
 
   // ---- Org branding (Phase 5.4d) — org_admin only; RLS enforces -----------

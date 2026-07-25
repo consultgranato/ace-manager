@@ -77,10 +77,11 @@ const aceProfile = {
               ${window.aceIcons.edit(14)} Edit
             </button>
             <div class="profile-menu-wrap">
-              <button class="profile-menu-btn" id="profileMenuBtn" aria-label="More options">
+              <button class="profile-menu-btn" id="profileMenuBtn" aria-label="More options"
+                      aria-haspopup="true" aria-expanded="false" aria-controls="profileMenu">
                 ${window.aceIcons.moreHorizontal(18)}
               </button>
-              <div class="profile-menu" id="profileMenu" style="display:none;">
+              <div class="profile-menu" id="profileMenu" role="menu" style="display:none;">
                 ${s.archived
                   ? `<button class="profile-menu-item" data-action="restore">${window.aceIcons.rotateCcw(14)} Restore Student</button>`
                   : `<button class="profile-menu-item profile-menu-danger" data-action="archive">${window.aceIcons.archive(14)} Archive Student</button>`
@@ -114,19 +115,29 @@ const aceProfile = {
     const menuBtn = document.getElementById('profileMenuBtn');
     const menu = document.getElementById('profileMenu');
     if (menuBtn && menu) {
+      const setMenu = (open) => {
+        menu.style.display = open ? 'block' : 'none';
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
       menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        setMenu(menu.style.display === 'none');
       });
       document.addEventListener('click', (e) => {
-        if (!menuBtn.contains(e.target) && !menu.contains(e.target)) {
-          menu.style.display = 'none';
+        if (!menuBtn.contains(e.target) && !menu.contains(e.target)) setMenu(false);
+      });
+      // Escape closes it and hands focus back to the trigger.
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && menu.style.display === 'block') {
+          setMenu(false);
+          try { menuBtn.focus(); } catch (err) { /* non-fatal */ }
         }
       });
 
       menu.querySelectorAll('.profile-menu-item').forEach(item => {
+        item.setAttribute('role', 'menuitem');
         item.addEventListener('click', async () => {
-          menu.style.display = 'none';
+          setMenu(false);
           const action = item.dataset.action;
           if (action === 'archive') {
             await window.aceArchiveStudent.confirm(this.state.student);
@@ -188,18 +199,31 @@ const aceProfile = {
     };
   },
 
+  // The IEP card used to hard-code "Never started" no matter what, so a student
+  // whose draft was generated last week still read as untouched. The generate
+  // step stamps students.iep_draft_generated_at — report from it.
+  iepCardStatus() {
+    const stamp = this.state.student && this.state.student.iep_draft_generated_at;
+    if (!stamp) return { text: 'Never started', dot: 'gray' };
+    const when = window.aceUtils.formatShortDate(new Date(stamp));
+    const days = window.aceUtils.daysUntil(window.aceUtils.dateToISO(new Date(stamp)));
+    const age = days === 0 ? 'today' : days === -1 ? 'yesterday' : when;
+    return { text: `Draft generated ${age}`, dot: 'green' };
+  },
+
   renderCards() {
     const host = document.getElementById('profileCards');
     if (!host) return;
 
+    const iep = this.iepCardStatus();
     const cards = [
       {
         id: 'iep',
         icon: window.aceIcons.fileText(18),
         title: 'IEP Builder',
-        status: 'Never started',
-        statusDot: 'gray',
-        actionLabel: 'Open IEP Builder',
+        status: iep.text,
+        statusDot: iep.dot,
+        actionLabel: iep.dot === 'green' ? 'Open IEP Builder' : 'Start IEP draft',
         actionDisabled: false
       }
     ];
@@ -237,7 +261,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.barChart(18)}</div>
         <div class="card-title">Goals &amp; Progress</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="goalsHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
     `;
@@ -254,7 +277,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.calendar(18)}</div>
         <div class="card-title">Meeting Info</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="meetingSectionHost">
         <div class="muted" style="font-size:13px;">Loading…</div>
@@ -278,7 +300,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.graduationCap(18)}</div>
         <div class="card-title">Teacher Feedback</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="teacherFeedbackHost">
         <div class="muted" style="font-size:13px;">Loading…</div>
@@ -301,7 +322,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.usersRound(18)}</div>
         <div class="card-title">Parent Feedback</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="parentFeedbackHost">
         <div class="muted" style="font-size:13px;">Loading…</div>
@@ -324,7 +344,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.compass(18)}</div>
         <div class="card-title">Transition Assessment</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="transitionHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
     `;
@@ -344,11 +363,13 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.compass(18)}</div>
         <div class="card-title">Transition Plan</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div class="card-status-text">${tpEligible
         ? 'Postsecondary goals, services, courses of study & Indicator 13 checklist'
         : 'Not required yet — unlocks at age 14½'}</div>
+      ${tpEligible ? '' : `<p class="muted" style="font-size:12.5px;line-height:1.5;margin:6px 0 0;">${
+        window.aceUtils.escapeHtml(window.aceTransitionPlan
+          ? window.aceTransitionPlan.gateExplanation(this.state.student) : '')}</p>`}
       <button class="card-action" ${tpEligible ? '' : 'disabled'}>Open Transition Plan</button>
     `;
     host.appendChild(tpCard);
@@ -367,7 +388,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.settings(18)}</div>
         <div class="card-title">Related Services</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="servicesHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
     `;
@@ -384,7 +404,6 @@ const aceProfile = {
       <div class="card-header">
         <div class="card-icon">${window.aceIcons.fileText(18)}</div>
         <div class="card-title">Documents</div>
-        <div class="card-status-dot dot-gray"></div>
       </div>
       <div id="documentsHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
     `;
@@ -429,13 +448,26 @@ const aceProfile = {
     document.getElementById('notesClose').addEventListener('click', () => this.closeNotes());
     document.getElementById('notesOverlay').addEventListener('click', () => this.closeNotes());
 
+    // Escape closes the notes drawer, like every other panel in the app.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const drawer = document.getElementById('notesDrawer');
+      if (drawer && drawer.classList.contains('open')) {
+        e.preventDefault();
+        this.closeNotes();
+      }
+    });
+
     // Wire up debounced auto-save
     this.setupAutoSave();
   },
 
-  // Debounced save state
+  // Debounced save state. _pendingValue holds anything typed while a save is in
+  // flight: the old code returned early and dropped it, so the last keystrokes
+  // before a slow save silently never persisted.
   _saveTimer: null,
   _saveInFlight: false,
+  _pendingValue: null,
   _lastSavedValue: null,
 
   setupAutoSave() {
@@ -466,7 +498,12 @@ const aceProfile = {
       this.setNotesStatus('saved');
       return;
     }
-    if (this._saveInFlight) return;
+    // A save is already running — remember the newest text and let that save
+    // flush it when it lands, so nothing typed mid-request is lost.
+    if (this._saveInFlight) {
+      this._pendingValue = value;
+      return;
+    }
 
     this._saveInFlight = true;
     this.setNotesStatus('saving');
@@ -482,11 +519,19 @@ const aceProfile = {
       console.error('Notes save error:', error);
       this.setNotesStatus('error');
       if (window.aceToast) window.aceToast.error('Could not save notes');
+      // Keep the newest text queued so the next keystroke or blur retries it.
       return;
     }
 
     this._lastSavedValue = value;
     if (this.state.student) this.state.student.notes = value;
+
+    if (this._pendingValue !== null && this._pendingValue !== value) {
+      const next = this._pendingValue;
+      this._pendingValue = null;
+      return this.saveNotes(next);
+    }
+    this._pendingValue = null;
     this.setNotesStatus('saved');
   },
 
@@ -514,11 +559,22 @@ const aceProfile = {
   openNotes() {
     document.getElementById('notesDrawer').classList.add('open');
     document.getElementById('notesOverlay').classList.add('open');
+    const ta = document.getElementById('notesTextarea');
+    if (ta) { try { ta.focus(); } catch (e) { /* non-fatal */ } }
   },
 
   closeNotes() {
     document.getElementById('notesDrawer').classList.remove('open');
     document.getElementById('notesOverlay').classList.remove('open');
+    // Flush anything typed in the last second before the drawer goes away.
+    const ta = document.getElementById('notesTextarea');
+    if (ta && this._saveTimer) {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = null;
+      this.saveNotes(ta.value);
+    }
+    const fab = document.getElementById('notesFab');
+    if (fab) { try { fab.focus(); } catch (e) { /* non-fatal */ } }
   },
 
   renderNotFound(message) {

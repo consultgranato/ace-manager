@@ -4,7 +4,11 @@
 
 const aceAddStudent = {
 
-  CASELOAD_LIMIT: 15,
+  // A hard stop only where a caseload this size means something has gone wrong;
+  // SOFT_LIMIT is the point where the form starts noting the load is heavy but
+  // never blocks. (Was a flat 15, which is below a real high-school caseload.)
+  CASELOAD_LIMIT: 30,
+  SOFT_LIMIT: 20,
 
   async render() {
     const { count, error: countError } = await window.aceSupabase
@@ -34,7 +38,12 @@ const aceAddStudent = {
       <div class="add-student-header">
         <a href="${this.basePath()}index.html" class="back-link">← Back to Home</a>
         <h1>Add a Student</h1>
-        <p class="muted">You currently have ${currentCount} of ${this.CASELOAD_LIMIT} students on your caseload.</p>
+        <p class="muted">${currentCount === 0
+          ? 'This will be the first student on your caseload.'
+          : `You currently have ${currentCount} active ${currentCount === 1 ? 'student' : 'students'} on your caseload.`}</p>
+        ${currentCount >= this.SOFT_LIMIT ? `
+          <p class="field-hint">That's a heavy caseload — everything still works, but keep an eye on your
+          meeting calendar so deadlines don't stack up.</p>` : ''}
       </div>
 
       <form id="addStudentForm" class="student-form">
@@ -63,6 +72,13 @@ const aceAddStudent = {
                 <option value="12 (Senior)">12 (Senior)</option>
               </select>
             </label>
+            <label>
+              <span class="label-text">Date of Birth <span class="optional">(optional)</span></span>
+              <input type="date" id="dob" />
+              <span class="field-hint">Sets the exact age&#8209;14½ transition gate and age&#8209;of&#8209;majority timing</span>
+            </label>
+          </div>
+          <div class="form-row two-col">
             <label>
               <span class="label-text">Placement Type</span>
               <select id="placementType">
@@ -178,8 +194,13 @@ const aceAddStudent = {
         <h1>Caseload Limit Reached</h1>
       </div>
       <div class="ace-card">
-        <p>You currently have <strong>${count}</strong> active students on your caseload, which is the v1 limit of <strong>${this.CASELOAD_LIMIT}</strong>.</p>
-        <p class="muted" style="margin-top:8px;">To add a new student, archive a current student first from their profile (coming in Phase 2), or contact your administrator if your actual caseload exceeds 15 students.</p>
+        <p>You have <strong>${count}</strong> active students, which is the maximum of <strong>${this.CASELOAD_LIMIT}</strong> Ace Manager tracks per case manager.</p>
+        <p class="muted" style="margin-top:8px;">
+          If a student has moved, graduated, or exited services, archive them from their profile —
+          archived students keep all their records and stop counting against this total.
+          If your real caseload is genuinely larger than ${this.CASELOAD_LIMIT}, your organization
+          admin can split it across accounts on the Team page.
+        </p>
         <a href="${this.basePath()}pages/caseload.html" class="btn-primary" style="display:inline-block;text-decoration:none;margin-top:12px;">View My Caseload</a>
       </div>
     `;
@@ -215,6 +236,7 @@ const aceAddStudent = {
     const primaryDisability = document.getElementById('primaryDisability').value;
     const secondaryDisability = document.getElementById('secondaryDisability').value || null;
     const placementType = document.getElementById('placementType').value || null;
+    const dob = document.getElementById('dob').value || null;
     const hasBip = document.getElementById('hasBip').checked;
     const serviceMinutesRaw = document.getElementById('serviceMinutes').value;
     const serviceMinutes = serviceMinutesRaw ? parseInt(serviceMinutesRaw, 10) : null;
@@ -254,6 +276,7 @@ const aceAddStudent = {
         primary_disability: primaryDisability,
         secondary_disability: secondaryDisability,
         placement_type: placementType,
+        dob: dob,
         has_bip: hasBip,
         service_minutes: serviceMinutes,
         annual_review_date: annualReviewDate,

@@ -368,8 +368,15 @@ const aceGoals = {
         afterRender: (body) => {
           body.querySelectorAll('.goal-history-del').forEach(btn => {
             btn.addEventListener('click', async () => {
+              btn.disabled = true;
               const { error } = await window.aceSupabase.from('goal_progress_entries').delete().eq('id', btn.dataset.entryId);
-              if (!error) body.querySelector(`.goal-history-row[data-entry-id="${btn.dataset.entryId}"]`)?.remove();
+              if (error) {
+                // Was silent: the row simply stayed put with no explanation.
+                btn.disabled = false;
+                window.aceToast?.error('Could not delete that data point');
+                return;
+              }
+              body.querySelector(`.goal-history-row[data-entry-id="${btn.dataset.entryId}"]`)?.remove();
             });
           });
         }

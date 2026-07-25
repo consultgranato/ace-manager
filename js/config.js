@@ -8,7 +8,7 @@
 // changes the query string and browsers can't serve stale JS/CSS.
 // The deploy script matches the assignment below by pattern, so keep it on its
 // own line with a digits-only value. Run `node bump-version.js` each deploy.
-window.BUILD_VERSION = '20260722235326';
+window.BUILD_VERSION = '20260725031607';
 
 const SUPABASE_URL = 'https://npihodfemfpmhhooqtyl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waWhvZGZlbWZwbWhob29xdHlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzUwMzIsImV4cCI6MjA5NjQ1MTAzMn0.KDSh5GeGtbw-45-HK9gBg5Wkb-k2NQY5ui40Ln3H5ZI';
@@ -17,9 +17,14 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // only used when the org row (or an individual field) is missing, so the app can
 // never render blank branding. Keep in sync with the CSS --purple-primary token
 // default in css/styles.css.
+//
+// These are deliberately PRODUCT-neutral, not Niles North: an organization that
+// hasn't set its branding yet used to inherit another district's name and crest.
+// aceAuth.getBranding() falls back to the org's own school_name / name first, so
+// this generic mark only appears when there is no organization context at all.
 window.ACE_DEFAULT_BRANDING = {
-  school_name: 'Niles North',
-  logo_url: 'assets/vikings-logo.jpg',
+  school_name: 'Ace Manager',
+  logo_url: 'assets/ace-mark.svg',
   accent: '#4c2c7b'
 };
 

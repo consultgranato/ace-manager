@@ -30,8 +30,19 @@ const aceMeetings = {
     { label: 'Submit any related forms (ESY, transportation, etc.)', completed: false, auto: false }
   ],
 
+  // Every day boundary in this module is LOCAL (aceUtils.todayISO / _isoDaysAgo).
+  // toISOString() returns the UTC date, which west of UTC is tomorrow after
+  // ~7pm — that flipped a meeting scheduled for today into "past, needs marking
+  // complete" every evening and blocked scheduling anything for today.
+  _isoDaysAgo(n) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - n);
+    return window.aceUtils.dateToISO(d);
+  },
+
   async openScheduleDrawer(student) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = window.aceUtils.todayISO();
     const bodyHTML = `
       <form id="scheduleMeetingForm" class="student-form" style="gap:14px;">
         <div class="form-row">
@@ -475,13 +486,12 @@ const aceMeetings = {
 
   // Edit/Delete action buttons shared by the scheduled and completed cards.
   _meetingActionsHTML() {
-    const btn = (id, icon, color, label) =>
-      `<button type="button" id="${id}" title="${label}" aria-label="${label}" ` +
-      `style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;` +
-      `border:1px solid var(--border);border-radius:6px;background:#fff;color:${color};cursor:pointer;">${icon}</button>`;
-    return `<div class="meeting-actions" style="display:flex;gap:6px;">
-      ${btn('editMeetingBtn', window.aceIcons.edit(15), 'var(--text-muted)', 'Edit meeting')}
-      ${btn('deleteMeetingBtn', window.aceIcons.trash2(15), 'var(--critical)', 'Delete meeting')}
+    const btn = (id, icon, extraClass, label) =>
+      `<button type="button" id="${id}" class="meeting-action-btn ${extraClass}" ` +
+      `title="${label}" aria-label="${label}">${icon}</button>`;
+    return `<div class="meeting-actions">
+      ${btn('editMeetingBtn', window.aceIcons.edit(15), '', 'Edit meeting')}
+      ${btn('deleteMeetingBtn', window.aceIcons.trash2(15), 'meeting-action-danger', 'Delete meeting')}
     </div>`;
   },
 
@@ -511,7 +521,7 @@ const aceMeetings = {
   //   { meeting, state: 'upcoming' | 'past_not_completed' | 'completed_followups_pending' }
   // Returns null when no relevant meeting exists.
   async getActiveMeeting(studentId) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = window.aceUtils.todayISO();
 
     // 1. Upcoming non-completed meeting (today or future)
     const { data: upcoming } = await window.aceSupabase
@@ -542,9 +552,7 @@ const aceMeetings = {
     }
 
     // 3. Recently completed (last 30 days) with incomplete follow-ups
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysAgoStr = this._isoDaysAgo(30);
 
     const { data: completed } = await window.aceSupabase
       .from('meetings')
@@ -572,10 +580,8 @@ const aceMeetings = {
   computeActiveFromMeetings(meetings) {
     if (!meetings || meetings.length === 0) return null;
 
-    const today = new Date().toISOString().split('T')[0];
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const today = window.aceUtils.todayISO();
+    const thirtyDaysAgoStr = this._isoDaysAgo(30);
 
     // 1. Upcoming non-completed meeting (today or future)
     const upcoming = meetings

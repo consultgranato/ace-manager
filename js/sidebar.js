@@ -47,6 +47,10 @@ const aceSidebar = {
         </nav>
 
         <div class="sidebar-section-title">Students</div>
+        <div class="sidebar-filter" id="sidebarFilterWrap" hidden>
+          <label class="visually-hidden" for="sidebarFilter">Filter students</label>
+          <input type="search" id="sidebarFilter" class="sidebar-filter-input" placeholder="Filter…" autocomplete="off" />
+        </div>
         <div class="sidebar-students" id="sidebarStudents">
           <div class="sidebar-empty">No students yet. Click <strong>+ New Student</strong> to add one.</div>
         </div>
@@ -157,14 +161,37 @@ const aceSidebar = {
       } else {
         dotClass = this.computeStatusDot(s);
       }
+      const search = `${s.first_name} ${s.last_initial} ${s.grade || ''}`.toLowerCase();
       return `
-        <a href="${this.basePath()}pages/student-profile.html?id=${s.id}" class="sidebar-student">
+        <a href="${this.basePath()}pages/student-profile.html?id=${s.id}" class="sidebar-student" data-search="${this.escapeHtml(search)}">
           <span class="status-dot ${dotClass}"></span>
           <span class="student-name">${this.escapeHtml(s.first_name)} ${this.escapeHtml(s.last_initial)}.</span>
           <span class="student-grade">${this.escapeHtml(s.grade)}</span>
         </a>
       `;
     }).join('');
+
+    // The filter earns its space only once the list is long enough to scroll.
+    const wrap = document.getElementById('sidebarFilterWrap');
+    const input = document.getElementById('sidebarFilter');
+    if (wrap && input && students.length > 8) {
+      wrap.hidden = false;
+      input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        let shown = 0;
+        container.querySelectorAll('.sidebar-student').forEach(a => {
+          const hit = !q || (a.dataset.search || '').includes(q);
+          a.style.display = hit ? '' : 'none';
+          if (hit) shown++;
+        });
+        const empty = container.querySelector('.sidebar-filter-empty');
+        if (shown === 0 && !empty) {
+          container.insertAdjacentHTML('beforeend', '<div class="sidebar-empty sidebar-filter-empty">No match.</div>');
+        } else if (shown > 0 && empty) {
+          empty.remove();
+        }
+      });
+    }
   },
 
   computeStatusDot(student) {
