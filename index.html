@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Home — Ace Manager</title>
-  <link rel="stylesheet" href="css/styles.css?v=20260725031607" />
+  <link rel="stylesheet" href="css/styles.css?v=20260725195031" />
 </head>
 <body>
   <div id="sidebarHost"></div>
@@ -17,52 +17,63 @@
           <div id="homeSubtitle" class="muted"></div>
         </header>
 
-        <section class="home-section">
-          <h2 class="section-title">Needs Attention</h2>
-          <div id="needsAttention" class="attention-grid">
-            <div class="empty-state"><div class="muted">Loading…</div></div>
+        <div class="home-grid">
+          <div class="home-main">
+            <section class="home-section">
+              <h2 class="section-title">Needs attention</h2>
+              <div id="needsAttention" class="attention-grid">
+                <div class="empty-state"><div class="muted">Loading…</div></div>
+              </div>
+            </section>
+
+            <section class="home-section" id="recentMeetingsSection">
+              <h2 class="section-title">Recent meetings</h2>
+              <div id="recentMeetings" class="recent-meetings-stack"></div>
+            </section>
+
+            <section class="home-section">
+              <details class="home-calendar">
+                <summary class="home-calendar-summary">
+                  <span class="section-title">Month calendar</span>
+                  <span class="home-calendar-hint muted">Show</span>
+                </summary>
+                <div id="calendarHost"></div>
+              </details>
+            </section>
+
+            <section class="home-section" id="recentActivitySection" style="display:none;">
+              <h2 class="section-title">Recent activity</h2>
+              <div id="recentActivity"></div>
+            </section>
           </div>
-        </section>
 
-        <section class="home-section" id="recentMeetingsSection">
-          <h2 class="section-title">Recent Meetings</h2>
-          <div id="recentMeetings" class="recent-meetings-stack"></div>
-        </section>
-
-        <section class="home-section">
-          <details class="home-calendar">
-            <summary class="home-calendar-summary">
-              <span class="section-title" style="margin:0;">Month Calendar</span>
-              <span class="home-calendar-hint muted">show / hide</span>
-            </summary>
-            <div id="calendarHost"></div>
-          </details>
-        </section>
-
-        <section class="home-section" id="recentActivitySection" style="display:none;">
-          <h2 class="section-title">Recent Activity</h2>
-          <div id="recentActivity"></div>
-        </section>
+          <aside class="home-rail" id="homeRail" hidden>
+            <section class="home-section">
+              <h2 class="section-title">At a glance</h2>
+              <div class="glance-card" id="homeGlance"></div>
+            </section>
+          </aside>
+        </div>
       </div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=20260725031607"></script>
-  <script src="js/utils.js?v=20260725031607"></script>
-  <script src="js/auth.js?v=20260725031607"></script>
-  <script src="js/router.js?v=20260725031607"></script>
-  <script src="js/sidebar.js?v=20260725031607"></script>
-  <script src="js/modal.js?v=20260725031607"></script>
-  <script src="js/toast.js?v=20260725031607"></script>
-  <script src="js/store.js?v=20260725031607"></script>
-  <script src="js/status.js?v=20260725031607"></script>
-  <script src="js/icons.js?v=20260725031607"></script>
-  <script src="js/calendar.js?v=20260725031607"></script>
-  <script src="js/meetings.js?v=20260725031607"></script>
-  <script src="js/compliance.js?v=20260725031607"></script>
-  <script src="js/homepage.js?v=20260725031607"></script>
-  <script src="js/app.js?v=20260725031607"></script>
+  <script src="js/config.js?v=20260725195031"></script>
+  <script src="js/utils.js?v=20260725195031"></script>
+  <script src="js/auth.js?v=20260725195031"></script>
+  <script src="js/router.js?v=20260725195031"></script>
+  <script src="js/sidebar.js?v=20260725195031"></script>
+  <script src="js/modal.js?v=20260725195031"></script>
+  <script src="js/toast.js?v=20260725195031"></script>
+  <script src="js/store.js?v=20260725195031"></script>
+  <script src="js/status.js?v=20260725195031"></script>
+  <script src="js/icons.js?v=20260725195031"></script>
+  <script src="js/calendar.js?v=20260725195031"></script>
+  <script src="js/meetings.js?v=20260725195031"></script>
+  <script src="js/compliance.js?v=20260725195031"></script>
+  <script src="js/homepage.js?v=20260725195031"></script>
+  <script src="js/app.js?v=20260725195031"></script>
 
 </body>
 </html>

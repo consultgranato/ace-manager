@@ -29,9 +29,8 @@ const aceSidebar = {
         <div class="sidebar-brand">
           <img src="${this.escapeHtml(logoSrc)}" alt="${this.escapeHtml(schoolName)}" class="brand-logo" />
           <div class="brand-text">
-            <div class="brand-name">ACE MANAGER</div>
+            <div class="brand-name">Ace Manager</div>
             <div class="brand-school">${this.escapeHtml(schoolName)}</div>
-            <div class="brand-user">${this.escapeHtml(fullName)}</div>
           </div>
         </div>
 
@@ -69,10 +68,13 @@ const aceSidebar = {
             <span class="nav-icon">${window.aceIcons.settings(17)}</span>
             <span class="nav-label">Settings</span>
           </a>
-          <button class="sidebar-logout" id="sidebarLogout">
-            <span class="nav-icon">${window.aceIcons.logOut(15)}</span>
-            Sign Out
-          </button>
+          <div class="sidebar-account">
+            <span class="sidebar-account-name">${this.escapeHtml(fullName)}</span>
+            <button class="sidebar-logout" id="sidebarLogout">
+              <span class="nav-icon">${window.aceIcons.logOut(14)}</span>
+              Sign out
+            </button>
+          </div>
         </div>
       </aside>
 

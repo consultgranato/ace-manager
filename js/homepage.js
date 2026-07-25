@@ -145,6 +145,14 @@ const aceHomepage = {
     // Filter to only students that need attention
     const flagged = enriched.filter(e => e.state.needsAttention);
 
+    // The rail runs off data already in hand — no extra round trips.
+    this.renderGlance({
+      students,
+      enriched,
+      meetingsByStudent,
+      attentionCount: flagged.length + complianceCards.length
+    });
+
     if (flagged.length === 0 && complianceCards.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
@@ -215,6 +223,41 @@ const aceHomepage = {
         <div class="attention-action">Open profile</div>
       </a>
     `;
+  },
+
+  // Caseload summary rail. Reads only from what renderNeedsAttention already
+  // fetched, so it costs zero additional queries — the bulk fetch stays the
+  // single source for the whole page.
+  renderGlance({ students, enriched, meetingsByStudent, attentionCount }) {
+    const rail = document.getElementById('homeRail');
+    const host = document.getElementById('homeGlance');
+    if (!rail || !host) return;
+
+    // Local day boundary. toISOString() is UTC and rolls over in the evening
+    // west of UTC, which would drop today's meetings out of "scheduled".
+    const todayStr = window.aceUtils.todayISO();
+
+    const upcoming = Object.values(meetingsByStudent)
+      .flat()
+      .filter(m => !m.completed && m.scheduled_date >= todayStr).length;
+
+    const overdue = enriched.filter(e => e.state.dot === 'red').length;
+
+    const stats = [
+      { label: 'Active students', value: students.length, tone: 'neutral' },
+      { label: 'Needs attention', value: attentionCount, tone: attentionCount ? 'warning' : 'success' },
+      { label: 'Meetings scheduled', value: upcoming, tone: 'neutral' },
+      { label: 'Overdue', value: overdue, tone: overdue ? 'critical' : 'success' }
+    ];
+
+    host.innerHTML = stats.map(s => `
+      <div class="glance-row">
+        <span class="glance-label">${window.aceUtils.escapeHtml(s.label)}</span>
+        <span class="glance-value glance-${s.tone}">${s.value}</span>
+      </div>
+    `).join('');
+
+    rail.hidden = false;
   },
 
   async renderRecentMeetings() {

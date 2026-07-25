@@ -2,15 +2,16 @@
 // Ace Manager — Main App Entry Point
 // =============================================================
 
-// Paint the org's accent onto the primary token before anything renders.
-// Only --purple-primary is org-driven today; the deep/warm/tint shades stay as
-// authored in css/styles.css. Deriving those shades (and the gradients that use
-// them) from a single accent is a later refinement needed for real second-org
-// onboarding — until then a non-purple accent would clash with the fixed shades.
+// Paint the org's accent before anything renders.
+//
+// Setting --accent is now sufficient: css/styles.css derives the whole ramp
+// (tints, shades, focus ring, washes) from it with color-mix(), and the legacy
+// --purple-* names alias onto that ramp. So a teal district gets a coherent
+// teal product rather than teal dropped into fixed purple shades.
 async function applyOrgBranding() {
   const branding = await window.aceAuth.getBranding();
   if (branding.accent) {
-    document.documentElement.style.setProperty('--purple-primary', branding.accent);
+    document.documentElement.style.setProperty('--accent', branding.accent);
   }
 }
 

@@ -420,7 +420,7 @@ const aceProfile = {
     const notesHost = document.createElement('div');
     notesHost.id = 'notesDrawerHost';
     notesHost.innerHTML = `
-      <button class="notes-fab" id="notesFab" aria-label="Open notes">${window.aceIcons.pencilLine(24)}</button>
+      <button class="notes-fab" id="notesFab" aria-label="Open notes">${window.aceIcons.pencilLine(16)}<span>Notes</span></button>
       <div class="notes-drawer" id="notesDrawer">
         <div class="notes-drawer-header">
           <h3>Notes</h3>

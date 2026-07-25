@@ -1,46 +1,145 @@
+/* ============================================================
+   FOUNDATION — design tokens
+   ------------------------------------------------------------
+   The shell is a fixed neutral system; ONE org-driven colour
+   (--accent) drives every tinted surface, so a district whose
+   accent is teal gets a coherent teal product rather than teal
+   dropped into a purple chrome. Everything accent-derived is
+   computed with color-mix() from --accent alone; js/app.js only
+   ever sets --accent.
+
+   Each derived token declares a literal fallback first, then the
+   color-mix() version. Engines without color-mix() keep the
+   literal (the D219 purple ramp); everything since 2023 takes
+   the computed one.
+   ============================================================ */
+
 :root {
-  /* Purple */
-  --purple-primary: #4c2c7b;
-  --purple-deep: #2c0663;
-  --purple-warm: #6b4ba0;
-  --purple-tint: #f5f0fa;
+  /* ---- Org-driven accent (the ONLY value js/app.js writes) ---- */
+  --accent: #4c2c7b;
 
-  /* Backgrounds */
-  --bg: #fbfaf8;
-  --bg-card: #ffffff;
-  --bg-subtle: #f7f6f3;
+  /* ---- Accent ramp, derived from --accent ---- */
+  --accent-50:  #f6f3fa;
+  --accent-50:  color-mix(in oklab, var(--accent)  7%, #fff);
+  --accent-100: #ece5f4;
+  --accent-100: color-mix(in oklab, var(--accent) 14%, #fff);
+  --accent-200: #d6c9e6;
+  --accent-200: color-mix(in oklab, var(--accent) 30%, #fff);
+  --accent-400: #7d5fa8;
+  --accent-400: color-mix(in oklab, var(--accent) 70%, #fff);
+  --accent-500: #603a93;
+  --accent-500: color-mix(in oklab, var(--accent) 88%, #fff);
+  --accent-600: var(--accent);
+  --accent-700: #3c2261;
+  --accent-700: color-mix(in oklab, var(--accent) 82%, #000);
+  --accent-800: #2c1948;
+  --accent-800: color-mix(in oklab, var(--accent) 64%, #000);
 
-  /* Borders */
-  --border: #d1d5db;
-  --border-strong: #b3b3b3;
-  --border-input: #b3b3b3;
+  /* Accent used as a translucent wash / focus ring */
+  --accent-ring:  rgba(76,44,123,0.16);
+  --accent-ring:  color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-wash:  rgba(76,44,123,0.06);
+  --accent-wash:  color-mix(in srgb, var(--accent) 7%, transparent);
 
-  /* Text */
-  --text: #1a1a1a;
-  --text-muted: #737373;
-  --text-faint: #a3a3a3;
+  /* ---- Neutral scale (cool slate — the fixed shell) ---- */
+  --n-0:   #ffffff;
+  --n-25:  #fcfcfd;
+  --n-50:  #f7f8fa;
+  --n-100: #f1f3f7;
+  --n-200: #e4e7ec;
+  --n-300: #d3d8e0;
+  --n-400: #98a2b3;
+  --n-500: #667085;
+  --n-600: #4b5565;
+  --n-700: #344054;
+  --n-800: #1d2939;
+  --n-900: #101828;
 
-  /* Status */
-  --success: #059669;
-  --warning: #d97706;
-  --critical: #dc2626;
+  /* ---- Semantic surfaces ---- */
+  --bg: var(--n-50);
+  --bg-card: var(--n-0);
+  --surface: var(--n-0);
+  --surface-2: var(--n-25);
+  --bg-subtle: var(--n-100);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.05);
-  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
-  --shadow-xl: 0 12px 40px rgba(0,0,0,0.12);
+  /* ---- Borders ---- */
+  --border: var(--n-200);
+  --border-strong: var(--n-300);
+  --border-input: var(--n-300);
 
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  /* ---- Text ---- */
+  --text: var(--n-900);
+  --text-muted: var(--n-500);
+  --text-faint: var(--n-400);
+  --text-2: var(--n-600);
 
-  /* Transitions */
+  /* ---- Status, each as fill / edge / ink ---- */
+  --success: #067647;
+  --success-bg: #ecfdf3;
+  --success-border: #abefc6;
+  --success-ink: #085d3a;
+
+  --warning: #b54708;
+  --warning-bg: #fffaeb;
+  --warning-border: #fedf89;
+  --warning-ink: #93370d;
+
+  --critical: #d92d20;
+  --critical-bg: #fef3f2;
+  --critical-border: #fecdca;
+  --critical-ink: #b42318;
+
+  --info-bg: var(--accent-50);
+  --info-border: var(--accent-200);
+  --info-ink: var(--accent-700);
+
+  /* ---- Elevation — layered, so depth reads at every level ---- */
+  --shadow-xs: 0 1px 2px rgba(16,24,40,0.05);
+  --shadow-sm: 0 1px 3px rgba(16,24,40,0.08), 0 1px 2px rgba(16,24,40,0.04);
+  --shadow-md: 0 4px 8px -2px rgba(16,24,40,0.08), 0 2px 4px -2px rgba(16,24,40,0.04);
+  --shadow-lg: 0 12px 16px -4px rgba(16,24,40,0.08), 0 4px 6px -2px rgba(16,24,40,0.03);
+  --shadow-xl: 0 20px 24px -4px rgba(16,24,40,0.10), 0 8px 8px -4px rgba(16,24,40,0.03);
+
+  /* ---- Radii — tighter than the old 8/12/16/20 ---- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 999px;
+
+  /* ---- Type scale ---- */
+  --fs-2xs: 11px;
+  --fs-xs:  12px;
+  --fs-sm:  13px;
+  --fs-base: 14px;
+  --fs-md:  15px;
+  --fs-lg:  17px;
+  --fs-xl:  20px;
+  --fs-2xl: 24px;
+  --fs-3xl: 30px;
+
+  /* ---- Spacing ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* ---- Layout ---- */
+  --sidebar-w: 264px;
+  --content-max: 1240px;
+
+  /* ---- Transitions ---- */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --t-fast: 150ms;
-  --t-base: 250ms;
+  --t-fast: 130ms;
+  --t-base: 220ms;
+
+  /* ---- Legacy aliases ------------------------------------
+     ~4,400 lines of feature CSS reference these names. Pointing
+     them at the ramp restyles all of it at once and keeps the
+     old rules valid, so nothing needs a line-by-line rewrite. */
+  --purple-primary: var(--accent-600);
+  --purple-deep:    var(--accent-700);
+  --purple-warm:    var(--accent-400);
+  --purple-tint:    var(--accent-50);
 }
 
 *, *::before, *::after {
@@ -50,22 +149,35 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-  font-size: 15px;
+  font-family: "Inter var", Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+               "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+  font-size: var(--fs-md);
   line-height: 1.5;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Lining, equal-width figures. Every date, count, day-remaining and
+     percentage in this app sits in a column or changes in place;
+     proportional digits make those jitter. */
+  font-variant-numeric: tabular-nums;
 }
 
-h1, h2, h3 {
-  letter-spacing: -0.015em;
+/* Headings get progressively tighter tracking as they grow — optical
+   compensation, so the large type doesn't read loose next to the body. */
+h1, h2, h3, h4 {
+  font-weight: 640;
+  color: var(--text);
+  line-height: 1.25;
 }
 
-h1 { font-size: 28px; }
-h2 { font-size: 22px; }
-h3 { font-size: 18px; }
+h1 { font-size: var(--fs-3xl); letter-spacing: -0.028em; }
+h2 { font-size: var(--fs-2xl); letter-spacing: -0.022em; }
+h3 { font-size: var(--fs-lg);  letter-spacing: -0.014em; }
+h4 { font-size: var(--fs-md);  letter-spacing: -0.008em; }
+
+/* Prose measure — long-form copy should never run the full card width. */
+p { max-width: 72ch; }
 
 .app-header {
   height: 60px;
@@ -4471,4 +4583,1242 @@ summary:focus-visible,
 .sidebar-filter-input:focus {
   outline: none; background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* =============================================================
+   DESIGN SYSTEM v2 — calm professional
+   -------------------------------------------------------------
+   The rules above accumulated one phase at a time and encode an
+   older look: purple gradients, 16-20px radii, near-invisible
+   shadows, and a shell built around D219's purple specifically.
+   This layer restates the primitives on top of the new tokens.
+   It is deliberately last in the file so it wins on the cascade
+   without editing 25 phases of feature CSS in place.
+
+   Principles
+   - The shell is neutral. Accent marks state, never decorates.
+   - One filled button per view. Everything else is quiet.
+   - Depth comes from a hairline border plus a soft shadow, not
+     from heavy fills.
+   - Type carries the hierarchy; colour does not have to.
+   ============================================================= */
+
+/* ---- 1. App shell ---------------------------------------------------- */
+
+.ace-app-main { margin-left: var(--sidebar-w); }
+.ace-footer   { margin-left: var(--sidebar-w); }
+
+/* Content now scales with the viewport instead of stranding a narrow
+   column in the middle of a wide screen. */
+.page-content,
+.homepage,
+.caseload-page,
+.settings-page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-8) var(--sp-12);
+}
+.homepage { padding-top: var(--sp-8); }
+
+@media (max-width: 1100px) {
+  .page-content, .homepage, .caseload-page, .settings-page {
+    padding: var(--sp-6) var(--sp-5) var(--sp-10);
+  }
+}
+
+/* ---- 2. Page headers ------------------------------------------------- */
+
+.home-header,
+.caseload-header,
+.settings-header,
+.add-student-header,
+.profile-header {
+  margin-bottom: var(--sp-6);
+}
+
+.home-header h1,
+.caseload-header h1,
+.settings-header h1,
+.add-student-header h1,
+.profile-name {
+  font-size: var(--fs-3xl);
+  font-weight: 640;
+  letter-spacing: -0.028em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.home-header p,
+.caseload-header p,
+.settings-header p {
+  color: var(--text-muted);
+  font-size: var(--fs-base);
+  margin-top: 6px;
+}
+
+/* ---- 3. Section labels ----------------------------------------------
+   The uppercase, wide-tracked, pale-grey label is the single most
+   dated pattern in the app and it appears on every page. Replaced
+   with sentence case at full text colour — it reads as a heading
+   instead of as a disclaimer. */
+
+.section-title,
+.settings-section-title,
+.sidebar-section-title,
+.tf-courses-header,
+.iep-acad-tf-key {
+  font-size: var(--fs-sm);
+  font-weight: 620;
+  text-transform: none;
+  letter-spacing: -0.006em;
+  color: var(--text-700, var(--n-700));
+}
+
+.section-title,
+.settings-section-title {
+  margin: 0 0 var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.sidebar-section-title {
+  padding: var(--sp-4) var(--sp-4) 6px;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+/* The one place small-caps still earns its keep: inline data keys inside
+   a dense reference panel, where sentence case would compete with values. */
+.iep-acad-tf-key {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+/* ---- 4. Surfaces ------------------------------------------------------
+   Every card gets a hairline border AND a soft shadow. The old cards
+   had shadow only at 4% opacity on an off-white page, so they never
+   separated from the background. */
+
+.ace-card,
+.profile-identity,
+.profile-card,
+.attention-card,
+.caseload-card,
+.caseload-row,
+.empty-state,
+.empty-state-small,
+.calendar-widget,
+.auth-card,
+.settings-card,
+.student-form fieldset,
+.tf-link-box,
+.meeting-section,
+.recent-meeting,
+.public-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-card,
+.caseload-card,
+.attention-card {
+  transition: box-shadow var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease),
+              transform var(--t-fast) var(--ease);
+}
+
+.profile-card:hover,
+.caseload-card:hover,
+.attention-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: none; /* the -2px lift read as jitter on a dense grid */
+}
+
+.auth-card,
+.ace-modal {
+  box-shadow: var(--shadow-xl);
+}
+
+/* ---- 5. Buttons -------------------------------------------------------
+   Flat fills, no gradients. A gradient on a small control is the
+   clearest "2016 admin template" tell in the old sheet. */
+
+.btn-primary,
+.ace-btn-primary,
+.card-action,
+.sidebar-add-btn,
+.caseload-empty-cta,
+.welcome-cta {
+  background: var(--accent-600);
+  background-image: none;
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 9px 16px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  letter-spacing: -0.006em;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: background var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease);
+}
+
+.btn-primary:hover:not(:disabled),
+.ace-btn-primary:hover:not(:disabled),
+.card-action:hover:not(:disabled),
+.sidebar-add-btn:hover:not(:disabled),
+.caseload-empty-cta:hover,
+.welcome-cta:hover {
+  background: var(--accent-700);
+  background-image: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:active:not(:disabled),
+.ace-btn-primary:active:not(:disabled),
+.card-action:active:not(:disabled) {
+  background: var(--accent-800);
+  transform: none;
+}
+
+.btn-primary:disabled,
+.ace-btn-primary:disabled,
+.card-action:disabled {
+  background: var(--n-200);
+  color: var(--text-faint);
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.btn-secondary,
+.ace-btn-secondary {
+  background: var(--surface);
+  color: var(--text-700, var(--n-700));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 9px 14px;
+  font-size: var(--fs-base);
+  font-weight: 590;
+  gap: 6px;
+  box-shadow: var(--shadow-xs);
+  transition: background var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease);
+}
+
+.btn-secondary:hover,
+.ace-btn-secondary:hover {
+  background: var(--n-50);
+  border-color: var(--n-400);
+}
+
+.ace-btn-danger {
+  background: var(--critical);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+.ace-btn-danger:hover:not(:disabled) { background: var(--critical-ink); }
+
+/* Card actions are no longer full-bleed filled bars. A card is a summary;
+   its action is a link-weight control, so a screen of cards has one
+   visual centre of gravity instead of six competing purple slabs. */
+.card-action {
+  width: auto;
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--accent-700);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-xs);
+}
+.card-action:hover:not(:disabled) {
+  background: var(--accent-50);
+  border-color: var(--accent-200);
+  color: var(--accent-700);
+  box-shadow: var(--shadow-xs);
+}
+.card-action:disabled { background: var(--n-50); border-color: var(--border); }
+
+/* ---- 6. Sidebar -------------------------------------------------------
+   Neutral shell: the brand block loses its purple gradient so the
+   chrome reads the same for any district. */
+
+.ace-sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.sidebar-brand {
+  background: var(--surface);
+  background-image: none;
+  color: var(--text);
+  padding: var(--sp-4) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  align-items: center;
+}
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 3px;
+  box-shadow: none;
+}
+
+.brand-text .brand-name {
+  font-size: var(--fs-base);
+  font-weight: 640;
+  letter-spacing: -0.012em;
+  color: var(--text);
+  text-transform: none;
+}
+.brand-text .brand-school {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  opacity: 1;
+  margin-top: 1px;
+}
+/* The signed-in name belongs with Sign out, not stacked under the product
+   name where it reads as part of the brand lockup. */
+.brand-text .brand-user { display: none; }
+
+.sidebar-nav {
+  padding: var(--sp-3) 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-item {
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-base);
+  font-weight: 520;
+  color: var(--text-700, var(--n-700));
+  gap: 10px;
+}
+.nav-item:hover { background: var(--n-100); color: var(--text); }
+
+/* Active state: tinted row plus a flush accent rule, so the current
+   page is legible at a glance without a saturated block. */
+.nav-item.active {
+  background: var(--accent-50);
+  color: var(--accent-700);
+  font-weight: 620;
+  position: relative;
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-600);
+}
+
+.sidebar-student {
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+}
+.sidebar-student:hover { background: var(--n-100); }
+.student-grade { font-size: var(--fs-2xs); color: var(--text-faint); }
+
+.sidebar-add-btn {
+  margin: 10px 12px;
+  padding: 8px 14px;
+  font-size: var(--fs-sm);
+}
+
+.sidebar-footer { border-top: 1px solid var(--border); padding: 8px; }
+.sidebar-logout {
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  color: var(--text-muted);
+}
+.sidebar-logout:hover { background: var(--critical-bg); color: var(--critical-ink); }
+
+/* The sidebar is white now, so a white focus ring would be invisible.
+   Restore the accent ring that the rest of the app uses. */
+.ace-sidebar a:focus-visible,
+.ace-sidebar button:focus-visible {
+  outline-color: var(--accent-600);
+}
+
+/* Fix: this input was authored for a purple sidebar — white text on a
+   translucent-white fill. It renders on the white student list, so the
+   text was invisible. It only appears past 8 students, which is why it
+   was never caught. */
+.sidebar-filter { padding: 0 12px 8px; }
+.sidebar-filter-input {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: var(--fs-xs);
+}
+.sidebar-filter-input::placeholder { color: var(--text-faint); }
+.sidebar-filter-input:focus {
+  background: var(--surface);
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* ---- 7. Form controls ------------------------------------------------- */
+
+.auth-card input,
+.auth-card select,
+.student-form input[type="text"],
+.student-form input[type="number"],
+.student-form input[type="date"],
+.student-form select,
+.student-form textarea,
+.notes-textarea,
+.caseload-search-input,
+.course-search-input,
+.tf-link-input,
+input[type="text"], input[type="email"], input[type="password"],
+input[type="date"], input[type="number"], input[type="search"],
+select, textarea {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  padding: 8px 11px;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease);
+}
+
+.auth-card input:focus,
+.auth-card select:focus,
+.student-form input:focus,
+.student-form select:focus,
+.student-form textarea:focus,
+.notes-textarea:focus,
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+::placeholder { color: var(--text-faint); }
+
+.student-form legend,
+.label-text {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.006em;
+}
+.student-form fieldset { padding: var(--sp-5) var(--sp-5) var(--sp-6); }
+
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-600); }
+
+/* ---- 8. Status pills and dots ----------------------------------------
+   Tinted fill + matching hairline + dark ink. The old pills were fill
+   and ink only, so they floated. */
+
+.ace-pill,
+.tf-status,
+.meeting-type-pill,
+.caseload-card-pill,
+.profile-deadline {
+  border-radius: var(--radius-full);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: -0.004em;
+  padding: 3px 9px;
+  border: 1px solid transparent;
+}
+
+.ace-pill-success, .tf-status-received,
+.profile-deadline.urgency-clear,
+.profile-deadline.urgency-comfortable {
+  background: var(--success-bg); color: var(--success-ink); border-color: var(--success-border);
+}
+.ace-pill-warning, .tf-status-waiting,
+.profile-deadline.urgency-soon {
+  background: var(--warning-bg); color: var(--warning-ink); border-color: var(--warning-border);
+}
+.ace-pill-critical,
+.profile-deadline.urgency-critical,
+.profile-deadline.urgency-overdue {
+  background: var(--critical-bg); color: var(--critical-ink); border-color: var(--critical-border);
+}
+.ace-pill-neutral {
+  background: var(--n-100); color: var(--n-700); border-color: var(--n-200);
+}
+.ace-pill-purple,
+.profile-deadline.urgency-approaching {
+  background: var(--info-bg); color: var(--info-ink); border-color: var(--info-border);
+}
+
+/* Status dots get a ring so they hold their edge on tinted rows. */
+.status-dot, .card-status-dot {
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.dot-gray, .card-status-dot.dot-gray { background: var(--n-300); }
+
+/* ---- 9. Cards: profile, caseload, attention -------------------------- */
+
+.profile-card-grid { gap: var(--sp-4); }
+.profile-card { padding: var(--sp-5); border-radius: var(--radius-xl); }
+
+.card-header { margin-bottom: 8px; gap: 10px; }
+.card-title { font-size: var(--fs-base); font-weight: 620; letter-spacing: -0.008em; }
+.card-icon {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  background: var(--n-100);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.card-icon .ace-icon { width: 15px; height: 15px; }
+.card-status-text { font-size: var(--fs-sm); margin-bottom: var(--sp-4); }
+
+.profile-identity { padding: var(--sp-6); }
+.profile-meta { font-size: var(--fs-base); margin-top: 4px; }
+
+.attention-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--sp-4);
+}
+.attention-card {
+  padding: var(--sp-4) var(--sp-5);
+  border-left: 3px solid var(--border-strong);
+}
+.attention-approaching { border-left-color: var(--warning); }
+.attention-critical,
+.attention-overdue { border-left-color: var(--critical); }
+.attention-name { font-size: var(--fs-md); font-weight: 620; }
+.attention-action { color: var(--accent-700); font-size: var(--fs-sm); }
+
+.caseload-card { padding: var(--sp-4) var(--sp-5); }
+.caseload-card-name { font-size: var(--fs-md); font-weight: 620; }
+
+/* ---- 10. Overlays: modal, drawer, toast ------------------------------
+   Purple gradient headers replaced with a neutral header + rule. The
+   dialog is a surface, not a branded banner. */
+
+.ace-drawer,
+.notes-drawer,
+.ace-modal,
+.profile-menu,
+.cal-popover {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+}
+.ace-drawer, .notes-drawer {
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  border-right: none;
+  box-shadow: var(--shadow-xl);
+}
+
+.ace-drawer-header,
+.notes-drawer-header {
+  background: var(--surface);
+  background-image: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  border-top-left-radius: var(--radius-xl);
+  padding: var(--sp-4) var(--sp-5);
+}
+.ace-drawer-header h2,
+.notes-drawer-header h3 {
+  font-size: var(--fs-lg);
+  font-weight: 640;
+  letter-spacing: -0.014em;
+  color: var(--text);
+}
+
+.ace-drawer-close,
+.notes-close {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  width: 30px; height: 30px;
+  font-size: 17px;
+}
+.ace-drawer-close:hover,
+.notes-close:hover { background: var(--n-100); color: var(--text); }
+
+/* Auto-save status sat on the purple header in white; it's on a white
+   header now. */
+.notes-status { color: var(--text-muted); }
+.notes-status-saving { color: var(--text-muted); }
+.notes-status-saved  { color: var(--success); }
+.notes-status-error  { color: var(--critical); }
+
+.ace-modal { border-radius: var(--radius-xl); padding: var(--sp-6); }
+.ace-modal h3 { font-size: var(--fs-lg); font-weight: 640; }
+.ace-modal-message { font-size: var(--fs-base); }
+
+.ace-toast {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--fs-base);
+}
+.ace-toast-info .ace-toast-icon { background: var(--accent-600); }
+
+/* ---- 11. Notes FAB ---------------------------------------------------
+   A round floating Material button in a non-Material app, sitting on
+   top of page content. Made a squared, bordered control that reads as
+   part of this system. */
+
+.notes-fab {
+  width: auto;
+  height: 38px;
+  padding: 0 14px;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  background-image: none;
+  color: var(--text-700, var(--n-700));
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-family: inherit;
+  bottom: 22px;
+  right: 22px;
+}
+.notes-fab:hover {
+  background: var(--n-50);
+  border-color: var(--n-400);
+  box-shadow: var(--shadow-lg);
+  transform: none;
+}
+.notes-fab .ace-icon { width: 16px; height: 16px; }
+
+/* ---- 12. Calendar ----------------------------------------------------- */
+
+.calendar-widget { padding: var(--sp-5); }
+.calendar-title { font-size: var(--fs-md); font-weight: 640; letter-spacing: -0.012em; }
+
+.cal-cell {
+  min-height: 74px;
+  border-radius: var(--radius-md);
+  border-color: var(--border);
+  background: var(--surface);
+}
+.cal-cell:hover { background: var(--n-50); border-color: var(--border-strong); }
+.cal-today { background: var(--accent-50); border-color: var(--accent-200); }
+.cal-today .cal-daynum { color: var(--accent-700); }
+.cal-approaching { background: var(--warning-bg); border-color: var(--warning-border); }
+.cal-critical, .cal-overdue { background: var(--critical-bg); border-color: var(--critical-border); }
+.cal-dow { color: var(--text-faint); font-size: var(--fs-2xs); letter-spacing: 0.02em; }
+
+.cal-nav-btn, .cal-today-btn, .cal-view-btn {
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  color: var(--text-700, var(--n-700));
+}
+.cal-nav-btn:hover, .cal-today-btn:hover {
+  background: var(--n-100);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.cal-view-btn.active { background: var(--accent-600); color: #fff; }
+
+.cal-week-cell { border-radius: var(--radius-md); }
+.cal-week-event { border-radius: var(--radius-xs); font-weight: 550; }
+
+/* ---- 13. Empty states -------------------------------------------------
+   Were a bare glyph over grey text on a shadowless panel. Now a proper
+   composition: framed icon, headline at text weight, muted support. */
+
+.empty-state {
+  padding: var(--sp-10) var(--sp-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+}
+.empty-state-icon,
+.caseload-empty-icon,
+.settings-empty-icon,
+.welcome-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  margin: 0 auto var(--sp-3);
+  border-radius: var(--radius-lg);
+  background: var(--n-100);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 20px;
+}
+.empty-state h2, .empty-state h3 {
+  font-size: var(--fs-lg);
+  font-weight: 620;
+  margin-bottom: 6px;
+}
+.empty-state p, .empty-state .muted {
+  color: var(--text-muted);
+  font-size: var(--fs-base);
+  margin-left: auto;
+  margin-right: auto;
+}
+.empty-state-small {
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--radius-lg);
+}
+
+/* ---- 14. Settings ----------------------------------------------------- */
+
+.settings-card { border-radius: var(--radius-xl); overflow: hidden; }
+.settings-row { padding: var(--sp-3) var(--sp-5); }
+.settings-label { font-size: var(--fs-sm); color: var(--text-muted); font-weight: 550; }
+.settings-value { font-size: var(--fs-base); color: var(--text); }
+.settings-section { margin-bottom: var(--sp-8); }
+.nsd-chip {
+  border-radius: var(--radius-md);
+  border-color: var(--border-strong);
+  font-size: var(--fs-sm);
+  box-shadow: var(--shadow-xs);
+}
+
+/* ---- 15. Auth + public forms ------------------------------------------
+   These pages are the first thing a new district sees, and the only
+   ones an outside teacher or parent ever sees. */
+
+.ace-header,
+.public-form-header {
+  background: var(--surface);
+  background-image: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.ace-logo, .public-form-brand {
+  color: var(--text);
+  font-weight: 640;
+  letter-spacing: -0.014em;
+  font-size: var(--fs-lg);
+}
+.ace-header-logo, .public-form-logo {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.header-btn {
+  background: var(--surface);
+  color: var(--text-700, var(--n-700));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 590;
+  padding: 7px 13px;
+}
+.header-btn:hover { background: var(--n-50); border-color: var(--n-400); }
+
+.auth-main { background: var(--bg); }
+.auth-card { padding: var(--sp-8); border-radius: var(--radius-xl); }
+.auth-card h2 { font-size: var(--fs-2xl); font-weight: 640; letter-spacing: -0.022em; }
+.auth-page-logo {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  width: 60px; height: 60px;
+}
+.auth-links a { color: var(--accent-700); font-weight: 550; }
+
+.public-form-card { padding: var(--sp-8); border-radius: var(--radius-xl); }
+.public-form-title { font-size: var(--fs-2xl); font-weight: 640; letter-spacing: -0.022em; }
+
+.error-msg {
+  background: var(--critical-bg);
+  border-color: var(--critical-border);
+  color: var(--critical-ink);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+}
+.success-msg {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-ink);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+}
+
+/* ---- 16. Links + focus ------------------------------------------------ */
+
+a { color: var(--accent-700); }
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* ---- 17. Chips + accommodations --------------------------------------- */
+
+.accomm-chip, .course-pill, .prep-auto-badge {
+  border-radius: var(--radius-full);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.accomm-chip {
+  background: var(--accent-50);
+  color: var(--accent-700);
+  border: 1px solid var(--accent-200);
+}
+.prep-auto-badge {
+  background: var(--n-100);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  text-transform: none;
+  letter-spacing: -0.004em;
+}
+
+/* Signed-in identity moved out of the brand lockup and paired with
+   Sign out, where it belongs. */
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 6px 10px 2px;
+}
+.sidebar-account-name {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-account .sidebar-logout {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  font-size: var(--fs-xs);
+}
+
+/* ---- 18. Homepage: two-column shell ----------------------------------
+   A single attention card used to sit alone in the middle of a wide
+   screen. The rail gives the page a second column of real content and
+   an anchor on the right, so the layout holds at any width. */
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: var(--sp-8);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .home-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .home-rail { order: -1; }
+}
+
+.home-main { min-width: 0; }
+.home-section + .home-section { margin-top: var(--sp-8); }
+
+.glance-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--sp-2) var(--sp-4);
+}
+
+.glance-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 10px 0;
+}
+.glance-row + .glance-row { border-top: 1px solid var(--border); }
+
+.glance-label {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.glance-value {
+  font-size: var(--fs-xl);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text);
+}
+.glance-value.glance-warning  { color: var(--warning-ink); }
+.glance-value.glance-critical { color: var(--critical-ink); }
+.glance-value.glance-success  { color: var(--text); }
+
+/* Collapsible calendar disclosure — was a grey uppercase "show / hide". */
+.home-calendar-summary {
+  gap: var(--sp-2);
+  padding: 0;
+  margin-bottom: var(--sp-3);
+}
+.home-calendar-summary .section-title { margin: 0; }
+.home-calendar-hint {
+  font-size: var(--fs-sm);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--accent-700);
+  font-weight: 550;
+}
+.home-calendar[open] .home-calendar-hint { visibility: hidden; }
+.home-calendar[open] .home-calendar-hint::after {
+  content: "Hide";
+  visibility: visible;
+}
+
+/* Attention cards read as a scannable stack, not a sparse card wall. */
+.attention-headline { font-size: var(--fs-base); font-weight: 590; margin-top: 6px; }
+.attention-subline  { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
+
+/* ---- 19. Measure ------------------------------------------------------
+   List pages earn the full 1240px; form and settings pages do not. A
+   settings row 1240px wide puts its label and value at opposite ends of
+   the monitor. */
+
+.settings-page,
+.add-student-header,
+.student-form {
+  max-width: 880px;
+}
+.add-student-header, .student-form { margin-left: auto; margin-right: auto; }
+
+.settings-note,
+.settings-card + .muted,
+.field-hint { max-width: 68ch; }
+
+/* Caseload cards sit a little wider so the pill and meta don't wrap. */
+.caseload-grid { grid-template-columns: repeat(auto-fill, minmax(288px, 1fr)); gap: var(--sp-4); }
+
+/* ---- 20. Primary-action discipline -----------------------------------
+   Caseload and Add Student each carry their own filled "New Student"
+   button. With the sidebar's also filled, two identical purple slabs
+   competed on the same screen. The sidebar's is persistent chrome, so
+   it steps down to a quiet control and the page action stays primary. */
+
+.sidebar-add-btn {
+  background: var(--surface);
+  background-image: none;
+  color: var(--text-700, var(--n-700));
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-xs);
+  font-weight: 590;
+}
+.sidebar-add-btn:hover:not(:disabled) {
+  background: var(--n-50);
+  background-image: none;
+  border-color: var(--n-400);
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+}
+
+/* ---- 21. The remaining uppercase labels -------------------------------
+   Section 3 caught the page-level ones; these are the in-card headings
+   the same pattern spread to. In every case the DOM text is already
+   sentence case and the stylesheet was uppercasing it, so dropping
+   text-transform restores the authored wording.
+
+   Tag-like micro-labels (auto badges, fit/probe chips) keep their caps —
+   at 10px on a chip, caps genuinely read better — but lose the heavy
+   weight and wide tracking that made them shout. */
+
+.prep-checklist-header h4,
+.tf-link-label,
+.goals-suggest-label,
+.goals-group-label,
+.iep-toc-title,
+.iep-func-group-title,
+.iep-disability-block-title,
+.tp-area-title,
+.iep-context-fields dt,
+.settings-section-title,
+.tf-courses-header {
+  text-transform: none;
+  letter-spacing: -0.006em;
+  font-size: var(--fs-sm);
+  font-weight: 620;
+  color: var(--text-700, var(--n-700));
+}
+
+/* Group titles that were purple underlined rules — quieter, and neutral
+   so they don't tint with the org accent for no reason. */
+.iep-func-group-title,
+.iep-disability-block-title {
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.tp-area-title { color: var(--text); }
+
+.iep-context-fields dt {
+  font-size: var(--fs-xs);
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.prep-count,
+.iep-chip-tag,
+.gbank-fit,
+.gbank-probe,
+.probe-sr-tag,
+.tf-status {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.prep-count { text-transform: none; letter-spacing: -0.004em; font-size: var(--fs-sm); color: var(--text-muted); }
+
+.gbank-fit   { background: var(--success-bg); color: var(--success-ink); border-radius: var(--radius-full); }
+.gbank-probe { background: var(--accent-50); color: var(--accent-700); border-radius: var(--radius-full); }
+.probe-sr-tag{ background: var(--warning-bg); color: var(--warning-ink); border-radius: var(--radius-full); }
+
+/* Meeting type pill — was a wide-tracked caps block. */
+.meeting-type-pill {
+  text-transform: none;
+  letter-spacing: -0.004em;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  background: var(--n-100);
+  color: var(--n-700);
+  border: 1px solid var(--border);
+}
+
+/* "Mark complete" is the meeting's real action — it was reading as
+   disabled next to the icon buttons. */
+.meeting-mark-btn {
+  background: var(--surface);
+  color: var(--text-700, var(--n-700));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-weight: 590;
+  font-size: var(--fs-sm);
+  box-shadow: var(--shadow-xs);
+}
+.meeting-mark-btn:hover:not(:disabled) {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-ink);
+}
+
+/* The IEP Builder card kept a status dot after the others dropped theirs;
+   an always-grey dot carries no information. */
+.profile-card .card-status-dot.dot-gray { display: none; }
+
+/* ---- 22. Disabled controls -------------------------------------------
+   A blanket opacity: 0.5 fades the border and text together, so a
+   disabled button reads as a rendering fault rather than a state.
+   Give it its own flat treatment instead. */
+
+.btn-secondary:disabled,
+.ace-btn-secondary:disabled,
+.meeting-mark-btn:disabled {
+  opacity: 1;
+  background: var(--n-50);
+  color: var(--text-faint);
+  border-color: var(--border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.btn-secondary:disabled:hover,
+.ace-btn-secondary:disabled:hover,
+.meeting-mark-btn:disabled:hover {
+  background: var(--n-50);
+  border-color: var(--border);
+  color: var(--text-faint);
+}
+
+/* ---- 23. Public form pages -------------------------------------------
+   Teachers and parents only ever see these, so they carry the product's
+   first impression outside the district. The header was a white slab
+   floating above the card with a hard bottom rule; it reads better as
+   a plain page header on the page background. */
+
+.public-form-body { background: var(--bg); }
+
+.public-form-header {
+  background: transparent;
+  border-bottom: none;
+  padding: var(--sp-8) 0 var(--sp-5);
+}
+.public-form-shell { padding-inline: var(--sp-5); }
+.public-form-logo { width: 36px; height: 36px; }
+.public-form-brand { font-size: var(--fs-md); }
+.public-form-sub { color: var(--text-muted); font-size: var(--fs-sm); }
+
+.public-form-card { box-shadow: var(--shadow-md); }
+.public-form-lead { color: var(--text-muted); font-size: var(--fs-md); }
+.public-form-footer {
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+  padding: var(--sp-8) 0 var(--sp-6);
+}
+
+/* Course / option picker rows */
+.picker-item {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: 590;
+  transition: border-color var(--t-fast) var(--ease),
+              background var(--t-fast) var(--ease);
+}
+.picker-item:hover {
+  background: var(--accent-50);
+  border-color: var(--accent-200);
+}
+
+/* ---- 24. Auth header lockup -------------------------------------------
+   .ace-header-inner is space-between, and the mark and wordmark were
+   siblings — so on a wide screen they flew to opposite ends of the
+   header. They're one lockup now.
+
+   The Ace mark is already a filled, rounded, gradient tile. Framing it
+   in a white bordered box drew a tile around a tile. */
+
+.ace-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ace-header-inner { justify-content: flex-start; gap: var(--sp-4); }
+.ace-header-inner .header-btn { margin-left: auto; }
+
+.ace-header-logo,
+.auth-page-logo,
+.public-form-logo {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+.ace-header-logo { width: 26px; height: 26px; margin-right: 0; border-radius: var(--radius-sm); }
+.auth-page-logo  { width: 48px; height: 48px; border-radius: var(--radius-lg); }
+.public-form-logo{ border-radius: var(--radius-md); }
+
+.ace-logo { font-size: var(--fs-md); letter-spacing: -0.012em; }
+.auth-logo-wrap { margin: var(--sp-10) auto var(--sp-5); }
+
+/* ---- 25. IEP Builder --------------------------------------------------
+   The builder collapses the app sidebar to a 60px icon rail. The new
+   account row has to collapse with it — otherwise the signed-in name
+   renders into a 60px column and truncates to "T…". */
+
+@media (min-width: 901px) {
+  .iep-builder-page .sidebar-account { display: none; }
+}
+
+/* Document typography: a 2px rule under every section heading was the
+   heaviest line on the page and there is one per section. */
+.iep-section-title {
+  font-size: var(--fs-xl);
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+.iep-doc-header h1 {
+  font-size: var(--fs-2xl);
+  font-weight: 640;
+  letter-spacing: -0.024em;
+}
+.iep-doc-header p,
+.iep-section-hint { color: var(--text-muted); font-size: var(--fs-base); }
+
+.iep-toc-title { margin-top: var(--sp-5); }
+.iep-toc-link { border-radius: var(--radius-md); font-size: var(--fs-sm); }
+.iep-toc-link.active {
+  background: var(--surface);
+  color: var(--accent-700);
+  border-left-color: var(--accent-600);
+}
+
+.iep-context-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+.iep-context-bar:hover { border-color: var(--border-strong); }
+
+.iep-placeholder {
+  background: var(--n-50);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+}
+
+/* Present-levels chips */
+.iep-chip > span,
+.chipChecks label > span,
+.chipRadios label > span {
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: var(--fs-base);
+  box-shadow: var(--shadow-xs);
+  transition: background var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease);
+}
+.iep-chip input:checked + span,
+.chipChecks input:checked + span,
+.chipRadios input:checked + span {
+  background: var(--accent-50);
+  border-color: var(--accent-400);
+  color: var(--accent-700);
+  font-weight: 590;
+}
+
+/* ---- 26. Mobile shell restore -----------------------------------------
+   This layer is deliberately last in the file, which means an unlayered
+   rule here outranks an equal-specificity rule inside an EARLIER media
+   query — media queries add no specificity. Section 1 re-declared
+   .ace-app-main / .ace-footer margin-left, which silently beat the
+   max-width:900px rules at line ~687 that pull content back when the
+   sidebar goes off-canvas. Restated here so the breakpoint wins again.
+
+   Anything else this layer restates must be re-asserted the same way. */
+
+@media (max-width: 900px) {
+  .ace-app-main {
+    margin-left: 0;
+    padding-top: 60px;
+  }
+  .ace-footer { margin-left: 0; }
+}
+
+/* The mobile sidebar toggle is a floating control over page content —
+   it needs the same treatment as the rest of the system. */
+.sidebar-toggle {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-700, var(--n-700));
+  box-shadow: var(--shadow-md);
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 900px) {
+  .sidebar-toggle { display: inline-flex; }
+  .ace-sidebar { box-shadow: var(--shadow-xl); }
 }
