@@ -138,8 +138,14 @@ const aceGoals = {
   // cycle, or due for a fresh probe. Only bank-pooled, active annual goals
   // probe; everything else logs data manually as before.
   _probeStatus(g, probes) {
-    if (!g.probe_pool || g.goal_type === 'transition' || g.status !== 'active') return null;
-    if (!window.ACE_PROBE_BANK || !window.ACE_PROBE_BANK.pools[g.probe_pool]) return null;
+    if (g.goal_type === 'transition' || g.status !== 'active') return null;
+    // Roughly a third of the bank has no probe pool — heaviest in Communication,
+    // Motor, Independent Living and Vocational, where the skill is measured by
+    // observation rather than a quiz the student can take alone. Say so out
+    // loud: an unexplained blank space reads as a broken feature.
+    if (!g.probe_pool || !window.ACE_PROBE_BANK || !window.ACE_PROBE_BANK.pools[g.probe_pool]) {
+      return { state: 'manual' };
+    }
     const pending = probes.filter(p => p.status === 'pending' && p.active);
     if (pending.length) return { state: 'waiting', probe: pending[pending.length - 1] };
     const completed = probes.filter(p => p.status === 'completed');
@@ -156,6 +162,13 @@ const aceGoals = {
     const st = this._probeStatus(g, probes);
     if (!st) return '';
     const esc = window.aceUtils.escapeHtml;
+
+    if (st.state === 'manual') {
+      return `<div class="probe-line probe-manual muted">
+        <span>${window.aceIcons.pencilLine(12)} Measured by teacher-charted data — no auto-scored probe for this goal. Use <strong>Log data</strong> to chart it.</span>
+      </div>`;
+    }
+
     const selfReport = window.ACE_PROBE_BANK.pools[g.probe_pool].type === 'self_report';
     const srTag = selfReport ? ' <span class="probe-sr-tag" title="Scored from student self-report — review before reporting">self-report</span>' : '';
 

@@ -71,6 +71,9 @@ async function renderUnassignedHoldingIfNeeded() {
         <div class="holding-newdistrict" id="holdingNewForm" style="display:none;">
           <input type="text" id="holdingOrgName" placeholder="District name (e.g. Maine Township HSD 207)" autocomplete="off" />
           <input type="text" id="holdingSchoolName" placeholder="School name (e.g. Maine East High School)" autocomplete="off" />
+          <input type="text" id="holdingProvCode" placeholder="Provisioning code" autocomplete="off" maxlength="40" />
+          <p class="holding-newdistrict-note muted">Standing up a district is by arrangement — a provisioning code comes from
+             Consult Granato Education. If your district is already set up, use the district code above instead.</p>
           <button class="btn-primary" id="holdingCreateBtn" type="button">Create organization</button>
           <div id="holdingCreateStatus" class="team-status muted"></div>
         </div>
@@ -117,10 +120,16 @@ async function renderUnassignedHoldingIfNeeded() {
     const status = document.getElementById('holdingCreateStatus');
     const orgName = document.getElementById('holdingOrgName').value.trim();
     const school = document.getElementById('holdingSchoolName').value.trim();
+    const provCode = document.getElementById('holdingProvCode').value.trim();
     status.className = 'team-status muted';
     if (!orgName || !school) { status.textContent = 'District name and school name are both required.'; return; }
+    // The server is the gate (migration 21) — this check only saves a round
+    // trip. Never treat a client-side check as the thing keeping orgs closed.
+    if (!provCode) { status.textContent = 'A provisioning code is required to set up a new district.'; return; }
     status.textContent = 'Creating…';
-    const { data, error } = await window.aceSupabase.rpc('create_organization', { p_name: orgName, p_school_name: school });
+    const { data, error } = await window.aceSupabase.rpc('create_organization', {
+      p_name: orgName, p_school_name: school, p_provisioning_code: provCode
+    });
     if (error || !data || !data.success) {
       status.className = 'team-status team-status-error';
       status.textContent = (data && data.message) || 'Could not create the organization.';

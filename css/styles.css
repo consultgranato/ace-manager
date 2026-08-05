@@ -4262,6 +4262,7 @@ textarea:focus {
 .holding-join input { text-transform: uppercase; letter-spacing: 0.08em; }
 .holding-newdistrict-toggle { border: none; background: none; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--purple-primary); cursor: pointer; padding: 0; margin-bottom: 14px; }
 .holding-newdistrict { display: flex; flex-direction: column; gap: 8px; text-align: left; margin-bottom: 16px; }
+.holding-newdistrict-note { font-size: 12px; line-height: 1.5; margin: -2px 0 2px; }
 .holding-card .btn-secondary { margin-top: 4px; }
 
 /* Org admin: branding, catalog, danger zone (Phase 5.4) */
@@ -4413,6 +4414,9 @@ textarea:focus {
 .probe-box .goal-mini-btn { margin-top: 7px; }
 .probe-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12.5px; margin: 8px 0; }
 .probe-due { font-weight: 600; color: var(--purple-primary); }
+.probe-manual { justify-content: flex-start; }
+.probe-manual span { display: inline-flex; align-items: center; gap: 6px; }
+.probe-manual svg { flex-shrink: 0; opacity: 0.7; }
 .probe-sr-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #92400e; background: #fef3c7; border-radius: 9px; padding: 1px 6px; }
 .probe-item { margin-bottom: 18px; }
 .probe-item-prompt { font-size: 14px; line-height: 1.5; margin-bottom: 8px; }

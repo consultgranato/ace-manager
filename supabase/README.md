@@ -45,3 +45,50 @@ Authenticated case managers get full CRUD on rows where `case_manager_id = auth.
 **Dropped RPCs (per-course model, no longer needed):** `get_tf_by_token`, `save_tf_draft`, `submit_tf`
 
 No direct anon table policies — all anonymous access is RPC-only.
+
+---
+
+8–20. `08`–`20` — parent links, transition links/meeting id, draft marker, meeting prior dates,
+non-school days, org-admin team + hard delete, goals/services/compliance, cycle-label school year,
+related-services simplify, transition plans, goal bank + probes, multi-tenant.
+*(Not individually documented here — read the header comment at the top of each file.)*
+
+21. `21_provisioning_and_function_hardening.sql` — provisioning gate + function hardening
+
+## Phase 21 — Provisioning gate
+
+Before this migration, `create_organization()` was callable by **any** authenticated user:
+anyone who could sign up could stand up a tenant and become its `org_admin`. Org isolation
+still held, but that is open self-provisioning, which the product vision explicitly rules out
+("never truly open signup on student data"; second-district onboarding is admin-driven).
+
+Org creation now requires a **provisioning code** that only the platform owner can mint.
+The `provisioning_codes` table has RLS enabled and **no policies at all**, plus every grant
+revoked — so `anon` and `authenticated` can neither read nor write it. The only readers are
+the `SECURITY DEFINER` RPC and the SQL editor.
+
+### Minting a code for a new district
+
+```sql
+insert into public.provisioning_codes (code, label, max_uses, expires_at)
+values ('MTHS-207-2026', 'Maine Township HSD 207 — first admin', 1, now() + interval '30 days');
+```
+
+Hand the code to the new district's first admin out of band. They sign up, land on the holding
+screen, open "Setting up a new district?", and enter it alongside the district and school names.
+The code is consumed on success (`uses` increments, `used_by_org` records which org it created).
+
+To revoke an unused code: `update public.provisioning_codes set active = false where code = '…';`
+To audit: `select code, label, uses, max_uses, active, used_by_org, expires_at from public.provisioning_codes;`
+
+### Function hardening
+
+`handle_new_user`, `update_updated_at`, and `students_set_org_id` were running with a mutable
+`search_path`, and all three were reachable on the REST API. They are trigger-only functions;
+`search_path` is now pinned to `''` and `EXECUTE` is revoked from `public`, `anon`, and
+`authenticated`. **Revoking EXECUTE does not stop a trigger from firing** — Postgres checks that
+privilege at `CREATE TRIGGER` time, not per-row. This was verified end to end (signup still
+creates the profile row; `updated_at` still stamps on update).
+
+This migration also drops the empty `ZZ ISOLATION TEST ORG (4b.1 — delete after audit)` shell,
+closing step 1 of the vision's recommended sequence.
