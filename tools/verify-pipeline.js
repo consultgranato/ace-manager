@@ -24,6 +24,9 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 global.window = {};
 require('../data/goal-bank.js');
 require('../data/probe-bank.js');
@@ -120,6 +123,54 @@ function numberIn(prompt) {
   return m ? Number(m[1]) : NaN;
 }
 
+// ---- 3b. round trip ----------------------------------------------------------------
+// The check that was missing. Everything above tests the BANK entry, but the app
+// never probes a bank entry: it turns a bank pick into a seed, saves a row, and
+// later builds the probe from that SAVED ROW. A circumference goal came back
+// with rectangle-perimeter items because the seed dropped gen_opts on the way
+// through, and every check above still passed.
+//
+// So: rebuild the goal the way the database stores it — only the columns that
+// actually persist — and require the probe to match the bank entry's.
+let roundTripped = 0;
+{
+  const seenT = new Set();
+  for (const g of goals) {
+    const p = pools[g.probe_pool];
+    if (!p || !p.gen || seenT.has(g.template_id)) continue;
+    seenT.add(g.template_id);
+
+    const fromBank = eng.build(g, { phase: 2, seed: 4242 }).items.map(shape).join('||');
+
+    // Exactly what survives a save: no gen_opts field, no hydrated extras.
+    const savedRow = {
+      id: 'rt-' + g.id,
+      probe_pool: g.probe_pool,
+      grade_band: g.grade_band,
+      criterion: g.criterion,
+      benchmarks: g.benchmarks,
+      bank_id: g.id,
+      probe_plan: model.probePlan(g.probe_pool, null)   // the lossy path
+    };
+    const fromSaved = eng.build(savedRow, { phase: 2, seed: 4242 }).items.map(shape).join('||');
+    roundTripped++;
+    if (fromBank !== fromSaved) {
+      note(`round-trip ${g.template_id}: a saved goal produces different items than its bank entry — the skill variant is being lost between the bank and the database`);
+    }
+  }
+}
+
+// The seed built in goals.js must carry gen_opts. Checked at the source because
+// this is the exact line whose absence caused the defect, and a behavioural test
+// alone would now pass on the bank_id recovery path instead of catching it.
+{
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'goals.js'), 'utf8');
+  const seedBlock = src.slice(src.indexOf('seed = {'), src.indexOf('source_need:', src.indexOf('seed = {')));
+  if (seedBlock && seedBlock.indexOf('gen_opts') < 0) {
+    note('round-trip goals.js: the bank-pick seed does not carry gen_opts, so saved goals will lose their skill variant');
+  }
+}
+
 // ---- 4. arithmetic ---------------------------------------------------------------
 const OPS = { '+': (a, b) => a + b, '−': (a, b) => a - b, '-': (a, b) => a - b, '×': (a, b) => a * b, '÷': (a, b) => a / b };
 let keysChecked = 0;
@@ -146,7 +197,7 @@ function check(expected, it, g) {
 }
 
 // ---- report -----------------------------------------------------------------------
-console.log(`\ngoals ${goals.length} · probes built ${probesBuilt} · skills on generated pools ${skillsChecked} · generator variants ${variantsChecked} · answer keys recomputed ${keysChecked}\n`);
+console.log(`\ngoals ${goals.length} · probes built ${probesBuilt} · skills on generated pools ${skillsChecked} · generator variants ${variantsChecked} · round-tripped through a saved row ${roundTripped} · answer keys recomputed ${keysChecked}\n`);
 if (fail.length) {
   console.error(`PIPELINE VERIFICATION FAILED — ${fail.length} problem${fail.length === 1 ? '' : 's'}\n`);
   [...new Set(fail)].slice(0, 40).forEach(f => console.error('  ' + f));

@@ -114,6 +114,7 @@ const aceGoalBuilder = {
       step: 0,
       fade: g.fade || s.fade || 'academic',
       probe_pool: g.probe_pool || s.probe_pool || null,
+      gen_opts: (g.probe_plan && g.probe_plan.gen_opts) || s.gen_opts || null,
       bank_id: g.bank_id || s.bank_id || null,
       skill: g.skill || s.skill || '',
       grade_band: g.grade_band || s.grade_band || null,
@@ -203,6 +204,7 @@ const aceGoalBuilder = {
           <label class="iep-label" style="margin-top:14px;">Progress monitoring pool</label>
           <select id="goalProbePool"></select>
           <p class="goalb-hint" id="goalPoolHint" style="margin-top:8px;"></p>
+          <div id="goalSkillPicker"></div>
         </section>
 
         <div class="goalb-nav">
@@ -258,7 +260,7 @@ const aceGoalBuilder = {
           bank_id: state.bank_id,
           il_standard: g.il_standard || s.il_standard || null,
           probe_pool: isTransition ? null : (parts.probe_pool || null),
-          probe_plan: isTransition ? {} : (M.probePlan(parts.probe_pool, (g.probe_plan && g.probe_plan.gen_opts) || s.gen_opts || null) || {}),
+          probe_plan: isTransition ? {} : (M.probePlan(parts.probe_pool, state.gen_opts || null) || {}),
           skill: state.skill || null,
           grade_band: state.grade_band || null,
           teaching_note: state.teaching_note || null,
@@ -348,7 +350,13 @@ const aceGoalBuilder = {
         keys.map(k => `<option value="${esc(k)}" ${state.probe_pool === k ? 'selected' : ''}>${esc(pools[k].label)}</option>`).join('');
     };
     buildPoolOptions();
-    poolSel.addEventListener('change', () => { state.probe_pool = poolSel.value || null; refresh(); });
+    poolSel.addEventListener('change', () => {
+      // A variant name belongs to one generator; carrying it across pools would
+      // silently resolve to whatever that generator lists first.
+      if (state.probe_pool !== poolSel.value) state.gen_opts = null;
+      state.probe_pool = poolSel.value || null;
+      refresh();
+    });
 
     // ---- step navigation ---------------------------------------------------
     body.querySelector('#goalPrev').addEventListener('click', () => this._goStep(body, state.step - 1, student, state));
@@ -498,6 +506,50 @@ const aceGoalBuilder = {
     hint.textContent = pool.gen
       ? 'Generated pool: every cycle draws a new equivalent form, so a rising line means the skill grew rather than the items being memorised.'
       : 'Curated pool: items are drawn without repeating until the pool is exhausted.';
+
+    this._renderSkillPicker(body, pool, state);
+  },
+
+  // A generated pool serves many skills — ma-geometry alone covers rectangles,
+  // circles, volume, angles and the Pythagorean theorem. A goal picked from the
+  // bank already names its skill; a hand-written one has to say, or the probe
+  // would draw from the wrong part of the strand.
+  //
+  // The options are labelled with a real item the variant produces, so the list
+  // explains itself instead of asking the case manager to decode a key name.
+  _renderSkillPicker(body, pool, state) {
+    const esc = window.aceUtils.escapeHtml;
+    const host = body.querySelector('#goalSkillPicker');
+    if (!host) return;
+    const gen = pool && pool.gen && window.ACE_PROBE_GENERATORS && window.ACE_PROBE_GENERATORS[pool.gen];
+    if (!gen || !gen.VARIANTS || gen.VARIANTS.length < 2) { host.innerHTML = ''; return; }
+
+    const current = (state.gen_opts && state.gen_opts.v) || '';
+    const sample = (v) => {
+      try {
+        let a = 12345;
+        const r = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        const it = gen(2, r, { v });
+        const p = String(it.prompt).replace(/\s+/g, ' ').trim();
+        return p.length > 64 ? p.slice(0, 61) + '…' : p;
+      } catch (e) { return ''; }
+    };
+
+    host.innerHTML = `
+      <label class="iep-label" style="margin-top:14px;">Skill measured
+        <span class="goalb-hint">which part of this pool the probe draws from</span></label>
+      <select id="goalGenVariant">
+        <option value="">Choose the skill…</option>
+        ${gen.VARIANTS.map(v =>
+          `<option value="${esc(v)}" ${v === current ? 'selected' : ''}>${esc(sample(v) || v)}</option>`).join('')}
+      </select>
+      ${current ? '' : '<p class="goalb-verb-warning" style="display:block;">Pick the skill, or the probe will sample the whole strand instead of what this goal is about.</p>'}`;
+
+    const sel = host.querySelector('#goalGenVariant');
+    sel.addEventListener('change', () => {
+      state.gen_opts = sel.value ? { v: sel.value } : null;
+      if (this._refresh) this._refresh();
+    });
   },
 
   _collect(body, state) {

@@ -75,6 +75,19 @@
   // equation solving.
   function generators() { return window.ACE_PROBE_GENERATORS || {}; }
 
+  // Loud rather than silent: a goal on a generated pool that cannot say which
+  // skill it is about will produce a probe that does not match it, and that is
+  // worth a console line a developer will actually see.
+  const _warned = {};
+  function warnUnresolved(goal, pool) {
+    const key = (goal && goal.id) || (goal && goal.probe_pool) || 'unknown';
+    if (_warned[key]) return;
+    _warned[key] = 1;
+    console.warn('[probe-engine] Goal ' + key + ' is on generated pool "' + goal.probe_pool +
+      '" but names no skill variant (gen_opts.v). Items will be sampled across the whole strand. ' +
+      'If this goal came from the bank, re-saving it will repair the plan.');
+  }
+
   // ---- pool access ---------------------------------------------------------------------
   function bank() { return window.ACE_PROBE_BANK || { pools: {}, items: {} }; }
   function poolDef(key) { return bank().pools[key] || null; }
@@ -141,10 +154,18 @@
     const usedIds = {};
     (opts.usedItemIds || []).forEach(id => { usedIds[id] = 1; });
 
-    // Per-goal generator options: which operation a fact-fluency goal is about,
-    // which sub-strand a fractions goal targets. Without these one pool-level
-    // generator would probe a multiplication goal with addition items.
-    const genOpts = (goal.probe_plan && goal.probe_plan.gen_opts) || goal.gen_opts || {};
+    // Per-goal generator options: which SKILL on this pool the goal is about.
+    // Three sources, in order of trust:
+    //   1. the goal's own probe_plan (what the builder saves today)
+    //   2. the hydrated bank entry, when building straight from the bank
+    //   3. recovered from bank_id — goals saved before this was threaded
+    //      through the builder have a pool but no variant, and would otherwise
+    //      silently draw items for a different skill on the same pool
+    let genOpts = (goal.probe_plan && goal.probe_plan.gen_opts) || goal.gen_opts || null;
+    if (!genOpts && goal.bank_id && model && model.genOptsForBankId) {
+      genOpts = model.genOptsForBankId(goal.bank_id);
+    }
+    genOpts = genOpts || {};
 
     const total = pool.items || 9;
     // Scale the phase mix to the pool's item count, keeping at least one item
@@ -170,6 +191,11 @@
         got = curated(goal.probe_pool, tier, want, r, usedIds, goal.grade_band);
         if (!got.length) got = fromBenchmarks(goal, 'observation', tier);
       } else if (pool.gen && generators()[pool.gen]) {
+        // A generated pool with no resolvable variant is a bug, not a default.
+        // Sampling every variant is wrong too, but it is honestly wrong — a
+        // mixed strand probe — where silently picking the generator's first
+        // variant looks authoritative while measuring another skill entirely.
+        if (!genOpts.v) warnUnresolved(goal, pool);
         // Generators can land on the same item twice by chance. Retry a bounded
         // number of times rather than handing a student the same question
         // twice in one probe, which reads as a bug and skews the score.
@@ -177,7 +203,8 @@
         let guard = 0;
         while (got.length < want && guard < want * 12) {
           guard++;
-          const it = generators()[pool.gen](tier, r, genOpts);
+          const it = generators()[pool.gen](tier, r,
+            genOpts.v ? genOpts : { v: pick(r, generators()[pool.gen].VARIANTS || []) });
           if (seenPrompt[it.prompt]) continue;
           seenPrompt[it.prompt] = 1;
           got.push(it);

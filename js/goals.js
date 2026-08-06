@@ -434,6 +434,10 @@ const aceGoals = {
           bank_id: pick.id,
           il_standard: pick.il_standard,
           probe_pool: pick.probe_pool,
+          // Which SKILL on the pool this goal is about. A generated pool serves
+          // many skills from one generator, so dropping this here is what made a
+          // circumference goal come back with rectangle-perimeter items.
+          gen_opts: pick.gen_opts,
           fade: pick.fade,
           skill: pick.skill,
           grade_band: pick.grade_band,

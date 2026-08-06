@@ -361,6 +361,21 @@
   }
   function reset() { _goals = null; }
 
+  // Recover a goal's generator options from the bank entry it came from.
+  // Goals saved before gen_opts was threaded through the builder have a
+  // probe_pool and a bank_id but no variant; without this they fall back to
+  // whichever variant the generator lists first, which is a different skill.
+  // Bank ids are "<template>-<band>", e.g. mt-ge-03-912.
+  function genOptsForBankId(bankId) {
+    if (!bankId) return null;
+    const tpls = templates();
+    for (let i = 0; i < tpls.length; i++) {
+      const t = tpls[i];
+      if (t.id && bankId.indexOf(t.id + '-') === 0) return t.gen_opts || null;
+    }
+    return null;
+  }
+
   // A saved goal row rendered through the same shape as a bank entry, so the
   // progress UI never needs two code paths.
   function hydrateSaved(row) {
@@ -412,6 +427,7 @@
     makeCriterion: makeCriterion, ladderTarget: ladderTarget, roundTarget: roundTarget,
     defaultBaseline: defaultBaseline, probePlan: probePlan,
     templates: templates, goals: goals, reset: reset, hydrateSaved: hydrateSaved,
+    genOptsForBankId: genOptsForBankId,
     vagueVerb: vagueVerb, fmtValue: fmtValue, atTarget: atTarget
   };
 });
