@@ -5826,3 +5826,201 @@ summary:focus-visible,
   .sidebar-toggle { display: inline-flex; }
   .ace-sidebar { box-shadow: var(--shadow-xl); }
 }
+
+/* =============================================================
+   Student profile — workflow overhaul
+   =============================================================
+   The profile used to be one flat grid of nine equal cards. It is now
+   identity + stage rail → next step → Prepare / Write / Reference. These
+   rules add the new chrome and stop the grid stretching cards into dead
+   space (the old layout padded a short card to match a tall neighbour,
+   which is where most of the empty space on the page came from).
+   ------------------------------------------------------------- */
+
+/* ---- Stage rail: where this student stands, at a glance -------------- */
+.stage-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px 4px 7px;
+  border-radius: var(--radius-full);
+  font-size: var(--fs-xs);
+  font-weight: 560;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.stage-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+.stage-done   { background: var(--success-bg); border-color: var(--success-border); color: var(--success-ink); }
+.stage-done .stage-dot { background: var(--success); color: #fff; }
+.stage-started{ background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-ink); }
+.stage-started .stage-dot { background: transparent; border: 2px solid var(--warning); }
+.stage-todo   { background: var(--n-50); border-color: var(--border); color: var(--text-muted); }
+.stage-todo .stage-dot { background: transparent; border: 1.5px dashed var(--border-strong); }
+
+/* ---- Next step: one recommendation, never an action taken for you ---- */
+.next-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  margin: var(--sp-5) 0 var(--sp-6);
+  padding: var(--sp-5) var(--sp-5) var(--sp-5) var(--sp-6);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--accent-200);
+  background: linear-gradient(180deg, var(--accent-50), var(--bg-card));
+  box-shadow: var(--shadow-xs);
+}
+.next-step-body { min-width: 260px; flex: 1; }
+.next-step-eyebrow {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent-600);
+  margin-bottom: 5px;
+}
+.next-step-title {
+  font-size: var(--fs-lg);
+  font-weight: 640;
+  letter-spacing: -0.014em;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+.next-step-text {
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0;
+  max-width: 62ch;
+}
+.next-step-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent-600);
+  background: var(--accent-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.next-step-cta:hover { background: var(--accent-700); box-shadow: var(--shadow-sm); }
+.next-step-cta svg { opacity: 0.9; }
+
+/* Waiting on someone else, and everything-done, are not "do this now" —
+   they get the same layout in a calmer colour so the accent means action. */
+.next-step-waiting { border-color: var(--warning-border); background: linear-gradient(180deg, var(--warning-bg), var(--bg-card)); }
+.next-step-waiting .next-step-eyebrow { color: var(--warning-ink); }
+.next-step-waiting .next-step-cta { background: var(--bg-card); color: var(--warning-ink); border-color: var(--warning-border); }
+.next-step-waiting .next-step-cta:hover { background: var(--warning-bg); }
+.next-step-clear { border-color: var(--success-border); background: linear-gradient(180deg, var(--success-bg), var(--bg-card)); }
+.next-step-clear .next-step-eyebrow { color: var(--success-ink); }
+.next-step-clear .next-step-cta { background: var(--bg-card); color: var(--success-ink); border-color: var(--success-border); }
+.next-step-clear .next-step-cta:hover { background: var(--success-bg); }
+
+/* ---- Sections: Prepare / Write / Reference --------------------------- */
+.profile-section { margin-bottom: var(--sp-8); }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.section-title {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+.section-subtitle { font-size: var(--fs-sm); color: var(--text-faint); }
+.section-gate-note {
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  margin: calc(var(--sp-8) * -1 + var(--sp-2)) 0 var(--sp-8);
+  padding: var(--sp-3) var(--sp-4);
+  border-left: 2px solid var(--border-strong);
+  background: var(--n-25);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  max-width: 78ch;
+}
+
+/* Reference collapses, so an empty student doesn't open to a wall of
+   unselected service chips and document buttons. */
+.section-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.section-chevron {
+  display: inline-flex;
+  align-self: center;
+  color: var(--text-faint);
+  transition: transform var(--t-fast) var(--ease);
+}
+.section-open .section-chevron { transform: rotate(90deg); }
+.section-toggle:hover .section-title { color: var(--text-2); }
+
+/* ---- Grid: stop stretching short cards into tall empty boxes --------- */
+.profile-card-grid { align-items: start; }
+
+/* Briefly mark the card a next-step button just jumped to. */
+@keyframes cardFlash {
+  0%   { box-shadow: 0 0 0 0 var(--accent-ring); }
+  30%  { box-shadow: 0 0 0 4px var(--accent-ring); }
+  100% { box-shadow: 0 0 0 0 var(--accent-ring); }
+}
+.card-flash { animation: cardFlash 1.4s var(--ease); border-color: var(--accent-400) !important; }
+
+@media (max-width: 700px) {
+  .next-step { padding: var(--sp-4); }
+  .next-step-cta { width: 100%; justify-content: center; }
+}
+
+/* The old flat grid gave Meeting, Teacher Feedback, Parent Feedback and
+   Transition Assessment `grid-column: span 2` each — so every card that
+   actually held content was full width, which is why an empty student ran to
+   ~2,200px of scroll. Sections are narrower in scope and read as a true 2-up. */
+.profile-card-meetings,
+.profile-card-teacher-feedback,
+.profile-card-parent-feedback,
+.profile-card-transition { grid-column: auto; }
+
+/* The sections host is a plain block — each section owns its own card grid.
+   (It used to carry .profile-card-grid itself, which turned the sections into
+   grid items and laid Prepare and Write out side by side.) */
+.profile-sections { display: block; }
+
+/* `hidden` is a UA-stylesheet display:none, so an author `display: grid` beats
+   it — the collapsed Reference section rendered wide open without this. */
+.profile-card-grid[hidden] { display: none; }

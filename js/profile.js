@@ -32,10 +32,156 @@ const aceProfile = {
 
     this.state.student = data;
     this.state.isAdmin = await window.aceAuth.isOrgAdmin();
-    this.renderHeader();
-    this.renderCards();
+
+    // One pass over the student's workflow state, shared by the stage rail and
+    // the next-step callout. Without it each of those would re-ask questions the
+    // individual cards already answer for themselves.
+    this.state.status = await this.loadWorkflowStatus();
+
+    // Status was just loaded — no need for the header's self-heal pass here.
+    this.renderHeader({ skipStatusRefresh: true });
+    this.renderSections();
     this.renderNotesDrawer();
     this.renderComplianceChip();
+  },
+
+  // -------------------------------------------------------------
+  // Workflow status
+  // -------------------------------------------------------------
+  // The profile used to be nine cards of equal weight, which answered "what
+  // features exist?" — never "what does this student need next?". Everything
+  // below exists to answer the second question. It only ever *suggests*: the
+  // next-step callout points at a step, it never performs one.
+  async loadWorkflowStatus() {
+    const sid = this.state.studentId;
+    const s = this.state.student;
+    const db = window.aceSupabase;
+
+    const blank = {
+      academicCourses: 0, meetingUpcoming: null, meetingHeld: 0,
+      tfLink: null, tfResponses: 0, pfLink: null, pfComplete: false,
+      taLatest: null, taComplete: false, goals: 0, probes: 0, ok: false
+    };
+
+    try {
+      const [meetings, tfLinks, pfLinks, taRows, goals, probes] = await Promise.all([
+        db.from('meetings').select('id, scheduled_date, completed, meeting_type')
+          .eq('student_id', sid).order('scheduled_date', { ascending: true }),
+        db.from('feedback_links').select('id, token').eq('student_id', sid)
+          .eq('active', true).order('created_at', { ascending: false }).limit(1),
+        db.from('parent_feedback').select('id, status').eq('student_id', sid)
+          .eq('active', true).order('created_at', { ascending: false }).limit(1),
+        db.from('transition_assessments').select('id, status, active').eq('student_id', sid)
+          .order('created_at', { ascending: false }).limit(1),
+        db.from('iep_goals').select('id').eq('student_id', sid),
+        db.from('probes').select('id').eq('student_id', sid).limit(1)
+      ]);
+
+      const courses = Array.isArray(s.courses) ? s.courses : [];
+      const mRows = meetings.data || [];
+      const tfLink = (tfLinks.data && tfLinks.data[0]) || null;
+      const pfLink = (pfLinks.data && pfLinks.data[0]) || null;
+      const taLatest = (taRows.data && taRows.data[0]) || null;
+
+      // Teacher responses hang off the active link, so this can only be asked
+      // once we know there is one.
+      let tfResponses = 0;
+      if (tfLink) {
+        const { data: tf } = await db.from('teacher_feedback')
+          .select('id').eq('link_id', tfLink.id).eq('status', 'completed');
+        tfResponses = (tf || []).length;
+      }
+
+      return {
+        academicCourses: courses.filter(c => c && c.is_academic).length,
+        meetingUpcoming: mRows.find(m => !m.completed) || null,
+        meetingHeld: mRows.filter(m => m.completed).length,
+        tfLink, tfResponses,
+        pfLink, pfComplete: !!(pfLink && pfLink.status === 'completed'),
+        taLatest, taComplete: !!(taLatest && taLatest.status === 'completed'),
+        goals: (goals.data || []).length,
+        probes: (probes.data || []).length,
+        ok: true
+      };
+    } catch (e) {
+      // A failed status read must never take the page down with it — the cards
+      // below each load their own data and still work.
+      console.error('Workflow status load failed:', e);
+      return blank;
+    }
+  },
+
+  // Five stages, in the order the work actually happens. Each is done /
+  // started / not-started — never a percentage, because none of these are
+  // partially true in a way a case manager would act on.
+  stages() {
+    const st = this.state.status || {};
+    const s = this.state.student;
+    const hasDates = !!(s.annual_review_date || s.reeval_due_date);
+    const inputSent = !!(st.tfLink || st.pfLink || (st.taLatest && st.taLatest.active));
+    const inputBack = (st.tfResponses > 0) || st.pfComplete || st.taComplete;
+
+    return [
+      { key: 'dates',   label: 'Dates',          state: hasDates ? 'done' : 'todo' },
+      { key: 'courses', label: 'Courses',        state: st.academicCourses > 0 ? 'done' : 'todo' },
+      { key: 'meeting', label: 'Meeting',        state: st.meetingUpcoming ? 'done' : (st.meetingHeld > 0 ? 'done' : 'todo') },
+      { key: 'input',   label: 'Input',          state: inputBack ? 'done' : (inputSent ? 'started' : 'todo') },
+      { key: 'levels',  label: 'Present levels', state: s.iep_draft_generated_at ? 'done' : 'todo' },
+      { key: 'goals',   label: 'Goals',          state: st.goals > 0 ? 'done' : 'todo' }
+    ];
+  },
+
+  // The single recommended next action. Ordered by the real workflow, so the
+  // first unmet condition wins. `action` is a hint the callout wires to an
+  // existing control — this never writes anything itself.
+  nextStep() {
+    const st = this.state.status || {};
+    const s = this.state.student;
+    const name = s.first_name;
+
+    if (!s.annual_review_date && !s.reeval_due_date) {
+      return { title: 'Add the review dates',
+        body: `Nothing else on this page can tell you what's due until ${name} has an annual review or re-evaluation date on file.`,
+        cta: 'Edit student', action: 'edit' };
+    }
+    if (st.academicCourses === 0) {
+      return { title: 'Assign academic classes',
+        body: 'Teacher feedback goes out per academic class, and present levels quote it by subject. Neither works until classes are on file.',
+        cta: 'Edit student', action: 'edit' };
+    }
+    if (!st.meetingUpcoming) {
+      return { title: 'Schedule the IEP meeting',
+        body: 'Scheduling generates the prep checklist and computes the date the draft has to reach the family.',
+        cta: 'Go to Meeting', action: 'scroll:meetings' };
+    }
+    if (!st.tfLink) {
+      return { title: 'Send the teacher feedback link',
+        body: `One link covers all ${st.academicCourses} of ${name}'s academic classes — send it to the whole team at once.`,
+        cta: 'Go to Teacher Feedback', action: 'scroll:teacher-feedback' };
+    }
+    if (st.tfResponses === 0) {
+      return { title: 'Waiting on teacher feedback',
+        body: 'The link is out and no one has responded yet. A nudge with the link is usually all it takes.',
+        cta: 'Copy the link again', action: 'scroll:teacher-feedback', tone: 'waiting' };
+    }
+    if (!s.iep_draft_generated_at) {
+      return { title: 'Draft the present levels',
+        body: `${st.tfResponses} teacher response${st.tfResponses === 1 ? '' : 's'} in. That's enough to generate a draft you can edit.`,
+        cta: 'Open the builder', action: 'iep' };
+    }
+    if (st.goals === 0) {
+      return { title: 'Write the goals',
+        body: 'Present levels are drafted. Goals build straight from them, filtered to this student\'s profile.',
+        cta: 'Go to Goals', action: 'scroll:goals' };
+    }
+    if (st.probes === 0) {
+      return { title: 'Start progress monitoring',
+        body: 'Goals are written. Probes run every two weeks and score themselves into the trend graphs.',
+        cta: 'Go to Goals', action: 'scroll:goals' };
+    }
+    return { title: `${name} is ready for the meeting`,
+      body: 'Dates, classes, input, present levels, goals and monitoring are all in place. Mark the meeting complete once it is held and the due dates roll forward.',
+      cta: 'Go to Meeting', action: 'scroll:meetings', tone: 'clear' };
   },
 
   // Initial-eval (Indicator 11) chip appears under the header deadline chip
@@ -48,7 +194,7 @@ const aceProfile = {
     if (anchor) anchor.insertAdjacentHTML('afterend', window.aceCompliance.chipHTML(status));
   },
 
-  renderHeader() {
+  renderHeader(opts) {
     const host = document.getElementById('profileHeader');
     if (!host) return;
     const s = this.state.student;
@@ -94,10 +240,107 @@ const aceProfile = {
             </div>
           </div>
         </div>
+
+        ${this.stageRailHTML()}
       </div>
+
+      ${this.nextStepHTML()}
     `;
 
     this.attachHeaderListeners();
+    this.attachNextStepListener();
+
+    // meetings.js calls renderHeader() on its own after marking a meeting
+    // complete or editing a date. That also invalidates the stage rail and the
+    // next step, so re-read the workflow state and repaint once it lands —
+    // otherwise the header would show this student's state from before the
+    // change and quietly recommend a step already taken.
+    if (!opts || !opts.skipStatusRefresh) this.refreshStatus();
+  },
+
+  async refreshStatus() {
+    if (this._statusRefreshing) return;
+    this._statusRefreshing = true;
+    try {
+      // The student row is re-read too: marking a meeting complete advances the
+      // due dates on it, which the deadline chip and the Dates stage both read.
+      const { data } = await window.aceSupabase
+        .from('students').select('*').eq('id', this.state.studentId).single();
+      if (data) this.state.student = data;
+      this.state.status = await this.loadWorkflowStatus();
+    } catch (e) {
+      console.error('Status refresh failed:', e);
+    } finally {
+      this._statusRefreshing = false;
+    }
+    this.renderHeader({ skipStatusRefresh: true });
+    this.renderComplianceChip();
+  },
+
+  stageRailHTML() {
+    if (!this.state.status || !this.state.status.ok) return '';
+    const esc = window.aceUtils.escapeHtml;
+    const done = this.stages().filter(x => x.state === 'done').length;
+    const total = this.stages().length;
+    return `
+      <div class="stage-rail" role="list" aria-label="Workflow progress: ${done} of ${total} steps complete">
+        ${this.stages().map(x => `
+          <div class="stage-pill stage-${x.state}" role="listitem">
+            <span class="stage-dot">${x.state === 'done' ? window.aceIcons.check(11) : ''}</span>
+            <span class="stage-label">${esc(x.label)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  },
+
+  nextStepHTML() {
+    if (!this.state.status || !this.state.status.ok) return '';
+    const esc = window.aceUtils.escapeHtml;
+    const n = this.nextStep();
+    this._nextStep = n;
+    const tone = n.tone || 'action';
+    return `
+      <section class="next-step next-step-${tone}" aria-label="Suggested next step">
+        <div class="next-step-body">
+          <div class="next-step-eyebrow">${tone === 'clear' ? 'Up to date' : 'Next step'}</div>
+          <h2 class="next-step-title">${esc(n.title)}</h2>
+          <p class="next-step-text">${esc(n.body)}</p>
+        </div>
+        <button class="next-step-cta" id="nextStepCta">${esc(n.cta)} ${window.aceIcons.chevronRight(15)}</button>
+      </section>
+    `;
+  },
+
+  attachNextStepListener() {
+    const btn = document.getElementById('nextStepCta');
+    if (!btn || !this._nextStep) return;
+    btn.addEventListener('click', async () => {
+      const a = this._nextStep.action || '';
+      if (a === 'edit') {
+        const result = await window.aceEditStudent.open(this.state.student);
+        if (result && result.confirmed && result.result) {
+          this.state.student = result.result;
+          this.state.status = await this.loadWorkflowStatus();
+          this.renderHeader();
+          this.renderSections();
+        }
+        return;
+      }
+      if (a === 'iep') {
+        window.location.href = `${this.basePath()}pages/iep-builder.html?id=${this.state.student.id}`;
+        return;
+      }
+      if (a.startsWith('scroll:')) {
+        const card = document.querySelector(`[data-card="${a.slice(7)}"]`);
+        if (card) {
+          this.scrollToCard(card);
+          // A brief highlight, so it's obvious which card the button meant.
+          card.classList.add('card-flash');
+          setTimeout(() => card.classList.remove('card-flash'), 1400);
+        }
+      }
+    });
   },
 
   attachHeaderListeners() {
@@ -211,205 +454,156 @@ const aceProfile = {
     return { text: `Draft generated ${age}`, dot: 'green' };
   },
 
-  renderCards() {
+  // Centre a card in the viewport. Deliberately not scrollIntoView: smooth
+  // scrolling is a silent no-op in some engines and embedded webviews (verified
+  // here — `behavior:'auto'` moved, `behavior:'smooth'` did nothing at all).
+  // A next-step button that appears to do nothing is worse than no button, so
+  // if the page hasn't moved shortly after, jump there outright.
+  scrollToCard(card) {
+    const rect = card.getBoundingClientRect();
+    const start = window.scrollY;
+    const top = Math.max(0, start + rect.top - Math.max(0, (window.innerHeight - rect.height) / 2));
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' });
+    if (reduce) return;
+    setTimeout(() => {
+      if (Math.abs(window.scrollY - start) < 2 && Math.abs(top - start) > 2) {
+        window.scrollTo({ top, behavior: 'auto' });
+      }
+    }, 250);
+  },
+
+  // -------------------------------------------------------------
+  // Sections
+  // -------------------------------------------------------------
+  // Three groups in workflow order instead of one flat grid of nine peers:
+  // Prepare (collect what you need) → Write (produce the text) → Reference
+  // (material you consult, not work you do). Reference starts collapsed so a
+  // student with nothing on file doesn't open to a wall of empty cards.
+  //
+  // Every card still mounts the same module render(host, student) as before —
+  // only the arrangement changed, not the contracts.
+  renderSections() {
     const host = document.getElementById('profileCards');
     if (!host) return;
+    const s = this.state.student;
+    host.innerHTML = '';
+
+    const tEligible = window.aceTransitionPlan
+      ? window.aceTransitionPlan.isEligible(s) : false;
+
+    const prepare = [
+      { id: 'meetings', icon: 'calendar', title: 'Meeting',
+        mount: el => window.aceMeetings && window.aceMeetings.renderMeetingSection(el, s) },
+      { id: 'teacher-feedback', icon: 'graduationCap', title: 'Teacher Feedback',
+        mount: el => window.aceTeacherFeedback && window.aceTeacherFeedback.render(el, s) },
+      { id: 'parent-feedback', icon: 'usersRound', title: 'Parent Feedback',
+        mount: el => window.aceParentFeedback && window.aceParentFeedback.render(el, s) }
+    ];
+    // The student self-assessment is the intake side of transition planning, so
+    // it lives under the same 14½ gate as the plan itself rather than sitting
+    // there as a dead card for a 13-year-old.
+    if (tEligible) {
+      prepare.push({ id: 'transition', icon: 'compass', title: 'Student Transition Assessment',
+        mount: el => window.aceTransition && window.aceTransition.render(el, s) });
+    }
 
     const iep = this.iepCardStatus();
-    const cards = [
-      {
-        id: 'iep',
-        icon: window.aceIcons.fileText(18),
-        title: 'IEP Builder',
-        status: iep.text,
-        statusDot: iep.dot,
-        actionLabel: iep.dot === 'green' ? 'Open IEP Builder' : 'Start IEP draft',
-        actionDisabled: false
-      }
+    const write = [
+      { id: 'iep', icon: 'fileText', title: 'Present Levels',
+        html: `
+          <div class="card-status-text">${window.aceUtils.escapeHtml(iep.text)}</div>
+          <button class="card-action" data-nav="iep">${iep.dot === 'green' ? 'Open the builder' : 'Start the draft'}</button>` },
+      { id: 'goals', icon: 'barChart', title: 'Goals &amp; Progress',
+        mount: el => window.aceGoals && window.aceGoals.render(el, s) }
+    ];
+    if (tEligible) {
+      write.push({ id: 'transition-plan', icon: 'compass', title: 'Transition Plan',
+        html: `
+          <div class="card-status-text">Postsecondary goals, services, courses of study &amp; the Indicator 13 checklist</div>
+          <button class="card-action" data-nav="transition-plan">Open the plan</button>` });
+    }
+
+    const reference = [
+      { id: 'services', icon: 'settings', title: 'Related Services',
+        mount: el => window.aceServices && window.aceServices.render(el, s) },
+      { id: 'documents', icon: 'fileText', title: 'Documents',
+        mount: el => window.aceDocuments && window.aceDocuments.render(el, s) }
     ];
 
-    // Render the standard cards
-    host.innerHTML = cards.map(c => `
-      <div class="profile-card" data-card="${c.id}">
+    this.appendSection(host, 'Prepare', 'Collect what the meeting needs', prepare);
+    this.appendSection(host, 'Write', 'Produce the text you paste into Embrace', write);
+
+    // One gate note for both transition surfaces, instead of two cards each
+    // explaining the same rule.
+    if (!tEligible && window.aceTransitionPlan) {
+      const note = document.createElement('p');
+      note.className = 'section-gate-note muted';
+      note.textContent = window.aceTransitionPlan.gateExplanation(s);
+      host.appendChild(note);
+    }
+
+    this.appendSection(host, 'Reference', 'Consult as needed', reference, true);
+  },
+
+  appendSection(host, title, subtitle, cards, collapsed) {
+    if (!cards.length) return;
+    const esc = window.aceUtils.escapeHtml;
+    const slug = title.toLowerCase();
+
+    const wrap = document.createElement('section');
+    wrap.className = 'profile-section';
+    wrap.dataset.section = slug;
+    wrap.innerHTML = `
+      <div class="section-head">
+        ${collapsed ? `
+          <button class="section-toggle" id="sectionToggle-${slug}" aria-expanded="false" aria-controls="sectionGrid-${slug}">
+            <span class="section-chevron">${window.aceIcons.chevronRight(15)}</span>
+            <h2 class="section-title">${esc(title)}</h2>
+            <span class="section-subtitle">${esc(subtitle)}</span>
+          </button>`
+        : `
+          <h2 class="section-title">${esc(title)}</h2>
+          <span class="section-subtitle">${esc(subtitle)}</span>`}
+      </div>
+      <div class="profile-card-grid" id="sectionGrid-${slug}"${collapsed ? ' hidden' : ''}></div>
+    `;
+    host.appendChild(wrap);
+
+    const grid = wrap.querySelector(`#sectionGrid-${slug}`);
+    cards.forEach(c => {
+      const el = document.createElement('div');
+      el.className = `profile-card profile-card-${c.id}`;
+      el.dataset.card = c.id;
+      el.innerHTML = `
         <div class="card-header">
-          <div class="card-icon">${c.icon}</div>
+          <div class="card-icon">${window.aceIcons[c.icon](18)}</div>
           <div class="card-title">${c.title}</div>
-          <div class="card-status-dot dot-${c.statusDot}" title="${c.status}"></div>
         </div>
-        <div class="card-status-text">${c.status}</div>
-        <button class="card-action" ${c.actionDisabled ? 'disabled' : ''}>
-          ${c.actionLabel}
-        </button>
-      </div>
-    `).join('');
+        <div class="card-body" id="cardHost-${c.id}">${c.html || '<div class="muted" style="font-size:13px;">Loading…</div>'}</div>
+      `;
+      grid.appendChild(el);
+      if (c.mount) c.mount(document.getElementById(`cardHost-${c.id}`));
+    });
 
-    // Wire IEP Builder card navigation
-    const iepBtn = host.querySelector('[data-card="iep"] .card-action');
-    if (iepBtn) {
-      iepBtn.disabled = false;
-      iepBtn.addEventListener('click', () => {
-        const bp = window.location.pathname.includes('/ace-manager/') ? '/ace-manager/' : '/';
-        window.location.href = `${bp}pages/iep-builder.html?id=${this.state.student.id}`;
+    // Static cards carry their navigation as a data-nav hint rather than each
+    // one wiring its own listener.
+    grid.querySelectorAll('[data-nav]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.dataset.nav === 'iep' ? 'iep-builder' : 'transition-plan';
+        window.location.href = `${this.basePath()}pages/${page}.html?id=${this.state.student.id}`;
       });
-    }
+    });
 
-    // Append the Goals & Progress card — live, custom content
-    const goalsCard = document.createElement('div');
-    goalsCard.className = 'profile-card profile-card-goals';
-    goalsCard.dataset.card = 'goals';
-    goalsCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.barChart(18)}</div>
-        <div class="card-title">Goals &amp; Progress</div>
-      </div>
-      <div id="goalsHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
-    `;
-    host.appendChild(goalsCard);
-    if (window.aceGoals) {
-      window.aceGoals.render(document.getElementById('goalsHost'), this.state.student);
-    }
-
-    // Append the Meeting Info card — it has custom dynamic content
-    const meetingCard = document.createElement('div');
-    meetingCard.className = 'profile-card profile-card-meetings';
-    meetingCard.dataset.card = 'meetings';
-    meetingCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.calendar(18)}</div>
-        <div class="card-title">Meeting Info</div>
-      </div>
-      <div id="meetingSectionHost">
-        <div class="muted" style="font-size:13px;">Loading…</div>
-      </div>
-    `;
-    host.appendChild(meetingCard);
-
-    // Render live meeting content
-    if (window.aceMeetings) {
-      window.aceMeetings.renderMeetingSection(
-        document.getElementById('meetingSectionHost'),
-        this.state.student
-      );
-    }
-
-    // Append the Teacher Feedback card — live, custom content
-    const tfCard = document.createElement('div');
-    tfCard.className = 'profile-card profile-card-teacher-feedback';
-    tfCard.dataset.card = 'teacher-feedback';
-    tfCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.graduationCap(18)}</div>
-        <div class="card-title">Teacher Feedback</div>
-      </div>
-      <div id="teacherFeedbackHost">
-        <div class="muted" style="font-size:13px;">Loading…</div>
-      </div>
-    `;
-    host.appendChild(tfCard);
-
-    if (window.aceTeacherFeedback) {
-      window.aceTeacherFeedback.render(
-        document.getElementById('teacherFeedbackHost'),
-        this.state.student
-      );
-    }
-
-    // Append the Parent Feedback card — live, custom content
-    const pfCard = document.createElement('div');
-    pfCard.className = 'profile-card profile-card-parent-feedback';
-    pfCard.dataset.card = 'parent-feedback';
-    pfCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.usersRound(18)}</div>
-        <div class="card-title">Parent Feedback</div>
-      </div>
-      <div id="parentFeedbackHost">
-        <div class="muted" style="font-size:13px;">Loading…</div>
-      </div>
-    `;
-    host.appendChild(pfCard);
-
-    if (window.aceParentFeedback) {
-      window.aceParentFeedback.render(
-        document.getElementById('parentFeedbackHost'),
-        this.state.student
-      );
-    }
-
-    // Append the Transition Assessment card — live, custom content
-    const taCard = document.createElement('div');
-    taCard.className = 'profile-card profile-card-transition';
-    taCard.dataset.card = 'transition';
-    taCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.compass(18)}</div>
-        <div class="card-title">Transition Assessment</div>
-      </div>
-      <div id="transitionHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
-    `;
-    host.appendChild(taCard);
-
-    if (window.aceTransition) {
-      window.aceTransition.render(document.getElementById('transitionHost'), this.state.student);
-    }
-
-    // Append the Transition Plan card (Phase 5.2) — gate-aware entry point
-    const tpCard = document.createElement('div');
-    tpCard.className = 'profile-card profile-card-transition-plan';
-    tpCard.dataset.card = 'transition-plan';
-    const tpEligible = window.aceTransitionPlan
-      ? window.aceTransitionPlan.isEligible(this.state.student) : false;
-    tpCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.compass(18)}</div>
-        <div class="card-title">Transition Plan</div>
-      </div>
-      <div class="card-status-text">${tpEligible
-        ? 'Postsecondary goals, services, courses of study & Indicator 13 checklist'
-        : 'Not required yet — unlocks at age 14½'}</div>
-      ${tpEligible ? '' : `<p class="muted" style="font-size:12.5px;line-height:1.5;margin:6px 0 0;">${
-        window.aceUtils.escapeHtml(window.aceTransitionPlan
-          ? window.aceTransitionPlan.gateExplanation(this.state.student) : '')}</p>`}
-      <button class="card-action" ${tpEligible ? '' : 'disabled'}>Open Transition Plan</button>
-    `;
-    host.appendChild(tpCard);
-    const tpBtn = tpCard.querySelector('.card-action');
-    if (tpBtn && tpEligible) {
-      tpBtn.addEventListener('click', () => {
-        window.location.href = `${this.basePath()}pages/transition-plan.html?id=${this.state.student.id}`;
+    if (collapsed) {
+      const toggle = wrap.querySelector('.section-toggle');
+      toggle.addEventListener('click', () => {
+        const open = grid.hasAttribute('hidden');
+        if (open) grid.removeAttribute('hidden'); else grid.setAttribute('hidden', '');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        wrap.classList.toggle('section-open', open);
       });
-    }
-
-    // Append the Services & Minutes card — live, custom content
-    const svcCard = document.createElement('div');
-    svcCard.className = 'profile-card profile-card-services';
-    svcCard.dataset.card = 'services';
-    svcCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.settings(18)}</div>
-        <div class="card-title">Related Services</div>
-      </div>
-      <div id="servicesHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
-    `;
-    host.appendChild(svcCard);
-    if (window.aceServices) {
-      window.aceServices.render(document.getElementById('servicesHost'), this.state.student);
-    }
-
-    // Append the Documents card — generators for the recurring paperwork
-    const docCard = document.createElement('div');
-    docCard.className = 'profile-card profile-card-documents';
-    docCard.dataset.card = 'documents';
-    docCard.innerHTML = `
-      <div class="card-header">
-        <div class="card-icon">${window.aceIcons.fileText(18)}</div>
-        <div class="card-title">Documents</div>
-      </div>
-      <div id="documentsHost"><div class="muted" style="font-size:13px;">Loading…</div></div>
-    `;
-    host.appendChild(docCard);
-    if (window.aceDocuments) {
-      window.aceDocuments.render(document.getElementById('documentsHost'), this.state.student);
     }
   },
 
