@@ -3,6 +3,20 @@
 // =============================================================
 
 (function () {
+  // Parent-named strengths. Worded the way a family would describe their own
+  // child rather than in IEP language, then mapped to the builder's strength
+  // vocabulary on the way into the report. Asking "what's going well?" as an
+  // open box got thoughtful answers that nobody transferred into the IEP;
+  // checkboxes reach the strengths section.
+  const STRENGTH_AREAS = [
+    'Kind and caring with others', 'Works hard and keeps trying', 'Curious — asks a lot of questions',
+    'Creative or artistic', 'Good with technology', 'Athletic or active',
+    'Funny — good sense of humour', 'Responsible at home', 'Good with younger kids or animals',
+    'Honest and straightforward', 'Remembers things well', 'Good at hands-on or building tasks',
+    'Patient', 'Independent — does things without being asked', 'Friendly and easy to talk to',
+    'Sticks up for other people', 'Organized', 'Calm under pressure'
+  ];
+
   const SUPPORT_AREAS = [
     'Organization and time management','Homework completion','Reading','Writing','Math',
     'Social skills and friendships','Emotional regulation','Self-advocacy',
@@ -65,6 +79,12 @@
         </div>
 
         <div class="tform-field">
+          <label class="tform-label">What are ${esc(name)}'s strengths? <span class="muted">(check any that sound right)</span></label>
+          <p class="tform-help muted">These go straight into the strengths section of the IEP, in your words.</p>
+          ${checkboxGroup('strengths', STRENGTH_AREAS, draft)}
+        </div>
+
+        <div class="tform-field">
           <label class="tform-label">What's going well at home?</label>
           <textarea id="pf-whatsGoingWell" rows="3">${esc(draft.whatsGoingWell || '')}</textarea>
         </div>
@@ -98,6 +118,7 @@
         version: 'PF1',
         parentName: document.getElementById('pf-parentName').value.trim(),
         hopesGoals: document.getElementById('pf-hopesGoals').value.trim(),
+        strengths: checkVals('strengths'),
         whatsGoingWell: document.getElementById('pf-whatsGoingWell').value.trim(),
         biggestConcerns: document.getElementById('pf-biggestConcerns').value.trim(),
         supportAreas: checkVals('supportAreas'),
@@ -123,7 +144,8 @@
       const errEl = document.getElementById('pfFormError');
       errEl.style.display = 'none';
       const payload = collectPayload();
-      const hasAny = payload.hopesGoals || payload.whatsGoingWell || payload.biggestConcerns || payload.supportAreas.length || payload.anythingElse;
+      const hasAny = payload.hopesGoals || payload.whatsGoingWell || payload.biggestConcerns
+        || payload.strengths.length || payload.supportAreas.length || payload.anythingElse;
       if (!hasAny) { errEl.textContent = 'Please answer at least one question before submitting.'; errEl.style.display = 'block'; return; }
 
       const { data, error } = await window.aceSupabase.rpc('submit_parent_feedback', { p_token: TOKEN, p_payload: payload });

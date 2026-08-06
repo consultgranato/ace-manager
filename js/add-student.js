@@ -10,6 +10,25 @@ const aceAddStudent = {
   CASELOAD_LIMIT: 30,
   SOFT_LIMIT: 20,
 
+  // Canonical list lives in config.js so the onboarding form and the edit
+  // drawer can never offer different placements.
+  get PLACEMENTS() { return window.ACE_PLACEMENTS || []; },
+
+  // The related-services list lives on the profile card (js/services.js); the
+  // onboarding form reads it from there when that file is loaded and falls back
+  // to this copy otherwise, so the two surfaces can never drift into offering
+  // different services.
+  FALLBACK_SERVICES: [
+    'Speech-Language', 'Occupational Therapy', 'Physical Therapy', 'Social Work',
+    'Counseling', 'School Psychologist', 'Nursing / Health', 'Vision Services',
+    'Hearing / Audiology', 'Orientation & Mobility', 'Assistive Technology',
+    'Behavioral Support (BCBA)', 'Adaptive PE', 'Transportation', 'Interpreting Services'
+  ],
+
+  serviceTypes() {
+    return (window.aceServices && window.aceServices.SERVICE_TYPES) || this.FALLBACK_SERVICES;
+  },
+
   async render() {
     const { count, error: countError } = await window.aceSupabase
       .from('students')
@@ -73,20 +92,11 @@ const aceAddStudent = {
               </select>
             </label>
             <label>
-              <span class="label-text">Date of Birth <span class="optional">(optional)</span></span>
-              <input type="date" id="dob" />
-              <span class="field-hint">Sets the exact age&#8209;14½ transition gate and age&#8209;of&#8209;majority timing</span>
-            </label>
-          </div>
-          <div class="form-row two-col">
-            <label>
               <span class="label-text">Placement Type</span>
               <select id="placementType">
                 <option value="">Select placement…</option>
-                <option value="gen_ed">General Education</option>
-                <option value="co_taught">Co-taught</option>
-                <option value="sped_resource">Special Education / Resource</option>
-                <option value="mixed">Mixed</option>
+                ${this.PLACEMENTS.map(([v, label]) =>
+                  `<option value="${v}">${label}</option>`).join('')}
               </select>
             </label>
           </div>
@@ -136,15 +146,23 @@ const aceAddStudent = {
 
         <fieldset>
           <legend>Supports &amp; Services</legend>
-          <div class="form-row two-col">
+          <p class="field-hint" style="margin: -4px 0 12px;">Which supports does this student receive? Reference only — service minutes and provider schedules stay in Embrace.</p>
+          <div class="form-row">
             <label class="checkbox-label">
               <input type="checkbox" id="hasBip" />
               <span class="label-text">Behavior Intervention Plan (BIP) in place</span>
             </label>
-            <label>
-              <span class="label-text">Weekly Service Minutes <span class="optional">(optional)</span></span>
-              <input type="number" id="serviceMinutes" min="0" max="9999" placeholder="e.g., 250" />
-            </label>
+          </div>
+          <div class="form-row">
+            <span class="label-text">Related services <span class="optional">(check any)</span></span>
+            <div class="onboard-svc-grid" id="onboardServices">
+              ${this.serviceTypes().map(t => `
+                <label class="svc-check">
+                  <input type="checkbox" value="${window.aceUtils.escapeHtml(t)}" />
+                  <span>${window.aceUtils.escapeHtml(t)}</span>
+                </label>`).join('')}
+            </div>
+            <span class="field-hint">These show up on the student's Related Services card and in the intro letter to teachers.</span>
           </div>
         </fieldset>
 
@@ -236,10 +254,9 @@ const aceAddStudent = {
     const primaryDisability = document.getElementById('primaryDisability').value;
     const secondaryDisability = document.getElementById('secondaryDisability').value || null;
     const placementType = document.getElementById('placementType').value || null;
-    const dob = document.getElementById('dob').value || null;
     const hasBip = document.getElementById('hasBip').checked;
-    const serviceMinutesRaw = document.getElementById('serviceMinutes').value;
-    const serviceMinutes = serviceMinutesRaw ? parseInt(serviceMinutesRaw, 10) : null;
+    const relatedServices = Array.from(
+      document.querySelectorAll('#onboardServices input:checked')).map(el => el.value);
     const annualReviewDate = document.getElementById('annualReviewDate').value || null;
     const reevalDueDate = document.getElementById('reevalDueDate').value || null;
     const notes = document.getElementById('notes').value.trim();
@@ -276,9 +293,7 @@ const aceAddStudent = {
         primary_disability: primaryDisability,
         secondary_disability: secondaryDisability,
         placement_type: placementType,
-        dob: dob,
         has_bip: hasBip,
-        service_minutes: serviceMinutes,
         annual_review_date: annualReviewDate,
         reeval_due_date: reevalDueDate,
         notes: notes,
@@ -293,6 +308,20 @@ const aceAddStudent = {
       errorEl.textContent = 'Could not save student: ' + error.message;
       errorEl.style.display = 'block';
       return;
+    }
+
+    // Related services checked at onboarding become rows in `services`, which is
+    // the same table the profile's Related Services card reads — so what was
+    // entered here is already on the student's page rather than being re-entered.
+    // A failure here must not lose the student who was just created, so it warns
+    // and continues instead of rolling back.
+    if (relatedServices.length) {
+      const { error: svcError } = await window.aceSupabase.from('services')
+        .insert(relatedServices.map(t => ({ student_id: data.id, service_type: t })));
+      if (svcError) {
+        console.error('Related services save failed:', svcError);
+        window.aceToast?.error('Student added, but the related services did not save — add them on the profile.');
+      }
     }
 
     successEl.textContent = `✓ ${firstName} ${lastInitial}. added to your caseload. Redirecting…`;

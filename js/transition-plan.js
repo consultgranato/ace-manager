@@ -67,28 +67,18 @@ const aceTransitionPlan = {
     'Social Security Administration (SSI benefits)'
   ],
 
-  // ---- 14½ gate ----------------------------------------------------------
-  // True when the transition plan belongs in this student's IEP: age ≥ 14½ at
-  // the next annual review (DOB on file), else the grade-9+ proxy.
-  isEligible(student) {
-    if (student && student.dob) {
-      const dob = window.aceUtils.parseLocalDate(student.dob);
-      const at = window.aceUtils.parseLocalDate(student.annual_review_date) || new Date();
-      if (dob && !isNaN(dob)) {
-        const ageYears = (at - dob) / (365.25 * 24 * 3600 * 1000);
-        return ageYears >= 14.5;
-      }
-    }
-    const g = parseInt(student && student.grade, 10);
-    return !isNaN(g) && g >= 9;
-  },
+  // ---- eligibility --------------------------------------------------------
+  // Transition planning is ON for every student, always.
+  //
+  // Illinois requires it in the IEP in effect when a student turns 14½, and
+  // every student on a secondary caseload is at or past that point. The old
+  // date-of-birth gate spent a required field on every student in order to hide
+  // a page that should never have been hidden, and when no birth date was on
+  // file it silently fell back to guessing from grade level. Planning early is
+  // never the error; discovering at a 9th-grade annual that nobody started is.
+  isEligible() { return true; },
 
-  gateExplanation(student) {
-    if (student && student.dob) {
-      return 'Illinois requires transition planning in the IEP in effect when the student turns 14½. Based on the birth date on file, this student has not reached that point yet — the plan unlocks automatically when they do.';
-    }
-    return 'Illinois requires transition planning by age 14½. No birth date is on file, so eligibility is estimated from grade level (9th and above). Add a birth date in Edit Student for an exact gate.';
-  },
+  gateExplanation() { return ''; },
 
   // ---- state -------------------------------------------------------------
   state: { student: null, plan: null, goals: [], ta1: null, saveTimer: null },

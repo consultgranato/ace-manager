@@ -5,7 +5,7 @@
 //   const inst = window.aceCourseSelector.mount(hostEl, initialCourses);
 //   inst.getCourses();  // → array of course objects
 //   inst.setCourses(arr); // replace selection
-// Each course: { name, code, department, is_academic, grade, teacher_name, teacher_email }
+// Each course: { name, code, department, is_academic }
 // =============================================================
 
 const aceCourseSelector = {
@@ -73,7 +73,7 @@ const aceCourseSelector = {
       if (!cat || isDuplicate(cat)) return;
       selected.push({
         name: cat.name, code: cat.code, department: cat.department,
-        is_academic: cat.is_academic, grade: '', teacher_name: '', teacher_email: ''
+        is_academic: cat.is_academic
       });
       searchInput.value = '';
       dropdown.style.display = 'none';
@@ -92,32 +92,21 @@ const aceCourseSelector = {
         return;
       }
       emptyHint.style.display = 'none';
+      // Just the class. Per-course grade, teacher name and teacher email were
+      // three fields per class that nothing downstream read: teacher feedback
+      // uses a single shared link and takes the responding teacher's name from
+      // the form they fill in, and the grade was never surfaced anywhere. They
+      // cost real time on every student and bought nothing.
       listEl.innerHTML = selected.map((c, i) => {
         const acPill = c.is_academic
           ? '<span class="course-pill course-pill-academic">Academic</span>'
           : '<span class="course-pill course-pill-nonacademic">Non-academic</span>';
         const codeStr = c.code ? ` <span class="course-card-code">${esc(c.code)}</span>` : '';
-        const gradeOpts = ['', 'A', 'B', 'C', 'D', 'F'].map(g =>
-          `<option value="${g}" ${c.grade === g ? 'selected' : ''}>${g || '—'}</option>`).join('');
         return `
-          <div class="course-card" data-idx="${i}">
+          <div class="course-card course-card-compact" data-idx="${i}">
             <div class="course-card-header">
               <div class="course-card-title">${esc(c.name)}${codeStr} ${acPill}</div>
               <button type="button" class="course-card-remove" data-idx="${i}" aria-label="Remove class">${window.aceIcons.x(15)}</button>
-            </div>
-            <div class="course-card-fields">
-              <label class="course-card-field course-card-grade">
-                <span>Grade</span>
-                <select data-idx="${i}" data-field="grade">${gradeOpts}</select>
-              </label>
-              <label class="course-card-field">
-                <span>Teacher</span>
-                <input type="text" data-idx="${i}" data-field="teacher_name" value="${esc(c.teacher_name || '')}" placeholder="Last name" />
-              </label>
-              <label class="course-card-field">
-                <span>Email</span>
-                <input type="email" data-idx="${i}" data-field="teacher_email" value="${esc(c.teacher_email || '')}" placeholder="teacher@d219.org" />
-              </label>
             </div>
           </div>
         `;
@@ -125,13 +114,6 @@ const aceCourseSelector = {
 
       listEl.querySelectorAll('.course-card-remove').forEach(btn => {
         btn.addEventListener('click', () => removeCourse(parseInt(btn.dataset.idx, 10)));
-      });
-      listEl.querySelectorAll('[data-field]').forEach(el => {
-        el.addEventListener('input', () => {
-          const idx = parseInt(el.dataset.idx, 10);
-          const field = el.dataset.field;
-          if (selected[idx]) selected[idx][field] = el.value;
-        });
       });
     }
 

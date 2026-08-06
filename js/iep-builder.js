@@ -373,18 +373,26 @@ const aceIepBuilder = {
   // nothing is inserted unless the case manager clicks a chip (see
   // wireStrengths). Renders nothing when no TA1 / no strengths on file.
   strengthChipsHTML(group) {
-    const ta = this.state.ta1;
-    if (!ta || !Array.isArray(ta.studentStrengths) || !ta.studentStrengths.length) return '';
     const esc = window.aceUtils.escapeHtml;
-    const chips = ta.studentStrengths.map(v => `
-      <span class="iep-strength-chip">
-        <button type="button" class="iep-strength-chip-add" data-group="${esc(group)}" data-value="${esc(v)}">+ ${esc(v)}</button>
-        <button type="button" class="iep-strength-chip-x" title="Dismiss suggestion" aria-label="Dismiss suggestion">&times;</button>
-      </span>`).join('');
-    return `<div class="iep-strength-suggest">
-      <span class="iep-strength-suggest-label">From student's transition assessment — click to add</span>
-      <div class="iep-strength-chips">${chips}</div>
-    </div>`;
+    const row = (label, values) => {
+      if (!Array.isArray(values) || !values.length) return '';
+      const chips = values.map(v => `
+        <span class="iep-strength-chip">
+          <button type="button" class="iep-strength-chip-add" data-group="${esc(group)}" data-value="${esc(v)}">+ ${esc(v)}</button>
+          <button type="button" class="iep-strength-chip-x" title="Dismiss suggestion" aria-label="Dismiss suggestion">&times;</button>
+        </span>`).join('');
+      return `<div class="iep-strength-suggest">
+        <span class="iep-strength-suggest-label">${esc(label)} — click to add</span>
+        <div class="iep-strength-chips">${chips}</div>
+      </div>`;
+    };
+    const ta = this.state.ta1;
+    const pf = this.state.pf1;
+    // Two sources, same click-to-add contract: the bank suggests, the case
+    // manager decides. Parent-named strengths are the ones most often lost
+    // between the feedback form and the document.
+    return row("From student's transition assessment", ta && ta.studentStrengths)
+         + row('Named by the family on the parent feedback form', pf && pf.strengths);
   },
 
   // 3.15 — Read-only parent reference from PF1 whatsGoingWell. Surfaced as a
@@ -1717,6 +1725,9 @@ const aceIepBuilder = {
     const parent = (pf.parentName && pf.parentName.trim()) ? pf.parentName.trim() : `${name}'s family`;
     const L = [`${parent} contributed family input to this review.`];
     if (pf.hopesGoals) L.push(`${parent} shared the following hopes and goals for ${name}: ${this._softQuote(pf.hopesGoals)}.`);
+    if (Array.isArray(pf.strengths) && pf.strengths.length) {
+      L.push(`${parent} identifies ${name}'s strengths as ${this._naturalList(pf.strengths.map(s => s.toLowerCase()))}.`);
+    }
     if (pf.whatsGoingWell) L.push(`At home, ${parent} reports that what is going well includes ${this._softQuote(pf.whatsGoingWell)}.`);
     if (pf.biggestConcerns) L.push(`Among ${parent}'s primary concerns: ${this._softQuote(pf.biggestConcerns)}.`);
     if (Array.isArray(pf.supportAreas) && pf.supportAreas.length) {
@@ -1733,13 +1744,10 @@ const aceIepBuilder = {
   // de-dup/functional/BIP/eligibility logic is untouched.
   // =============================================================
 
-  // Age gate for transition present levels. No DOB field exists on the
-  // student record, so per the 3.10b spec we default to grade 9 and above
-  // (the IEP in effect when the student turns 14½).
-  _isTransitionAge(d) {
-    const g = parseInt(d.grade, 10);
-    return !isNaN(g) && g >= 9;
-  },
+  // Transition present levels are written for every student. Illinois requires
+  // them in the IEP in effect at age 14½, which every student on a secondary
+  // caseload has reached; gating the section only ever risked omitting it.
+  _isTransitionAge() { return true; },
 
   // Adverse-impact statement (academic) — IDEA §300.320(a)(1). Explicit,
   // concrete, and tied to the academic levels/barriers already stated; not

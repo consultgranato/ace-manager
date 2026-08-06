@@ -490,9 +490,6 @@ const aceProfile = {
     const s = this.state.student;
     host.innerHTML = '';
 
-    const tEligible = window.aceTransitionPlan
-      ? window.aceTransitionPlan.isEligible(s) : false;
-
     const prepare = [
       { id: 'meetings', icon: 'calendar', title: 'Meeting',
         mount: el => window.aceMeetings && window.aceMeetings.renderMeetingSection(el, s) },
@@ -501,13 +498,10 @@ const aceProfile = {
       { id: 'parent-feedback', icon: 'usersRound', title: 'Parent Feedback',
         mount: el => window.aceParentFeedback && window.aceParentFeedback.render(el, s) }
     ];
-    // The student self-assessment is the intake side of transition planning, so
-    // it lives under the same 14½ gate as the plan itself rather than sitting
-    // there as a dead card for a 13-year-old.
-    if (tEligible) {
-      prepare.push({ id: 'transition', icon: 'compass', title: 'Student Transition Assessment',
-        mount: el => window.aceTransition && window.aceTransition.render(el, s) });
-    }
+    // The student self-assessment is the intake side of transition planning and
+    // is part of every student's file — transition planning is no longer gated.
+    prepare.push({ id: 'transition', icon: 'compass', title: 'Student Transition Assessment',
+      mount: el => window.aceTransition && window.aceTransition.render(el, s) });
 
     const iep = this.iepCardStatus();
     const write = [
@@ -518,12 +512,10 @@ const aceProfile = {
       { id: 'goals', icon: 'barChart', title: 'Goals &amp; Progress',
         mount: el => window.aceGoals && window.aceGoals.render(el, s) }
     ];
-    if (tEligible) {
-      write.push({ id: 'transition-plan', icon: 'compass', title: 'Transition Plan',
-        html: `
-          <div class="card-status-text">Postsecondary goals, services, courses of study &amp; the Indicator 13 checklist</div>
-          <button class="card-action" data-nav="transition-plan">Open the plan</button>` });
-    }
+    write.push({ id: 'transition-plan', icon: 'compass', title: 'Transition Plan',
+      html: `
+        <div class="card-status-text">Postsecondary goals, services, courses of study &amp; the Indicator 13 checklist</div>
+        <button class="card-action" data-nav="transition-plan">Open the plan</button>` });
 
     const reference = [
       { id: 'services', icon: 'settings', title: 'Related Services',
@@ -534,15 +526,6 @@ const aceProfile = {
 
     this.appendSection(host, 'Prepare', 'Collect what the meeting needs', prepare);
     this.appendSection(host, 'Write', 'Produce the text you paste into Embrace', write);
-
-    // One gate note for both transition surfaces, instead of two cards each
-    // explaining the same rule.
-    if (!tEligible && window.aceTransitionPlan) {
-      const note = document.createElement('p');
-      note.className = 'section-gate-note muted';
-      note.textContent = window.aceTransitionPlan.gateExplanation(s);
-      host.appendChild(note);
-    }
 
     this.appendSection(host, 'Reference', 'Consult as needed', reference, true);
   },

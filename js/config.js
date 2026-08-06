@@ -8,7 +8,7 @@
 // changes the query string and browsers can't serve stale JS/CSS.
 // The deploy script matches the assignment below by pattern, so keep it on its
 // own line with a digits-only value. Run `node bump-version.js` each deploy.
-window.BUILD_VERSION = '20260806211827';
+window.BUILD_VERSION = '20260806215318';
 
 const SUPABASE_URL = 'https://npihodfemfpmhhooqtyl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waWhvZGZlbWZwbWhob29xdHlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzUwMzIsImV4cCI6MjA5NjQ1MTAzMn0.KDSh5GeGtbw-45-HK9gBg5Wkb-k2NQY5ui40Ln3H5ZI';
@@ -41,6 +41,26 @@ window.D219_NON_SCHOOL_DAYS_SEED = [
   '2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31', '2027-01-01',
   '2027-01-18', '2027-02-15', '2027-03-12',
   '2027-03-22', '2027-03-23', '2027-03-24', '2027-03-25', '2027-03-26'
+];
+
+// Placement continuum, shared by the onboarding form and the edit drawer.
+// It lives here because config.js is the one file every page loads — kept in
+// either of those two modules, the page that did not load it would silently
+// fall back to a shorter list and quietly change what a case manager can pick.
+// Ordered least to most restrictive, which is how an LRE discussion moves.
+window.ACE_PLACEMENTS = [
+  ['gen_ed',         'General education (full inclusion)'],
+  ['co_taught',      'Co-taught / collaborative'],
+  ['resource',       'Resource / instructional support'],
+  ['self_contained', 'Instructional (self-contained)'],
+  ['life_skills',    'Life skills / functional academics'],
+  ['therapeutic',    'Therapeutic / behavioral program'],
+  ['vocational',     'Vocational / work-based placement'],
+  ['transition',     'Transition program (18-22)'],
+  ['separate_day',   'Separate day school'],
+  ['residential',    'Residential placement'],
+  ['home_hospital',  'Home / hospital instruction'],
+  ['mixed',          'Mixed — varies by period']
 ];
 
 // Initialize Supabase client and expose globally as window.aceSupabase

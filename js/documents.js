@@ -46,14 +46,19 @@ const aceDocuments = {
   },
 
   async _context() {
-    const [profile, branding, user, year] = await Promise.all([
+    const [profile, branding, user, year, svc] = await Promise.all([
       window.aceAuth.getProfileCached(),
       window.aceAuth.getBranding(),
       window.aceAuth.getUser(),
-      window.aceUtils.currentSchoolYearLabel()
+      window.aceUtils.currentSchoolYearLabel(),
+      // Related services chosen at onboarding (or toggled on the profile). A
+      // teacher who knows the student leaves for speech on Tuesdays reads a
+      // mid-period exit as a schedule, not as avoidance.
+      window.aceSupabase.from('services').select('service_type').eq('student_id', this._student.id)
     ]);
     return {
       s: this._student,
+      services: [...new Set(((svc && svc.data) || []).map(r => r.service_type))].sort(),
       name: `${this._student.first_name} ${this._student.last_initial}.`,
       first: this._student.first_name,
       cm: (profile && profile.full_name) || 'Case Manager',
@@ -121,36 +126,63 @@ ${ctx.first} has an IEP. The accommodations below are REQUIRED in all classes:
 ${list.map(a => `  •  ${a}`).join('\n')}
 
 Notes for teachers:
-  •  Accommodations are not optional supports — they are part of the IEP and legally required.
-  •  If an accommodation isn't working in your class, don't drop it — contact me and we'll problem-solve.
-  •  Questions, concerns, or anything you're noticing (good or bad): ${ctx.cm}${ctx.email ? ` (${ctx.email})` : ''}.`;
+  •  These are required. They are part of a legal document, not a list of suggestions.
+  •  The full IEP — goals, present levels, and the rest of the accommodations page — is in Embrace. Read it if you have not.
+  •  If one of these is not working in your room, tell me before you stop doing it and we will find something that does.
+  •  Anything you notice, good or bad: ${ctx.cm}${ctx.email ? ` (${ctx.email})` : ''}.`;
   },
 
-  // Case manager → the student's general education teachers. Warm, brief,
-  // professional. Can carry the accommodations one-pager as an appendix so it
-  // goes out as one piece (see _openCmIntro).
+  // One sentence naming the student's related services and BIP, or nothing at
+  // all when there are none — an empty "Services: none" line is noise.
+  _servicesLine(ctx) {
+    const list = ctx.services || [];
+    const bip = !!(ctx.s && ctx.s.has_bip);
+    if (!list.length && !bip) return '';
+    const lines = [];
+    if (list.length) {
+      lines.push(`${ctx.first} also receives ${this._naturalList(list)} services, so expect some scheduled pull-outs during the week.`);
+    }
+    if (bip) {
+      lines.push(`There is a behavior intervention plan in place. It is in Embrace with the IEP and is worth reading before you need it.`);
+    }
+    return `\n\n${lines.join(' ')}`;
+  },
+
+  _naturalList(arr) {
+    const a = (arr || []).filter(Boolean);
+    if (a.length <= 1) return a[0] || '';
+    if (a.length === 2) return `${a[0]} and ${a[1]}`;
+    return `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`;
+  },
+
+  // Case manager → the student's general education teachers.
+  //
+  // Deliberately plain. The earlier draft had the tells of machine-written
+  // prose — a tidy tricolon of bullets, "genuinely", "actually works", a warm
+  // sign-off doing no work — and teachers skim past that. This one says who,
+  // what, where the IEP lives, and what is being asked, then stops.
   _cmIntroLetter(ctx, attachAccommodations) {
     const reach = ctx.email
-      ? `The fastest way to reach me is email: ${ctx.email}.`
+      ? `Email is best: ${ctx.email}.`
       : `You can reach me through the ${ctx.school} main office.`;
-    const yearPhrase = ctx.year ? ` this school year (${ctx.year})` : ' this school year';
+    const yearPhrase = ctx.year ? ` this year (${ctx.year})` : ' this year';
     const accomm = attachAccommodations ? this._accommodationsText(ctx) : '';
+    const services = this._servicesLine(ctx);
 
-    let letter = `Hello,
+    let letter = `Hi,
 
-My name is ${ctx.cm}, and I'm the special education case manager for ${ctx.name}, who is in one of your classes${yearPhrase}. I wanted to introduce myself so you know who to come to with anything related to ${ctx.first}'s learning plan.
+I'm ${ctx.cm}, the case manager for ${ctx.name}, who is in your class${yearPhrase}.
 
-As ${ctx.first}'s case manager, I coordinate the IEP: I monitor progress, keep accommodations current, and make sure the plan actually works in your classroom. Here's what you can expect from me during the year:
+${ctx.first}'s IEP is in Embrace. If you have not opened it, it is worth ten minutes — the accommodations, goals, and present levels are all there, and it will tell you more about what to expect than this letter can. If you cannot find it or do not have access, tell me and I will sort it out.${services}
 
-  •  Short feedback requests before IEP meetings — a few minutes of your observations, which genuinely shape the plan.
-  •  Updates whenever ${ctx.first}'s accommodations or supports change.
-  •  Invitations to IEP meetings when your perspective is needed.
+Two things I need from you:
 
-In return, please don't wait for a formal request to flag something. If you're seeing anything — academic, behavioral, or just a gut feeling that something is off — I'd rather hear about it early. Good news is welcome too; it goes straight into the strengths section of the IEP.
+1. Use the accommodations. They are required, not suggestions. If one is not working in your room, tell me before you drop it and we will find something that does.
+2. Tell me early. If something is going wrong — grades, attendance, behavior, or just a feeling that this is not landing — I would rather hear it in October than in April. Tell me what is going well too; that goes in the IEP, and it is the part families read first.
+
+Before ${ctx.first}'s IEP meeting I will send a short form asking what you are seeing. It takes a few minutes and I do use it.
 
 ${reach}
-
-Thank you for everything you do for ${ctx.first}. I'm looking forward to working with you.
 
 ${ctx.cm}
 Case Manager, ${ctx.school}`;
@@ -176,22 +208,15 @@ ${accomm}`;
 
     return `Dear ${ctx.first}'s family,
 
-My name is ${ctx.cm}, and I'm delighted to be ${ctx.first}'s case manager at ${ctx.school} for ${yearPhrase}. I wanted to reach out early so you know who I am and how to find me.
+I'm ${ctx.cm}, ${ctx.first}'s case manager at ${ctx.school} for ${yearPhrase}. I wanted you to have my name and number before you need them.
 
-As ${ctx.first}'s case manager, I'm your main point of contact for everything related to the IEP. My job is to:
+What I do: I make sure ${ctx.first}'s accommodations are actually happening in every class, I track progress on the IEP goals and send you updates during the year, and I run the annual review. If something about school is not working, I am the person to call first.
 
-  •  Make sure ${ctx.first}'s accommodations and services are in place in every class.
-  •  Track progress on IEP goals and share updates with you throughout the year.
-  •  Coordinate ${ctx.first}'s annual review and any other IEP meetings, and prepare with you and ${ctx.first} beforehand.
-  •  Be the person you call first with a question or concern — big or small.
+What I will ask of you: before the IEP meeting I will send a short form asking what you are seeing at home — what is going well, what worries you, and what you want for ${ctx.first} after high school. You know things about your child that we do not, and that form is how they get into the plan rather than staying in a conversation.
 
-You know ${ctx.first} better than anyone, and the plan works best when we build it together. If anything comes up at home — something that's working, something that isn't, or a question about anything school-related — please don't hesitate to reach out.
+You do not have to wait for that form, or for a problem. If you have a question about anything, call.
 
 ${reach}
-
-I'm looking forward to a great year with ${ctx.first}.
-
-Warmly,
 
 ${ctx.cm}
 Case Manager, ${ctx.school}`;

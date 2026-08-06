@@ -64,8 +64,24 @@ const aceServices = {
     const legacy = this._selectedTypes().filter(t => !this.SERVICE_TYPES.includes(t));
     const all = this.SERVICE_TYPES.concat(legacy);
 
+    // Lead with what this student actually receives. This card is in the
+    // Reference section, and a reference should answer the question on the way
+    // in — "speech and social work, plus a BIP" — rather than making the case
+    // manager read a grid of fifteen options to work it out. Selections made
+    // during onboarding land here, so this is where they show up.
+    const chosen = this._selectedTypes().slice().sort();
+    const bip = !!this._student.has_bip;
+    const summary = (chosen.length || bip)
+      ? `<div class="svc-summary">
+           <span class="svc-summary-label">Receives</span>
+           <span class="svc-summary-list">${chosen.map(t => `<span class="svc-summary-item">${esc(t)}</span>`).join('')}
+           ${bip ? '<span class="svc-summary-item svc-summary-bip">Behavior Intervention Plan</span>' : ''}</span>
+         </div>`
+      : `<div class="svc-summary svc-summary-empty muted">No related services recorded${bip ? ' (a BIP is in place)' : ''}. Select any below.</div>`;
+
     host.innerHTML = `
-      <p class="muted svc-hint">Which related services does this student receive? Click to toggle. Reference only.</p>
+      ${summary}
+      <p class="muted svc-hint">Click to toggle. Reference only — minutes, frequency and provider schedules stay in Embrace.</p>
       <div class="svc-chipgrid">
         ${all.map(t => `
           <button type="button" class="svc-chip ${selected.has(t) ? 'selected' : ''}" data-type="${esc(t)}">

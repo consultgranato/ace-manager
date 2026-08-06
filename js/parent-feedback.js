@@ -147,6 +147,7 @@ const aceParentFeedback = {
     const esc = window.aceUtils.escapeHtml;
     const rows = [];
     if (p.hopesGoals) rows.push(['Hopes & goals', p.hopesGoals]);
+    if (Array.isArray(p.strengths) && p.strengths.length) rows.push(['Strengths named by family', p.strengths.join(', ')]);
     if (p.whatsGoingWell) rows.push(['Going well at home', p.whatsGoingWell]);
     if (p.biggestConcerns) rows.push(['Biggest concerns', p.biggestConcerns]);
     if (Array.isArray(p.supportAreas) && p.supportAreas.length) rows.push(['Support areas', p.supportAreas.join(', ')]);

@@ -7,6 +7,9 @@
 
 const aceEditStudent = {
 
+  placements() { return window.ACE_PLACEMENTS || []; },
+
+
   async open(student) {
     if (!student) return;
 
@@ -59,10 +62,10 @@ const aceEditStudent = {
             <span class="label-text">Placement</span>
             <select id="editPlacementType">
               <option value="" ${sel(s.placement_type, null)}>Select…</option>
-              <option value="gen_ed" ${sel(s.placement_type, 'gen_ed')}>General Education</option>
-              <option value="co_taught" ${sel(s.placement_type, 'co_taught')}>Co-taught</option>
-              <option value="sped_resource" ${sel(s.placement_type, 'sped_resource')}>SpEd / Resource</option>
-              <option value="mixed" ${sel(s.placement_type, 'mixed')}>Mixed</option>
+              ${this.placements().map(([v, label]) =>
+                `<option value="${v}" ${sel(s.placement_type, v)}>${label}</option>`).join('')}
+              ${this.placements().some(([v]) => v === s.placement_type) || !s.placement_type ? ''
+                : `<option value="${esc(s.placement_type)}" selected>${esc(s.placement_type)} (legacy)</option>`}
             </select>
           </label>
         </div>
@@ -91,10 +94,6 @@ const aceEditStudent = {
             <input type="checkbox" id="editHasBip" ${s.has_bip ? 'checked' : ''} />
             <span class="label-text">BIP in place</span>
           </label>
-          <label>
-            <span class="label-text">Weekly Service Minutes</span>
-            <input type="number" id="editServiceMinutes" min="0" max="9999" value="${s.service_minutes ?? ''}" />
-          </label>
         </div>
 
         <div class="form-row two-col">
@@ -105,13 +104,6 @@ const aceEditStudent = {
           <label>
             <span class="label-text">Re-evaluation Due</span>
             <input type="date" id="editReevalDueDate" value="${esc(s.reeval_due_date || '')}" />
-          </label>
-        </div>
-
-        <div class="form-row two-col">
-          <label>
-            <span class="label-text">Birth Date <span class="muted">(drives the 14½ transition gate)</span></span>
-            <input type="date" id="editDob" value="${esc(s.dob || '')}" />
           </label>
         </div>
 
@@ -167,8 +159,6 @@ const aceEditStudent = {
     const secondaryDisability = drawerBody.querySelector('#editSecondaryDisability').value || null;
     const placementType = drawerBody.querySelector('#editPlacementType').value || null;
     const hasBip = drawerBody.querySelector('#editHasBip').checked;
-    const serviceMinutesRaw = drawerBody.querySelector('#editServiceMinutes').value;
-    const serviceMinutes = serviceMinutesRaw ? parseInt(serviceMinutesRaw, 10) : null;
     const annualReviewDate = drawerBody.querySelector('#editAnnualReviewDate').value || null;
     const reevalDueDate = drawerBody.querySelector('#editReevalDueDate').value || null;
 
@@ -188,10 +178,8 @@ const aceEditStudent = {
         secondary_disability: secondaryDisability,
         placement_type: placementType,
         has_bip: hasBip,
-        service_minutes: serviceMinutes,
         annual_review_date: annualReviewDate,
         reeval_due_date: reevalDueDate,
-        dob: drawerBody.querySelector('#editDob').value || null,
         referral_date: drawerBody.querySelector('#editReferralDate').value || null,
         consent_date: drawerBody.querySelector('#editConsentDate').value || null,
         courses: this._courseSelector ? this._courseSelector.getCourses() : (student.courses || [])

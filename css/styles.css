@@ -6277,3 +6277,43 @@ summary:focus-visible,
 .goalb-direction-note[hidden],
 .gbank-detail[hidden],
 .gbank-more[hidden] { display: none !important; }
+
+/* =============================================================
+   Onboarding & reference refinements
+   ============================================================= */
+
+/* Related-services checkboxes on the Add Student form. Same vocabulary as the
+   profile card, laid out to be scanned rather than read. */
+.onboard-svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 14px; margin: 6px 0 8px; }
+/* `.student-form label` stacks its parts in a column, which is right for a
+   field but turns a checkbox into a box floating above its own text. Scoped
+   with the form class so it outranks that rule instead of relying on order. */
+.student-form .svc-check,
+.svc-check {
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  font-size: 13.5px; line-height: 1.4; cursor: pointer; padding: 3px 0;
+}
+.svc-check input { flex: 0 0 auto; margin: 0; }
+.svc-check span { min-width: 0; }
+
+/* The Related Services card leads with what the student actually receives, so
+   the Reference section answers its question without being read twice. */
+.svc-summary {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 9px 11px; margin-bottom: 10px;
+}
+.svc-summary-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.svc-summary-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.svc-summary-item {
+  font-size: 12px; font-weight: 600; background: var(--accent-50);
+  color: var(--accent-700); border-radius: var(--radius-full); padding: 2px 9px;
+}
+.svc-summary-item.svc-summary-bip { background: var(--warning-bg); color: var(--warning-ink); }
+.svc-summary-empty { display: block; font-size: 12.5px; font-weight: 400; }
+
+/* A class is now just a class — no per-course grade, teacher or email row. */
+.course-card-compact .course-card-header { margin-bottom: 0; }
+.course-card-compact { padding-bottom: 10px; }
+
+.tform-help { font-size: 12.5px; line-height: 1.5; margin: 2px 0 8px; }
