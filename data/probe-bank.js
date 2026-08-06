@@ -16,7 +16,7 @@
 // here: js/probe-engine.js mints a fresh equivalent form for those every cycle,
 // which is what makes a rising progress line mean fluency and not memorisation.
 //
-// 87 pools (22 generated) · 309 curated items
+// 89 pools (22 generated) · 309 curated items
 // =============================================================
 
 window.ACE_PROBE_BANK = {
@@ -221,6 +221,24 @@ window.ACE_PROBE_BANK = {
   "items": 6,
   "default_method": "work samples scored with a rubric",
   "curated": 3
+ },
+ "ma-performance": {
+  "label": "Math — applied measurement task",
+  "kind": "observation",
+  "method": "a task analysis checklist",
+  "administration": "Adult scores each step of the applied measurement task as independent, prompted or not performed.",
+  "frequency": "biweekly",
+  "items": 6,
+  "default_method": "a task analysis checklist"
+ },
+ "wr-process": {
+  "label": "Writing — process & revision behaviors",
+  "kind": "observation",
+  "method": "an observation log",
+  "administration": "Case manager records opportunities to revise or self-edit and how many the student completed.",
+  "frequency": "biweekly",
+  "items": 6,
+  "default_method": "an observation log"
  },
  "ma-numbersense": {
   "label": "Math — number sense & place value",

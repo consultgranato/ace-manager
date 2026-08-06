@@ -23,7 +23,7 @@ PA('rd-pa-01', 'Syllable segmentation in multisyllabic academic words',
   ['segment two- and three-syllable words and state the syllable count',
    'segment four-syllable {corpus} words and state the syllable count',
    'segment four- and five-syllable {corpus} words and name the stressed syllable'],
-  { pool: 'ws-syllables', note: 'Syllable counting is the entry point to multisyllabic decoding — pair it with an explicit syllable-type routine rather than teaching it as an isolated auditory drill.' });
+  { gen_opts: { v: 'count' }, pool: 'ws-syllables', note: 'Syllable counting is the entry point to multisyllabic decoding — pair it with an explicit syllable-type routine rather than teaching it as an isolated auditory drill.' });
 
 PA('rd-pa-02', 'Phoneme segmentation of single-syllable words',
   'Given {n} orally presented single-syllable words',
@@ -31,7 +31,8 @@ PA('rd-pa-02', 'Phoneme segmentation of single-syllable words',
   'accuracy', 90, [4, 5],
   ['segment three-phoneme words into individual sounds',
    'segment four-phoneme words containing a consonant blend',
-   'segment four- and five-phoneme words containing blends and digraphs']);
+   'segment four- and five-phoneme words containing blends and digraphs'],
+  { gen_opts: { v: 'segment' } });
 
 PA('rd-pa-03', 'Phoneme deletion and substitution',
   'Given an orally presented word and a direction to delete or substitute one sound',
@@ -39,7 +40,8 @@ PA('rd-pa-03', 'Phoneme deletion and substitution',
   'accuracy', 85, [4, 5],
   ['delete the initial sound of a word and state the new word',
    'delete a sound from a consonant blend and state the new word',
-   'substitute initial, medial or final sounds on request and state the new word']);
+   'substitute initial, medial or final sounds on request and state the new word'],
+  { gen_opts: { v: 'deletesub' } });
 
 PA('rd-pa-04', 'Phoneme blending into whole words',
   'Given a word presented orally one phoneme at a time',
@@ -47,7 +49,8 @@ PA('rd-pa-04', 'Phoneme blending into whole words',
   'accuracy', 90, [4, 5],
   ['blend three-phoneme words into whole words',
    'blend four-phoneme words containing blends into whole words',
-   'blend five- and six-phoneme multisyllabic words into whole words']);
+   'blend five- and six-phoneme multisyllabic words into whole words'],
+  { gen_opts: { v: 'blend' } });
 
 PA('rd-pa-05', 'Syllable division of written multisyllabic words',
   'Given {n} written multisyllabic {corpus} words',
@@ -56,7 +59,7 @@ PA('rd-pa-05', 'Syllable division of written multisyllabic words',
   ['divide VC/CV words between the consonants and read each part',
    'divide V/CV and VC/V words and read the word aloud',
    'divide four- and five-syllable words using all six syllable types and read the word aloud'],
-  { pool: 'ws-syllables' });
+  { gen_opts: { v: 'divide' }, pool: 'ws-syllables' });
 
 PA('rd-pa-06', 'Stress and schwa in multisyllabic words',
   'Given {n} written multisyllabic {corpus} words',
@@ -65,7 +68,7 @@ PA('rd-pa-06', 'Stress and schwa in multisyllabic words',
   ['identify the stressed syllable in two-syllable words',
    'identify the stressed syllable in three-syllable words',
    'identify the stressed syllable and produce the schwa in four-syllable words'],
-  { pool: 'ws-syllables', dx: ['SLD', 'SLI'] });
+  { gen_opts: { v: 'stress' }, pool: 'ws-syllables', dx: ['SLD', 'SLI'] });
 
 // ---- decoding & word attack ----------------------------------------------------
 const DC = section({
@@ -79,7 +82,8 @@ DC('rd-dc-01', 'Reading closed and open syllable words',
   'accuracy', 90, [4, 5],
   ['read one-syllable closed and open syllable words aloud',
    'read two-syllable words combining closed and open syllables',
-   'read three- and four-syllable {corpus} words combining closed and open syllables']);
+   'read three- and four-syllable {corpus} words combining closed and open syllables'],
+  { gen_opts: { v: 'closedopen' } });
 
 DC('rd-dc-02', 'Reading vowel teams and diphthongs',
   'Given a list of {n} written words containing vowel teams and diphthongs',
@@ -87,7 +91,8 @@ DC('rd-dc-02', 'Reading vowel teams and diphthongs',
   'accuracy', 90, [4, 5],
   ['read words containing the most common vowel teams (ai, ea, oa, ee)',
    'read words containing variant vowel teams and diphthongs (ou, ow, oi, oy, au, aw)',
-   'read multisyllabic {corpus} words containing vowel teams and diphthongs']);
+   'read multisyllabic {corpus} words containing vowel teams and diphthongs'],
+  { gen_opts: { v: 'vowelteam' } });
 
 DC('rd-dc-03', 'Reading r-controlled vowel patterns',
   'Given a list of {n} written words containing r-controlled vowels',
@@ -95,7 +100,8 @@ DC('rd-dc-03', 'Reading r-controlled vowel patterns',
   'accuracy', 90, [4, 5],
   ['read words containing ar and or',
    'read words containing er, ir and ur',
-   'read multisyllabic {corpus} words containing r-controlled vowels in any position']);
+   'read multisyllabic {corpus} words containing r-controlled vowels in any position'],
+  { gen_opts: { v: 'rcontrolled' } });
 
 DC('rd-dc-04', 'Reading consonant blends and digraphs in longer words',
   'Given a list of {n} written words containing consonant blends and digraphs',
@@ -103,7 +109,8 @@ DC('rd-dc-04', 'Reading consonant blends and digraphs in longer words',
   'accuracy', 90, [4, 5],
   ['read one-syllable words with initial and final blends',
    'read words with three-letter blends and consonant digraphs',
-   'read multisyllabic {corpus} words with blends and digraphs in any position']);
+   'read multisyllabic {corpus} words with blends and digraphs in any position'],
+  { gen_opts: { v: 'blends' } });
 
 DC('rd-dc-05', 'Reading silent-e and vowel-consonant-e words',
   'Given a list of {n} written words contrasting closed and vowel-consonant-e patterns',
@@ -111,7 +118,8 @@ DC('rd-dc-05', 'Reading silent-e and vowel-consonant-e words',
   'accuracy', 90, [4, 5],
   ['read vowel-consonant-e words aloud',
    'read minimal pairs contrasting closed and vowel-consonant-e syllables (hop/hope)',
-   'read multisyllabic words containing a vowel-consonant-e syllable']);
+   'read multisyllabic words containing a vowel-consonant-e syllable'],
+  { gen_opts: { v: 'vce' } });
 
 DC('rd-dc-06', 'Applying a chunking strategy to unfamiliar multisyllabic words',
   'Given {nshort} unfamiliar multisyllabic {corpus} words in isolation',
@@ -120,7 +128,7 @@ DC('rd-dc-06', 'Applying a chunking strategy to unfamiliar multisyllabic words',
   ['name the chunking steps and apply them to a three-syllable word with adult prompting',
    'chunk and read three-syllable {corpus} words',
    'chunk and read four- and five-syllable {corpus} words within 5 seconds each'],
-  { note: 'The point is the strategy, not the word list — score whether the student chunks before guessing, because guessing from first letters is the habit this replaces.' });
+  { gen_opts: { v: 'chunking' }, note: 'The point is the strategy, not the word list — score whether the student chunks before guessing, because guessing from first letters is the habit this replaces.' });
 
 DC('rd-dc-07', 'Reading high-frequency irregular words',
   'Given a list of {n} high-frequency words with irregular spellings',
@@ -128,7 +136,8 @@ DC('rd-dc-07', 'Reading high-frequency irregular words',
   'accuracy', 95, [4, 5],
   ['read the 100 most frequent irregular words aloud',
    'read the 200 most frequent irregular words aloud',
-   'read the 300 most frequent irregular words aloud within 3 seconds each']);
+   'read the 300 most frequent irregular words aloud within 3 seconds each'],
+  { gen_opts: { v: 'irregular' } });
 
 DC('rd-dc-08', 'Decoding technical vocabulary from content-area text',
   'Given {nshort} technical terms drawn from current {course} material',
@@ -137,7 +146,7 @@ DC('rd-dc-08', 'Decoding technical vocabulary from content-area text',
   ['decode two- and three-syllable technical terms from the current unit',
    'decode four-syllable technical terms using known roots and affixes',
    'decode unfamiliar technical terms of any length using syllable division and morphology'],
-  { note: 'Draw the word list from the courses the student is actually enrolled in — decoding practice on unrelated words does not transfer to the class where reading is breaking down.' });
+  { gen_opts: { v: 'technical' }, note: 'Draw the word list from the courses the student is actually enrolled in — decoding practice on unrelated words does not transfer to the class where reading is breaking down.' });
 
 // ---- morphology & word study ------------------------------------------------------
 const MO = section({
@@ -151,7 +160,8 @@ MO('rd-mo-01', 'Using common prefixes to determine word meaning',
   'accuracy', 85, [4, 5],
   ['state the meaning of the prefixes un-, re-, pre- and dis-',
    'state the meaning of 10 common prefixes and apply them to known base words',
-   'use prefix meaning to determine the meaning of unfamiliar {corpus} words']);
+   'use prefix meaning to determine the meaning of unfamiliar {corpus} words'],
+  { gen_opts: { v: 'prefix' } });
 
 MO('rd-mo-02', 'Using suffixes and inflectional endings',
   'Given {n} words containing suffixes and inflectional endings',
@@ -159,7 +169,8 @@ MO('rd-mo-02', 'Using suffixes and inflectional endings',
   'accuracy', 85, [4, 5],
   ['identify the base word and the inflectional ending (-s, -ed, -ing)',
    'state how derivational suffixes (-ful, -less, -ness, -ly) change meaning',
-   'state how a suffix changes the part of speech of an unfamiliar {corpus} word']);
+   'state how a suffix changes the part of speech of an unfamiliar {corpus} word'],
+  { gen_opts: { v: 'suffix' } });
 
 MO('rd-mo-03', 'Using Greek and Latin roots',
   'Given {n} {corpus} words built on Greek and Latin roots',
@@ -168,7 +179,7 @@ MO('rd-mo-03', 'Using Greek and Latin roots',
   ['state the meaning of 10 high-utility roots (port, dict, struct, spect, scrib)',
    'state the meaning of 20 high-utility roots and define words built on them',
    'use root meaning to define unfamiliar {corpus} words encountered in text'],
-  { note: 'High-utility roots pay off across science and social studies at the same time; teach the root families the student\'s current courses actually use.' });
+  { gen_opts: { v: 'root' }, note: 'High-utility roots pay off across science and social studies at the same time; teach the root families the student\'s current courses actually use.' });
 
 MO('rd-mo-04', 'Changing a word\'s part of speech through derivation',
   'Given a base word and a target part of speech',
@@ -176,7 +187,8 @@ MO('rd-mo-04', 'Changing a word\'s part of speech through derivation',
   'accuracy', 85, [4, 5],
   ['produce the noun form of a given verb (decide/decision)',
    'produce noun, verb and adjective forms of a given base word',
-   'produce the correct derived form and use it correctly in a written sentence']);
+   'produce the correct derived form and use it correctly in a written sentence'],
+  { gen_opts: { v: 'derivation' } });
 
 MO('rd-mo-05', 'Analyzing multi-morphemic words',
   'Given {nshort} multi-morphemic {corpus} words',
@@ -184,7 +196,8 @@ MO('rd-mo-05', 'Analyzing multi-morphemic words',
   'accuracy', 85, [4, 5],
   ['separate a two-part word into base and affix',
    'separate a three-part word into prefix, root and suffix',
-   'separate and define four-part {corpus} words and state the whole-word meaning']);
+   'separate and define four-part {corpus} words and state the whole-word meaning'],
+  { gen_opts: { v: 'multimorph' } });
 
 MO('rd-mo-06', 'Inferring unknown word meaning from morphology in context',
   'Given {text} containing unfamiliar words built from known morphemes',
@@ -193,7 +206,7 @@ MO('rd-mo-06', 'Inferring unknown word meaning from morphology in context',
   ['state a working definition using word parts when the affix is highlighted',
    'state a working definition using word parts and the sentence around the word',
    'state a working definition and confirm or revise it using the rest of the paragraph'],
-  { std: 'IL ELA L.{gg}.4' });
+  { gen_opts: { v: 'infer' }, std: 'IL ELA L.{gg}.4' });
 
 MO('rd-mo-07', 'Interpreting abbreviations and acronyms in content text',
   'Given {nshort} abbreviations and acronyms drawn from {text}',
@@ -202,7 +215,7 @@ MO('rd-mo-07', 'Interpreting abbreviations and acronyms in content text',
   ['state the meaning of common academic and measurement abbreviations',
    'state the meaning of course-specific acronyms from the current unit',
    'state the meaning of unfamiliar acronyms using the text\'s first-use definition'],
-  { std: 'IL ELA L.{gg}.4', dx: ['SLD', 'ID', 'OHI'] });
+  { gen_opts: { v: 'abbrev' }, std: 'IL ELA L.{gg}.4', dx: ['SLD', 'ID', 'OHI'] });
 
 // ---- fluency ------------------------------------------------------------------------
 const FL = section({

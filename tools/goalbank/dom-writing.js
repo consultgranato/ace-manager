@@ -20,7 +20,8 @@ ME('wl-me-01', 'Capitalization in written work',
   'accuracy', 90, [4, 5],
   ['capitalize the first word of a sentence and the pronoun I',
    'capitalize proper nouns, including names, places and days',
-   'capitalize titles, proper adjectives and the first word of a quotation']);
+   'capitalize titles, proper adjectives and the first word of a quotation'],
+  { gen_opts: { v: 'capitalization' } });
 
 ME('wl-me-02', 'End punctuation and sentence boundaries',
   'Given a paragraph written without end punctuation',
@@ -28,7 +29,8 @@ ME('wl-me-02', 'End punctuation and sentence boundaries',
   'accuracy', 90, [4, 5],
   ['place periods at the end of declarative sentences',
    'choose correctly among periods, question marks and exclamation points',
-   'mark sentence boundaries in a run-on paragraph and punctuate each one correctly']);
+   'mark sentence boundaries in a run-on paragraph and punctuate each one correctly'],
+  { gen_opts: { v: 'endpunct' } });
 
 ME('wl-me-03', 'Comma use in sentences',
   'Given {n} sentences requiring commas',
@@ -36,7 +38,8 @@ ME('wl-me-03', 'Comma use in sentences',
   'accuracy', 85, [4, 5],
   ['use commas in a series and in dates and addresses',
    'use commas after introductory elements and before a coordinating conjunction',
-   'use commas with nonrestrictive elements and avoid comma splices']);
+   'use commas with nonrestrictive elements and avoid comma splices'],
+  { gen_opts: { v: 'comma' } });
 
 ME('wl-me-04', 'Apostrophes in contractions and possessives',
   'Given {n} sentences containing apostrophe errors',
@@ -44,7 +47,8 @@ ME('wl-me-04', 'Apostrophes in contractions and possessives',
   'accuracy', 90, [4, 5],
   ['form contractions with a correctly placed apostrophe',
    'form singular possessives correctly',
-   'distinguish plural, singular possessive and plural possessive forms']);
+   'distinguish plural, singular possessive and plural possessive forms'],
+  { gen_opts: { v: 'apostrophe' } });
 
 ME('wl-me-05', 'Quotation marks and dialogue punctuation',
   'Given {nshort} sentences containing direct quotations',
@@ -53,7 +57,7 @@ ME('wl-me-05', 'Quotation marks and dialogue punctuation',
   ['place quotation marks around the speaker\'s exact words',
    'punctuate a quotation with a correctly placed comma and end mark',
    'punctuate dialogue with correct paragraphing and interrupted quotations'],
-  { bands: ['6-8', '9-12'] });
+  { gen_opts: { v: 'quotation' }, bands: ['6-8', '9-12'] });
 
 ME('wl-me-06', 'Homophone accuracy in writing',
   'Given {n} sentences containing commonly confused homophones',
@@ -61,7 +65,8 @@ ME('wl-me-06', 'Homophone accuracy in writing',
   'accuracy', 90, [4, 5],
   ['choose correctly between to, too and two',
    'choose correctly among their, there and they\'re and your and you\'re',
-   'choose correctly among 20 commonly confused homophone sets in original writing']);
+   'choose correctly among 20 commonly confused homophone sets in original writing'],
+  { gen_opts: { v: 'homophone' } });
 
 ME('wl-me-07', 'Applying conventions in own extended writing',
   'Given an original paragraph of at least 8 sentences written by the student',
@@ -70,7 +75,7 @@ ME('wl-me-07', 'Applying conventions in own extended writing',
   ['produce a paragraph with correct capitalization and end punctuation',
    'produce a paragraph with correct capitalization, end punctuation and internal commas',
    'produce an extended piece with all conventions correct after self-editing'],
-  { note: 'Conventions accuracy on a worksheet and conventions accuracy in the student\'s own writing are different skills — this goal is the one that shows up in the gradebook.' });
+  { pool: 'wr-paragraph', note: 'Conventions accuracy on a worksheet and conventions accuracy in the student\'s own writing are different skills — this goal is the one that shows up in the gradebook.' });
 
 // ---- spelling -------------------------------------------------------------------
 const SP = section({
@@ -84,7 +89,8 @@ SP('wl-sp-01', 'Spelling words with regular vowel patterns',
   'accuracy', 90, [4, 5],
   ['spell one-syllable closed and open syllable words',
    'spell words with vowel teams and r-controlled vowels',
-   'spell multisyllabic words applying all six syllable types']);
+   'spell multisyllabic words applying all six syllable types'],
+  { gen_opts: { v: 'vowelpattern' } });
 
 SP('wl-sp-02', 'Applying spelling rules for adding suffixes',
   'Given {n} base words and suffixes to add',
@@ -92,7 +98,8 @@ SP('wl-sp-02', 'Applying spelling rules for adding suffixes',
   'accuracy', 85, [4, 5],
   ['apply the drop-e rule when adding a vowel suffix',
    'apply the doubling rule to one-syllable base words',
-   'apply doubling, drop-e and change-y rules to multisyllabic base words']);
+   'apply doubling, drop-e and change-y rules to multisyllabic base words'],
+  { gen_opts: { v: 'suffixrules' } });
 
 SP('wl-sp-03', 'Spelling high-frequency irregular words',
   'Given {n} dictated high-frequency words with irregular spellings',
@@ -100,7 +107,8 @@ SP('wl-sp-03', 'Spelling high-frequency irregular words',
   'accuracy', 90, [4, 5],
   ['spell the 100 most frequent irregular words',
    'spell the 200 most frequent irregular words',
-   'spell the 300 most frequent irregular words correctly in dictated sentences']);
+   'spell the 300 most frequent irregular words correctly in dictated sentences'],
+  { gen_opts: { v: 'irregular' } });
 
 SP('wl-sp-04', 'Spelling content-area and technical vocabulary',
   'Given {nshort} dictated technical terms from a current {course} unit',
@@ -108,7 +116,8 @@ SP('wl-sp-04', 'Spelling content-area and technical vocabulary',
   'accuracy', 85, [4, 5],
   ['spell unit terms with a word bank available',
    'spell unit terms from dictation',
-   'spell unit terms correctly within original written work']);
+   'spell unit terms correctly within original written work'],
+  { gen_opts: { v: 'technical' } });
 
 SP('wl-sp-05', 'Using morphology to spell derived words',
   'Given {nshort} base words and a target derived form',
@@ -117,7 +126,7 @@ SP('wl-sp-05', 'Using morphology to spell derived words',
   ['spell base word plus prefix correctly',
    'spell base word plus derivational suffix correctly',
    'spell multi-morphemic words containing both a prefix and a suffix'],
-  { std: 'IL ELA L.{gg}.4b' });
+  { gen_opts: { v: 'morphology' }, std: 'IL ELA L.{gg}.4b' });
 
 SP('wl-sp-06', 'Using spelling supports and proofreading strategies',
   'Given an original piece of writing and access to a spell-checker or word list',
@@ -126,7 +135,7 @@ SP('wl-sp-06', 'Using spelling supports and proofreading strategies',
   ['identify words flagged by a spell-checker and choose the correct replacement',
    'locate misspellings a spell-checker does not flag, such as homophones',
    'proofread an original piece and correct all misspellings using available supports'],
-  { note: 'A student who cannot spell but can proofread with tools is functionally literate at work; teach both lines at once rather than waiting for the first to finish.' });
+  { gen_opts: { v: 'proofread' }, note: 'A student who cannot spell but can proofread with tools is functionally literate at work; teach both lines at once rather than waiting for the first to finish.' });
 
 // ---- grammar & usage --------------------------------------------------------------
 const US = section({
@@ -140,7 +149,8 @@ US('wl-us-01', 'Subject-verb agreement',
   'accuracy', 90, [4, 5],
   ['correct agreement with simple singular and plural subjects',
    'correct agreement when a phrase separates the subject and verb',
-   'correct agreement with compound, collective and indefinite-pronoun subjects']);
+   'correct agreement with compound, collective and indefinite-pronoun subjects'],
+  { gen_opts: { v: 'subjectverb' } });
 
 US('wl-us-02', 'Consistent and correct verb tense',
   'Given a paragraph containing verb tense errors',
@@ -148,7 +158,8 @@ US('wl-us-02', 'Consistent and correct verb tense',
   'accuracy', 85, [4, 5],
   ['use regular past tense verbs correctly',
    'use common irregular past tense verbs correctly',
-   'maintain consistent tense across a paragraph and shift tense only when meaning requires it']);
+   'maintain consistent tense across a paragraph and shift tense only when meaning requires it'],
+  { gen_opts: { v: 'tense' } });
 
 US('wl-us-03', 'Pronoun case and clear antecedents',
   'Given {n} sentences containing pronoun errors',
@@ -156,7 +167,8 @@ US('wl-us-03', 'Pronoun case and clear antecedents',
   'accuracy', 85, [4, 5],
   ['choose the correct subject or object pronoun',
    'match a pronoun to its antecedent in number and person',
-   'revise sentences with ambiguous or missing antecedents']);
+   'revise sentences with ambiguous or missing antecedents'],
+  { gen_opts: { v: 'pronoun' } });
 
 US('wl-us-04', 'Using modifiers correctly',
   'Given {n} sentences containing adjective and adverb errors',
@@ -165,7 +177,7 @@ US('wl-us-04', 'Using modifiers correctly',
   ['choose between an adjective and an adverb form',
    'use comparative and superlative forms correctly',
    'relocate misplaced and dangling modifiers so the meaning is clear'],
-  { bands: ['6-8', '9-12'] });
+  { gen_opts: { v: 'modifier' }, bands: ['6-8', '9-12'] });
 
 US('wl-us-05', 'Parallel structure in sentences',
   'Given {nshort} sentences containing faulty parallel structure',
@@ -174,7 +186,7 @@ US('wl-us-05', 'Parallel structure in sentences',
   ['identify the list or paired elements in a sentence',
    'revise a list so all items share the same form',
    'revise paired and correlative constructions so both parts are parallel'],
-  { bands: ['9-12', '18-22'] });
+  { gen_opts: { v: 'parallel' }, bands: ['9-12', '18-22'] });
 
 US('wl-us-06', 'Using a range of sentence types',
   'Given a writing prompt',
@@ -182,7 +194,8 @@ US('wl-us-06', 'Using a range of sentence types',
   'accuracy', 85, [3, 4],
   ['write correct simple sentences',
    'write correct compound sentences using a coordinating conjunction',
-   'write a paragraph containing at least one simple, one compound and one complex sentence']);
+   'write a paragraph containing at least one simple, one compound and one complex sentence'],
+  { gen_opts: { v: 'sentencetypes' } });
 
 // ---- sentence construction -----------------------------------------------------------
 const SE = section({
@@ -196,7 +209,8 @@ SE('wl-se-01', 'Writing complete sentences',
   'accuracy', 90, [4, 5],
   ['identify whether a group of words is a complete sentence',
    'rewrite fragments as complete sentences',
-   'rewrite fragments and run-ons as complete, correctly punctuated sentences']);
+   'rewrite fragments and run-ons as complete, correctly punctuated sentences'],
+  { gen_opts: { v: 'complete' } });
 
 SE('wl-se-02', 'Combining sentences to reduce choppiness',
   'Given {nshort} pairs of short related sentences',
@@ -205,7 +219,7 @@ SE('wl-se-02', 'Combining sentences to reduce choppiness',
   ['combine two sentences with a coordinating conjunction',
    'combine two sentences with a subordinating conjunction',
    'combine three related sentences into one clear sentence without changing meaning'],
-  { std: 'IL ELA W.{gg}.4' });
+  { gen_opts: { v: 'combine' }, std: 'IL ELA W.{gg}.4' });
 
 SE('wl-se-03', 'Expanding sentences with detail',
   'Given {nshort} simple sentences',
@@ -213,7 +227,8 @@ SE('wl-se-03', 'Expanding sentences with detail',
   'accuracy', 85, [4, 5],
   ['add one detail phrase to a simple sentence',
    'add two detail phrases answering different questions',
-   'expand a sentence with detail and correct punctuation for the added elements']);
+   'expand a sentence with detail and correct punctuation for the added elements'],
+  { gen_opts: { v: 'expand' } });
 
 SE('wl-se-04', 'Varying sentence beginnings',
   'Given a paragraph in which most sentences begin the same way',
@@ -222,7 +237,7 @@ SE('wl-se-04', 'Varying sentence beginnings',
   ['identify sentences that begin the same way',
    'revise two sentences to begin with a different word or phrase',
    'revise a paragraph so no more than two sentences begin with the same word'],
-  { std: 'IL ELA W.{gg}.4' });
+  { gen_opts: { v: 'vary' }, std: 'IL ELA W.{gg}.4' });
 
 SE('wl-se-05', 'Writing topic sentences',
   'Given a set of supporting details',
@@ -231,7 +246,7 @@ SE('wl-se-05', 'Writing topic sentences',
   ['choose the best topic sentence from three options',
    'write a topic sentence for a set of given details',
    'write a topic sentence that both states the main idea and previews the details'],
-  { std: 'IL ELA W.{gg}.2a' });
+  { gen_opts: { v: 'topic' }, std: 'IL ELA W.{gg}.2a' });
 
 SE('wl-se-06', 'Using transition words and phrases',
   'Given a paragraph written without transitions',
@@ -240,7 +255,7 @@ SE('wl-se-06', 'Using transition words and phrases',
   ['insert sequence transitions such as first, next and finally',
    'insert cause, contrast and example transitions',
    'insert transitions that accurately match the logical relationship in each case'],
-  { std: 'IL ELA W.{gg}.2c' });
+  { gen_opts: { v: 'transitions' }, std: 'IL ELA W.{gg}.2c' });
 
 // ---- paragraph & composition -----------------------------------------------------------
 const PG = section({
@@ -331,7 +346,8 @@ ED('wl-ed-01', 'Editing for conventions using a checklist',
   'accuracy', 85, [4, 5],
   ['find and correct capitalization and end punctuation errors',
    'find and correct capitalization, punctuation and spelling errors',
-   'find and correct all convention errors in an unfamiliar draft using the checklist']);
+   'find and correct all convention errors in an unfamiliar draft using the checklist'],
+  { gen_opts: { v: 'conventions' } });
 
 ED('wl-ed-02', 'Revising for clarity and word choice',
   'Given a draft containing vague or repeated word choices',
@@ -340,7 +356,7 @@ ED('wl-ed-02', 'Revising for clarity and word choice',
   ['identify vague or repeated words in a draft',
    'replace vague words with more precise alternatives',
    'revise a draft for precision and explain why each change improves it'],
-  { std: 'IL ELA L.{gg}.3' });
+  { gen_opts: { v: 'wordchoice' }, std: 'IL ELA L.{gg}.3' });
 
 ED('wl-ed-03', 'Revising for organization',
   'Given a draft whose paragraphs are out of order or off topic',
@@ -348,7 +364,8 @@ ED('wl-ed-03', 'Revising for organization',
   'accuracy', 85, [3, 4],
   ['identify the sentence in a paragraph that does not belong',
    'reorder the sentences of a paragraph into logical order',
-   'reorder paragraphs and delete off-topic content across a full draft']);
+   'reorder paragraphs and delete off-topic content across a full draft'],
+  { gen_opts: { v: 'organization' } });
 
 ED('wl-ed-04', 'Responding to teacher and peer feedback',
   'Given a returned draft with written feedback',
@@ -357,7 +374,7 @@ ED('wl-ed-04', 'Responding to teacher and peer feedback',
   ['restate what a feedback comment is asking for',
    'make a revision addressing each surface-level comment',
    'make revisions addressing every comment, including comments about content'],
-  { note: 'Track whether the revision actually addresses the comment; students who retype a draft unchanged still hand in a "revised" copy.' });
+  { pool: 'wr-process', note: 'Track whether the revision actually addresses the comment; students who retype a draft unchanged still hand in a "revised" copy.' });
 
 ED('wl-ed-05', 'Self-editing before submission',
   'Given a finished draft and the student\'s own editing routine',
@@ -366,7 +383,7 @@ ED('wl-ed-05', 'Self-editing before submission',
   ['complete an editing routine when reminded by an adult',
    'complete an editing routine when prompted by a written checklist',
    'complete the editing routine independently before every submission'],
-  { fade: 'behavior', pool: 'wr-editing' });
+  { fade: 'behavior', pool: 'wr-process' });
 
 // ---- research & citation --------------------------------------------------------------------
 const RS = section({
@@ -481,7 +498,8 @@ ME('wl-me-08', 'Punctuating and formatting a list or set of steps',
   'accuracy', 90, [4, 5],
   ['produce a list with consistent capitalization',
    'produce a numbered list with consistent punctuation',
-   'produce a formatted list or procedure with consistent punctuation, capitalization and numbering']);
+   'produce a formatted list or procedure with consistent punctuation, capitalization and numbering'],
+  { gen_opts: { v: 'lists' } });
 
 SE('wl-se-07', 'Writing a clear thesis or controlling idea',
   'Given a prompt requiring a position or focus',
@@ -490,7 +508,7 @@ SE('wl-se-07', 'Writing a clear thesis or controlling idea',
   ['choose the best thesis statement from three options',
    'write a thesis statement that states a clear position',
    'write a thesis that states the position and previews the supporting points'],
-  { std: 'IL ELA W.{gg}.1a' });
+  { gen_opts: { v: 'thesis' }, std: 'IL ELA W.{gg}.1a' });
 
 PG('wl-pg-09', 'Writing a comparison of two texts or options',
   'Given two texts, products or options and an organizing structure',
@@ -507,6 +525,6 @@ ED('wl-ed-06', 'Proofreading with text-to-speech',
   ['use text-to-speech to hear the draft read aloud',
    'identify errors revealed by the reading',
    'identify and correct every error revealed by the reading, including omitted words'],
-  { note: 'Text-to-speech catches the omitted and doubled words a student\'s own eyes reliably skip; it is a proofreading strategy, not only an access tool.' });
+  { gen_opts: { v: 'tts' }, note: 'Text-to-speech catches the omitted and doubled words a student\'s own eyes reliably skip; it is a proofreading strategy, not only an access tool.' });
 
 module.exports = collect(ME, SP, US, SE, PG, ED, RS, FW);

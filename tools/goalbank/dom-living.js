@@ -22,7 +22,8 @@ MB('il-mb-01', 'Identifying and counting currency',
   'accuracy', 95, [4, 5],
   ['identify each coin and bill by name and value',
    'count a set of coins to one dollar',
-   'count mixed bills and coins to twenty dollars']);
+   'count mixed bills and coins to twenty dollars'],
+  { gen_opts: { v: 'identify' } });
 
 MB('il-mb-02', 'Making a purchase and verifying change',
   'Given {nshort} purchase scenarios',
@@ -30,7 +31,8 @@ MB('il-mb-02', 'Making a purchase and verifying change',
   'accuracy', 90, [4, 5],
   ['pay with the next whole dollar above the price',
    'pay and state whether the change is approximately correct',
-   'pay, count the change and identify an incorrect amount']);
+   'pay, count the change and identify an incorrect amount'],
+  { gen_opts: { v: 'purchase' } });
 
 MB('il-mb-03', 'Tracking spending against a budget',
   'Given {money} and a record of purchases',
@@ -38,7 +40,8 @@ MB('il-mb-03', 'Tracking spending against a budget',
   'accuracy', 90, [4, 5],
   ['record each purchase in a spending log',
    'record purchases and calculate the running total',
-   'record purchases, calculate the remaining balance and state when to stop spending']);
+   'record purchases, calculate the remaining balance and state when to stop spending'],
+  { gen_opts: { v: 'tracking' } });
 
 MB('il-mb-04', 'Distinguishing needs from wants in spending decisions',
   'Given a fixed amount and a list of possible purchases',
@@ -46,7 +49,8 @@ MB('il-mb-04', 'Distinguishing needs from wants in spending decisions',
   'accuracy', 90, [4, 5],
   ['sort purchases into needs and wants',
    'choose a plan that covers all needs',
-   'choose a plan that covers needs, includes savings, and explain each trade-off']);
+   'choose a plan that covers needs, includes savings, and explain each trade-off'],
+  { gen_opts: { v: 'needswants' } });
 
 MB('il-mb-05', 'Using a bank account and debit card',
   'Given a bank statement, a debit card and {nshort} transactions',
@@ -55,7 +59,7 @@ MB('il-mb-05', 'Using a bank account and debit card',
   ['state the current balance from a statement or app',
    'record a transaction and update the balance',
    'reconcile a statement, identify an unrecognised charge and state what to do'],
-  { bands: ['9-12', '18-22'] });
+  { gen_opts: { v: 'banking' }, bands: ['9-12', '18-22'] });
 
 MB('il-mb-06', 'Paying bills on time',
   'Given {nshort} bills with due dates and a payment method',
@@ -64,7 +68,7 @@ MB('il-mb-06', 'Paying bills on time',
   ['identify the amount due and the due date on a bill',
    'schedule a payment before the due date with support',
    'pay every bill before its due date and record it independently'],
-  { bands: ['18-22'] });
+  { gen_opts: { v: 'bills' }, bands: ['18-22'] });
 
 MB('il-mb-07', 'Recognising financial scams and predatory offers',
   'Given {nshort} offers, messages and advertisements, including fraudulent ones',
@@ -83,7 +87,7 @@ MB('il-mb-08', 'Saving toward a stated goal',
   ['state the savings goal and the amount needed',
    'set aside the planned amount with a reminder',
    'set aside the planned amount every pay period and track the balance independently'],
-  { bands: ['9-12', '18-22'] });
+  { gen_opts: { v: 'saving' }, bands: ['9-12', '18-22'] });
 
 // ---- community navigation ----------------------------------------------------------------
 const CN = section({

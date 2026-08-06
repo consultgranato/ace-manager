@@ -25,6 +25,12 @@ const path = require('path');
 const model = require('../js/goal-model.js');
 const { POOLS } = require('./goalbank/pools');
 
+// The runtime generators, loaded the same way the browser loads them, so the
+// build can check that every goal names a variant that actually exists.
+global.window = global.window || {};
+require('../js/probe-generators.js');
+const GENERATORS = global.window.ACE_PROBE_GENERATORS || {};
+
 const DOMAIN_FILES = [
   'dom-reading', 'dom-writing', 'dom-math', 'dom-communication',
   'dom-behavior', 'dom-social', 'dom-executive', 'dom-living',
@@ -66,6 +72,22 @@ for (const tpl of templates) {
   // produce the number the goal is written in.
   const pool = POOLS[tpl.pool];
   const mdef = model.METRICS.filter(m => m.id === tpl.metric)[0];
+
+  // ALIGNMENT GATE. A generated pool serves many different skills from one
+  // generator, so each goal must name the variant that matches what IT is
+  // about. Without this a graphing goal gets probed with equation solving and
+  // the per-benchmark breakdown reports progress on a skill the goal never
+  // named — which is exactly the defect this check was written for.
+  if (pool && pool.gen) {
+    const gen = GENERATORS[pool.gen];
+    if (!gen) {
+      errors.push(`${tpl.id}: pool "${tpl.pool}" names generator "${pool.gen}", which does not exist`);
+    } else if (!tpl.gen_opts || !tpl.gen_opts.v) {
+      errors.push(`${tpl.id}: on generated pool "${tpl.pool}" but declares no gen_opts.v — pick one of: ${gen.VARIANTS.join(', ')}`);
+    } else if (gen.VARIANTS.indexOf(tpl.gen_opts.v) < 0) {
+      errors.push(`${tpl.id}: gen_opts.v "${tpl.gen_opts.v}" is not a variant of "${pool.gen}" — pick one of: ${gen.VARIANTS.join(', ')}`);
+    }
+  }
   if (pool && mdef && pool.kind !== 'observation') {
     if (mdef.unit !== '%') {
       // …unless the pool is timed, which is what a one-minute math CBM is.

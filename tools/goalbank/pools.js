@@ -100,6 +100,18 @@ const POOLS = {
   }),
 
   // ---- math (generated) -------------------------------------------------------
+  // Applied measurement and writing-process goals cannot be auto-scored: the
+  // skill IS the performance. They get an adult-scored pool rather than a
+  // multiple-choice stand-in that would measure recognition and call it doing.
+  'ma-performance': O(0, 'Math — applied measurement task', 'a task analysis checklist', {
+    default_method: 'a task analysis checklist',
+    admin: 'Adult scores each step of the applied measurement task as independent, prompted or not performed.'
+  }),
+  'wr-process':     O(0, 'Writing — process & revision behaviors', 'an observation log', {
+    default_method: 'an observation log',
+    admin: 'Case manager records opportunities to revise or self-edit and how many the student completed.'
+  }),
+
   'ma-numbersense': G(0, 'Math — number sense & place value', 'auto-scored number sense probes', 'numbersense'),
   // A link probe CAN produce a rate metric as long as it is timed — that is
   // exactly what a one-minute math CBM is. `timed` tells the probe form to run
