@@ -38,7 +38,12 @@
 # The SQL migrations are committed for version history, never fetched at
 # runtime. The repo is public so this hides nothing that isn't already on
 # GitHub — it just keeps the schema from being served off the app's own domain.
+#
+# force = true is required: Netlify serves a matching static file *before* it
+# consults redirects, so without it these rules never fire and the .sql files
+# are served normally (verified — this returned 200 until force was added).
 [[redirects]]
   from = "/supabase/*"
-  to = "/404.html"
+  to = "/"
   status = 404
+  force = true
