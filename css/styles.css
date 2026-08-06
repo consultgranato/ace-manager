@@ -6024,3 +6024,256 @@ summary:focus-visible,
 /* `hidden` is a UA-stylesheet display:none, so an author `display: grid` beats
    it — the collapsed Reference section rendered wide open without this. */
 .profile-card-grid[hidden] { display: none; }
+
+/* =============================================================
+   Phase 6 — benchmarks, faceted goal bank, progress monitoring
+   ============================================================= */
+
+/* ---- goal builder: stepped workflow ---- */
+.goalb-rail { display: flex; gap: 4px; list-style: none; margin: 14px 0 16px; padding: 0; }
+.goalb-rail[hidden] { display: none; }
+.goalb-rail-step {
+  flex: 1; display: flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 7px 8px; border-radius: var(--radius-md); border: 1px solid transparent;
+  font-size: 12px; color: var(--text-muted); min-width: 0;
+}
+.goalb-rail-step:hover { background: var(--surface-2); }
+.goalb-rail-step.current { border-color: var(--accent-200); background: var(--accent-50); color: var(--accent-700); font-weight: 600; }
+.goalb-rail-step.done { color: var(--success-ink); }
+.goalb-rail-dot {
+  width: 20px; height: 20px; flex: 0 0 20px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700;
+  background: var(--n-100, #eef0f4); color: var(--text-muted);
+}
+.goalb-rail-step.current .goalb-rail-dot { background: var(--accent-600, var(--accent)); color: #fff; }
+.goalb-rail-step.done .goalb-rail-dot { background: var(--success-bg); color: var(--success-ink); }
+.goalb-rail-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 520px) { .goalb-rail-label { display: none; } }
+
+.goalb-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; }
+.goalb-nav[hidden] { display: none; }
+.goalb-nav button { min-width: 110px; }
+.goalb-step-lead { font-size: 12.5px; line-height: 1.55; color: var(--text-muted); margin: 0 0 12px; }
+
+/* Annual vs postsecondary: the grammar switch hides what does not apply. */
+.goalb[data-type="annual"] .goalb-transition { display: none; }
+.goalb[data-type="transition"] .goalb-annual { display: none; }
+.goalb[data-type="transition"] .goalb-behavior-label::first-line { font-weight: 600; }
+
+.goalb-source {
+  display: block; font-size: 12.5px; line-height: 1.5;
+  background: var(--accent-50); border: 1px solid var(--accent-200);
+  border-radius: var(--radius-md); padding: 9px 11px; margin-bottom: 14px; color: var(--accent-700);
+}
+.goalb-source svg { vertical-align: -2px; margin-right: 4px; }
+.goalb-source-note { margin-top: 6px; color: var(--text-muted); font-weight: 400; }
+
+.goalb-direction-note {
+  font-size: 12px; line-height: 1.5; color: var(--warning-ink);
+  background: var(--warning-bg); border: 1px solid var(--warning-border);
+  border-radius: var(--radius-sm); padding: 7px 9px; margin: -2px 0 10px;
+}
+.goalb-meter-note { display: block; width: 100%; font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+
+/* ---- goal builder: benchmark editor ---- */
+.goalb-bm-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.goalb-bm { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 11px; background: var(--surface); }
+.goalb-bm-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.goalb-bm-num {
+  width: 20px; height: 20px; flex: 0 0 20px; border-radius: 50%;
+  background: var(--accent-100); color: var(--accent-700);
+  display: grid; place-items: center; font-size: 11px; font-weight: 700;
+}
+.goalb-bm-window { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+.goalb-bm-behavior { width: 100%; font-family: inherit; font-size: 13px; line-height: 1.45; resize: vertical; margin-bottom: 8px; }
+.goalb-bm-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.goalb-bm-target-label { font-size: 12px; color: var(--text-muted); }
+.goalb-bm-target { width: 84px; margin-bottom: 0 !important; }
+.goalb-bm-unit { font-size: 12px; color: var(--text-muted); }
+.goalb-bm-scaffold { font-size: 11.5px; color: var(--text-muted); font-style: italic; }
+
+.goalb-bm-preview { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.goalb-bm-preview-row {
+  display: flex; gap: 8px; font-size: 12.5px; line-height: 1.5; color: var(--text-muted);
+  border-left: 2px solid var(--accent-200); padding-left: 9px;
+}
+.goalb-bm-preview-num { font-weight: 700; color: var(--accent-700); flex: 0 0 auto; }
+
+/* ---- goal builder: monitoring plan ---- */
+.goalb-plan { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 13px; background: var(--surface-2); }
+.goalb-plan-manual { border-style: dashed; }
+.goalb-plan-manual p { font-size: 12.5px; line-height: 1.55; color: var(--text-muted); margin: 6px 0 0; }
+.goalb-plan-title { font-size: 13px; font-weight: 700; margin-bottom: 9px; }
+.goalb-plan-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 10px; font-size: 12.5px; }
+.goalb-plan-grid dt { color: var(--text-muted); }
+.goalb-plan-grid dd { margin: 0; }
+.goalb-plan-phases { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.goalb-plan-phase {
+  font-size: 11.5px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-full); padding: 3px 9px;
+}
+.goalb-plan-phase-key { font-size: 11px; color: var(--text-muted); }
+.goalb-plan-admin { font-size: 12px; line-height: 1.55; color: var(--text-muted); margin: 10px 0 0; }
+
+.ace-btn-primary.is-blocked { opacity: 0.5; cursor: not-allowed; }
+
+/* ---- goal bank browser ---- */
+.gbank-lead { font-size: 13px; margin: 0 0 12px; line-height: 1.55; }
+.gbank-filters-2 { grid-template-columns: 1fr 1fr auto; margin-top: -2px; }
+@media (max-width: 600px) { .gbank-filters-2 { grid-template-columns: 1fr; } }
+.gbank-row { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.gbank-row.expanded { border-color: var(--accent-400); box-shadow: 0 0 0 3px var(--accent-ring); }
+.gbank-row-main {
+  display: block; width: 100%; text-align: left; background: none;
+  border: 0; padding: 11px 12px; cursor: pointer; font: inherit; color: inherit;
+}
+.gbank-row-main:hover { background: var(--accent-wash); }
+.gbank-row-skill { font-size: 13px; font-weight: 650; margin-bottom: 4px; }
+.gbank-fit-band { background: var(--accent-50); color: var(--accent-700); }
+.gbank-detail { border-top: 1px solid var(--border); padding: 12px; background: var(--surface-2); }
+.gbank-detail-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 6px;
+}
+.gbank-bm { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.gbank-bm li { font-size: 12.5px; line-height: 1.5; }
+.gbank-bm-win { font-weight: 700; color: var(--accent-700); margin-right: 4px; }
+.gbank-detail-p { font-size: 12.5px; line-height: 1.55; margin: 0 0 10px; }
+.gbank-detail-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px; }
+.gbank-note {
+  font-size: 12px; line-height: 1.55; font-style: italic; color: var(--accent-700);
+  background: var(--accent-50); border-radius: var(--radius-sm); padding: 8px 10px; margin: 0 0 10px;
+}
+.gbank-use { width: 100%; }
+.gbank-more { width: 100%; margin-top: 10px; }
+
+/* ---- goals card: overview strip ---- */
+.goals-overview { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.goals-ov-chip {
+  font-size: 11.5px; border-radius: var(--radius-full); padding: 3px 10px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+}
+.goals-ov-chip.ok { background: var(--success-bg); border-color: var(--success-border); color: var(--success-ink); }
+.goals-ov-chip.warn { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-ink); }
+.goals-ov-chip.due { background: var(--accent-50); border-color: var(--accent-200); color: var(--accent-700); }
+
+.goal-skill-chip { font-size: 11.5px; color: var(--text-muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-dir-chip { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--warning-ink); background: var(--warning-bg); border-radius: var(--radius-full); padding: 1px 7px; }
+
+/* ---- goals card: benchmark rail ---- */
+.goal-bm-rail { display: flex; flex-direction: column; gap: 4px; margin: 9px 0; }
+.goal-bm-rung {
+  display: flex; align-items: center; gap: 9px; font-size: 12px;
+  border: 1px solid var(--border); border-left-width: 3px;
+  border-radius: var(--radius-sm); padding: 5px 9px; background: var(--surface);
+}
+.goal-bm-rung.none { border-left-color: var(--border-strong); }
+.goal-bm-rung.low  { border-left-color: var(--warning); background: var(--warning-bg); }
+.goal-bm-rung.near { border-left-color: var(--accent-400); background: var(--accent-50); }
+.goal-bm-rung.met  { border-left-color: var(--success); background: var(--success-bg); }
+.goal-bm-rung-n {
+  width: 17px; height: 17px; flex: 0 0 17px; border-radius: 50%;
+  background: var(--n-100, #eef0f4); color: var(--text-muted);
+  display: grid; place-items: center; font-size: 10px; font-weight: 700;
+}
+.goal-bm-rung.met .goal-bm-rung-n { background: var(--success); color: #fff; }
+.goal-bm-rung-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.goal-bm-rung-win { font-size: 10.5px; color: var(--text-muted); }
+.goal-bm-rung-beh { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-bm-rung-val { font-weight: 700; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.goal-bm-rung.none .goal-bm-rung-val { font-weight: 400; color: var(--text-muted); font-size: 11px; }
+
+/* ---- goals card: chart + decision rule ---- */
+.goal-chart { display: block; margin-top: 8px; max-width: 340px; }
+.goal-chart-aim { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.75; }
+.goal-chart-dot-manual { fill: var(--surface); stroke: var(--accent-600, var(--accent)); stroke-width: 1.5; }
+.goal-decision {
+  display: flex; align-items: flex-start; gap: 7px; font-size: 12px; line-height: 1.5;
+  border-radius: var(--radius-sm); padding: 7px 9px; margin: 8px 0;
+}
+.goal-decision svg { flex: 0 0 auto; margin-top: 1px; }
+.goal-decision.warn { background: var(--warning-bg); color: var(--warning-ink); border: 1px solid var(--warning-border); }
+.goal-decision.good { background: var(--success-bg); color: var(--success-ink); border: 1px solid var(--success-border); }
+.goal-decision.ok   { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+.goal-decision.muted { color: var(--text-muted); font-size: 11.5px; padding: 2px 0; }
+
+.probe-phase {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--accent-700); background: var(--accent-50); border-radius: var(--radius-full); padding: 1px 7px;
+}
+
+/* ---- history rows with per-benchmark breakdown ---- */
+.goal-history-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.goal-history-src { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.goal-history-bd { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* ---- log-data drawer: benchmark inputs ---- */
+.gp-bm-inputs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.gp-bm-input { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.gp-bm-num {
+  width: 18px; height: 18px; flex: 0 0 18px; border-radius: 50%;
+  background: var(--accent-100); color: var(--accent-700);
+  display: grid; place-items: center; font-size: 10px; font-weight: 700;
+}
+.gp-bm-beh { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.gp-bm-val { width: 72px; margin-bottom: 0 !important; }
+
+/* ---- observation probe scoring ---- */
+.obs-admin {
+  font-size: 12.5px; line-height: 1.55; background: var(--accent-50);
+  border: 1px solid var(--accent-200); border-radius: var(--radius-md);
+  padding: 9px 11px; margin-bottom: 8px; color: var(--accent-700);
+}
+.obs-phase { font-size: 11.5px; margin-bottom: 12px; }
+.obs-items { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.obs-item { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 11px; }
+.obs-item-head { font-size: 13px; line-height: 1.45; font-weight: 600; margin-bottom: 7px; }
+.obs-item-hint { font-size: 11.5px; line-height: 1.45; margin-bottom: 8px; }
+.obs-tier {
+  display: inline-grid; place-items: center; width: 22px; height: 17px;
+  border-radius: var(--radius-full); background: var(--accent-100); color: var(--accent-700);
+  font-size: 10px; font-weight: 700; margin-right: 5px; vertical-align: 1px;
+}
+.obs-tally-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
+.obs-tally-row input { width: 70px; margin-bottom: 0 !important; }
+.obs-rubric { display: flex; flex-direction: column; gap: 5px; }
+.obs-rubric-opt { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.45; cursor: pointer; }
+.obs-rubric-opt strong { color: var(--accent-700); margin-right: 4px; }
+.obs-value-row { display: flex; align-items: center; gap: 8px; }
+.obs-value-input { width: 110px; margin-bottom: 0 !important; }
+.obs-value-unit { font-size: 12px; color: var(--text-muted); }
+.obs-preview {
+  font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 9px 11px; margin-bottom: 14px;
+}
+
+/* ---- student probe form: timer, progress, short text ---- */
+.probe-timer { text-align: center; margin: 18px 0 22px; }
+.probe-timer-face {
+  font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em; margin-bottom: 12px; color: var(--accent-700);
+}
+.probe-timer-face.low { color: var(--danger, #b42318); }
+.probe-timer-hint { font-size: 13px; color: var(--text-muted); margin: 10px 0 0; }
+.probe-progress { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; }
+.probe-progress-bar { flex: 1; height: 6px; border-radius: var(--radius-full); background: var(--n-100, #eef0f4); overflow: hidden; }
+.probe-progress-fill { height: 100%; width: 0; background: var(--accent-600, var(--accent)); transition: width 0.2s ease; }
+.probe-progress-text { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.probe-text-input { width: 100%; max-width: 320px; }
+.tform-submit { position: sticky; bottom: 12px; width: 100%; }
+
+/* An element given the `hidden` attribute must actually hide. Any class that
+   sets a display value outruns the attribute's default `display:none`, which is
+   how the probe progress bar and the sticky submit button showed through before
+   a timed probe had started. Scoped to the components that use `hidden` as
+   state rather than applied globally. */
+.probe-progress[hidden],
+.probe-items[hidden],
+.tform-submit[hidden],
+.goalb-step[hidden],
+.goalb-nav[hidden],
+.goalb-rail[hidden],
+.goalb-rail-step[hidden],
+.goalb-direction-note[hidden],
+.gbank-detail[hidden],
+.gbank-more[hidden] { display: none !important; }
