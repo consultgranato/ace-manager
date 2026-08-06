@@ -1,0 +1,44 @@
+# =============================================================
+# Ace Manager — Netlify configuration
+# =============================================================
+# Static site: no build step, published straight from the repo root. Deploys
+# are git-connected — push to main and Netlify builds. Never `netlify deploy`
+# by hand except for a throwaway preview.
+# =============================================================
+
+[build]
+  publish = "."
+  command = ""
+
+# ---- Security headers -------------------------------------------------------
+# This app is a front end over student IEP data, so it should not ship with bare
+# defaults. Nothing here is app-visible; these only harden how a browser is
+# allowed to treat the page.
+#
+# Deliberately NOT set: Content-Security-Policy. login, signup, reset-password
+# and f.html each carry an inline <script>, so any CSP today would need
+# script-src 'unsafe-inline' and would buy very little. Move those four blocks
+# into files and a real CSP becomes worth adding.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # No framing at all — there is no legitimate reason to embed this app.
+    X-Frame-Options = "DENY"
+    # Don't let a browser second-guess a declared content type.
+    X-Content-Type-Options = "nosniff"
+    # Never leak a student profile URL (which carries the student id) to an
+    # external host in a Referer header.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # None of these are used; deny them rather than leave them available.
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+    # .app is HSTS-preloaded, so browsers already force HTTPS. Stated anyway so
+    # the posture is explicit rather than inherited from the TLD.
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# The SQL migrations are committed for version history, never fetched at
+# runtime. The repo is public so this hides nothing that isn't already on
+# GitHub — it just keeps the schema from being served off the app's own domain.
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
