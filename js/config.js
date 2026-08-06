@@ -8,7 +8,7 @@
 // changes the query string and browsers can't serve stale JS/CSS.
 // The deploy script matches the assignment below by pattern, so keep it on its
 // own line with a digits-only value. Run `node bump-version.js` each deploy.
-window.BUILD_VERSION = '20260806215318';
+window.BUILD_VERSION = '20260806220154';
 
 const SUPABASE_URL = 'https://npihodfemfpmhhooqtyl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waWhvZGZlbWZwbWhob29xdHlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzUwMzIsImV4cCI6MjA5NjQ1MTAzMn0.KDSh5GeGtbw-45-HK9gBg5Wkb-k2NQY5ui40Ln3H5ZI';
@@ -48,6 +48,12 @@ window.D219_NON_SCHOOL_DAYS_SEED = [
 // either of those two modules, the page that did not load it would silently
 // fall back to a shorter list and quietly change what a case manager can pick.
 // Ordered least to most restrictive, which is how an LRE discussion moves.
+//
+// !! students.placement_type carries a CHECK constraint listing these exact
+// values. ADDING A PLACEMENT HERE REQUIRES A MIGRATION — see
+// supabase/23_placement_continuum.sql — or the insert fails at save time with
+// "violates check constraint students_placement_type_check", which is what
+// happened when this list first grew past the original four.
 window.ACE_PLACEMENTS = [
   ['gen_ed',         'General education (full inclusion)'],
   ['co_taught',      'Co-taught / collaborative'],
