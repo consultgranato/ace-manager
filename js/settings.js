@@ -98,7 +98,7 @@ const aceSettings = {
               <label><span class="label-text">Logo URL</span>
                 <input type="text" id="brandLogo" value="${esc(org?.branding?.logo_url || '')}" placeholder="https://…/logo.png" /></label>
               <label><span class="label-text">Accent color</span>
-                <input type="color" id="brandAccent" value="${esc(org?.branding?.accent || '#4c2c7b')}" /></label>
+                <input type="color" id="brandAccent" value="${esc(org?.branding?.accent || window.ACE_DEFAULT_BRANDING.accent)}" /></label>
             </div>
             <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
               <button class="btn-primary" id="brandSaveBtn" type="button">Save branding</button>

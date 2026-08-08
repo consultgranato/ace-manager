@@ -8,24 +8,28 @@
 // changes the query string and browsers can't serve stale JS/CSS.
 // The deploy script matches the assignment below by pattern, so keep it on its
 // own line with a digits-only value. Run `node bump-version.js` each deploy.
-window.BUILD_VERSION = '20260806223159';
+window.BUILD_VERSION = '20260808002218';
 
 const SUPABASE_URL = 'https://npihodfemfpmhhooqtyl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5waWhvZGZlbWZwbWhob29xdHlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzUwMzIsImV4cCI6MjA5NjQ1MTAzMn0.KDSh5GeGtbw-45-HK9gBg5Wkb-k2NQY5ui40Ln3H5ZI';
 
 // Branding fallbacks. The real values live on organizations.branding; these are
 // only used when the org row (or an individual field) is missing, so the app can
-// never render blank branding. Keep in sync with the CSS --purple-primary token
-// default in css/styles.css.
+// never render blank branding. Keep the accent in sync with the --accent token
+// default in css/styles.css — CSS paints first, this only confirms it.
 //
 // These are deliberately PRODUCT-neutral, not Niles North: an organization that
 // hasn't set its branding yet used to inherit another district's name and crest.
 // aceAuth.getBranding() falls back to the org's own school_name / name first, so
 // this generic mark only appears when there is no organization context at all.
+//
+// The accent is neutral slate grey for the same reason. D219 purple belongs to
+// the Niles North org row and is painted only for a signed-in, org-assigned user
+// — see applyOrgBranding() in js/app.js.
 window.ACE_DEFAULT_BRANDING = {
   school_name: 'Ace Manager',
   logo_url: 'assets/ace-mark.svg',
-  accent: '#4c2c7b'
+  accent: '#5b6070'
 };
 
 // Seed list of D219 2026-27 non-attendance days (weekday dates; weekends are

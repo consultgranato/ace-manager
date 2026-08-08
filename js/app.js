@@ -2,16 +2,27 @@
 // Ace Manager — Main App Entry Point
 // =============================================================
 
-// Paint the org's accent before anything renders.
+// Paint the org's accent over the neutral default.
 //
-// Setting --accent is now sufficient: css/styles.css derives the whole ramp
-// (tints, shades, focus ring, washes) from it with color-mix(), and the legacy
-// --purple-* names alias onto that ramp. So a teal district gets a coherent
-// teal product rather than teal dropped into fixed purple shades.
+// Setting --accent is sufficient: css/styles.css derives the whole ramp (tints,
+// shades, focus ring, washes, button gradients, accent shadows) from it with
+// color-mix(), and the legacy --purple-* names alias onto that ramp. So a teal
+// district gets a coherent teal product rather than teal dropped into fixed
+// purple shades.
+//
+// This runs only inside the isProtectedPage() branch below, and only after the
+// unassigned holding screen has had its chance to bail out — so by the time we
+// get here the user is signed in AND assigned to an org. getOrgAccent() adds the
+// last condition: the colour must be the org's own. No accent, no override, and
+// the page keeps the neutral slate grey the stylesheet painted at first byte.
+//
+// That is the whole rule for Niles North purple: signed in, assigned to Niles
+// North, and Niles North's row says #4c2c7b. Nothing else in the app is allowed
+// to paint it — see the token block at the top of css/styles.css.
 async function applyOrgBranding() {
-  const branding = await window.aceAuth.getBranding();
-  if (branding.accent) {
-    document.documentElement.style.setProperty('--accent', branding.accent);
+  const accent = await window.aceAuth.getOrgAccent();
+  if (accent) {
+    document.documentElement.style.setProperty('--accent', accent);
   }
 }
 

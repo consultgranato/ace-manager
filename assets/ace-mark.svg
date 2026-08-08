@@ -1,14 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Ace Manager">
   <title>Ace Manager</title>
-  <defs>
-    <linearGradient id="aceMarkBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4c2c7b"/>
-      <stop offset="1" stop-color="#2c0663"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#aceMarkBg)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M20 46 L32 18 L44 46"/>
-    <path d="M25.2 36.4 H38.8"/>
+  <!-- The twin-peak "A" mark, traced from the master artwork (2000px PNG) and
+       kept in its native 800x479 space inside the transform below, so the
+       numbers stay checkable against the original.
+
+       Deliberately monochrome and background-free: every place this renders
+       (.ace-header-logo, .auth-page-logo, .public-form-logo, .brand-logo)
+       supplies its own white tile and padding, and the mark must NOT carry
+       district colour — Niles North's purple now comes only from that org's
+       branding row, never from the product default. -->
+  <g transform="translate(3 14.65) scale(0.0725)" fill="#1b1c22">
+    <path d="M280.5 0 L0 478 L72 478 L280.5 122.7 L489 478 L561 478 Z"/>
+    <path d="M518.5 0 L238 478 L310 478 L518.5 122.7 L727 478 L799 478 Z"/>
   </g>
 </svg>

@@ -170,6 +170,30 @@ const aceAuth = {
     };
   },
 
+  // The accent an org has actually chosen for itself, or null.
+  //
+  // Deliberately NOT getBranding().accent: that one falls back to the product
+  // default so the sidebar always has something to render. This is the colour
+  // gate, and a gate that falls back isn't a gate. It returns a value only when
+  // the signed-in user is an assigned member of an org (profile.org_id set, org
+  // row readable under RLS) AND that org row carries its own accent. So Niles
+  // North's purple reaches the page only for a confirmed Niles North case
+  // manager; a pending signup, a public form, or an org that never picked a
+  // colour all stay on the neutral grey the stylesheet already painted.
+  async getOrgAccent() {
+    try {
+      const org = await this.getOrg();
+      const accent = org && org.branding && org.branding.accent;
+      // Anything that isn't a plain hex is ignored rather than written into a
+      // custom property, where a junk value would silently break the whole ramp.
+      return (typeof accent === 'string' && /^#[0-9a-f]{6}$/i.test(accent.trim()))
+        ? accent.trim()
+        : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
   onAuthChange(callback) {
     return window.aceSupabase.auth.onAuthStateChange((event, session) => {
       callback(event, session);

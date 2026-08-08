@@ -10,36 +10,58 @@
 
    Each derived token declares a literal fallback first, then the
    color-mix() version. Engines without color-mix() keep the
-   literal (the D219 purple ramp); everything since 2023 takes
-   the computed one.
+   literal; everything since 2023 takes the computed one.
+
+   The default below is a NEUTRAL SLATE GREY, not purple. Purple is
+   Niles North's colour, and it now arrives one way only: from that
+   org's branding.accent, painted by applyOrgBranding() once the
+   signed-in user is confirmed to be an assigned member of the org.
+   Anything before that point — the login/signup/reset pages, the
+   public parent/teacher/probe forms, the "not in an organization
+   yet" holding screen, and the first paint of every page before
+   the org row comes back — renders in this grey. A district that
+   isn't Niles North never inherits Niles North's colour either.
    ============================================================ */
 
 :root {
   /* ---- Org-driven accent (the ONLY value js/app.js writes) ---- */
-  --accent: #4c2c7b;
+  --accent: #5b6070;
 
   /* ---- Accent ramp, derived from --accent ---- */
-  --accent-50:  #f6f3fa;
+  --accent-50:  #f4f5f6;
   --accent-50:  color-mix(in oklab, var(--accent)  7%, #fff);
-  --accent-100: #ece5f4;
+  --accent-100: #eaebee;
   --accent-100: color-mix(in oklab, var(--accent) 14%, #fff);
-  --accent-200: #d6c9e6;
+  --accent-200: #d3d5db;
   --accent-200: color-mix(in oklab, var(--accent) 30%, #fff);
-  --accent-400: #7d5fa8;
+  --accent-400: #8b8f9c;
   --accent-400: color-mix(in oklab, var(--accent) 70%, #fff);
-  --accent-500: #603a93;
+  --accent-500: #6b7080;
   --accent-500: color-mix(in oklab, var(--accent) 88%, #fff);
   --accent-600: var(--accent);
-  --accent-700: #3c2261;
+  --accent-700: #4a4e5b;
   --accent-700: color-mix(in oklab, var(--accent) 82%, #000);
-  --accent-800: #2c1948;
+  --accent-800: #3a3d47;
   --accent-800: color-mix(in oklab, var(--accent) 64%, #000);
 
   /* Accent used as a translucent wash / focus ring */
-  --accent-ring:  rgba(76,44,123,0.16);
+  --accent-ring:  rgba(91,96,112,0.16);
   --accent-ring:  color-mix(in srgb, var(--accent) 18%, transparent);
-  --accent-wash:  rgba(76,44,123,0.06);
+  --accent-wash:  rgba(91,96,112,0.06);
   --accent-wash:  color-mix(in srgb, var(--accent) 7%, transparent);
+
+  /* Softer ring for input focus, and the three accent-tinted drop shadows.
+     These exist so nothing has to hand-write an rgba() of the accent — a
+     hardcoded rgba(76,44,123,…) is exactly how D219 purple used to survive
+     on pages belonging to other orgs. */
+  --accent-ring-soft:    rgba(91,96,112,0.12);
+  --accent-ring-soft:    color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-shadow:       rgba(91,96,112,0.18);
+  --accent-shadow:       color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-shadow-md:    rgba(91,96,112,0.35);
+  --accent-shadow-md:    color-mix(in srgb, var(--accent) 35%, transparent);
+  --accent-shadow-lg:    rgba(91,96,112,0.45);
+  --accent-shadow-lg:    color-mix(in srgb, var(--accent) 45%, transparent);
 
   /* ---- Neutral scale (cool slate — the fixed shell) ---- */
   --n-0:   #ffffff;
@@ -135,7 +157,10 @@
   /* ---- Legacy aliases ------------------------------------
      ~4,400 lines of feature CSS reference these names. Pointing
      them at the ramp restyles all of it at once and keeps the
-     old rules valid, so nothing needs a line-by-line rewrite. */
+     old rules valid, so nothing needs a line-by-line rewrite.
+     The "purple" in the names is historical only — they resolve
+     to whatever --accent is, which is grey unless the org says
+     otherwise. Don't read them as a colour promise. */
   --purple-primary: var(--accent-600);
   --purple-deep:    var(--accent-700);
   --purple-warm:    var(--accent-400);
@@ -329,11 +354,11 @@ p { max-width: 72ch; }
 .auth-card select:focus {
   outline: none;
   border-color: var(--purple-primary);
-  box-shadow: 0 0 0 4px rgba(76,44,123,0.12);
+  box-shadow: 0 0 0 4px var(--accent-ring-soft);
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #5a3a8c 0%, #4c2c7b 100%);
+  background: linear-gradient(180deg, var(--accent-500) 0%, var(--accent-600) 100%);
   color: white;
   border: none;
   padding: 11px 18px;
@@ -347,7 +372,7 @@ p { max-width: 72ch; }
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #6b4ba0 0%, #5a3a8c 100%);
+  background: linear-gradient(180deg, var(--accent-400) 0%, var(--accent-500) 100%);
   box-shadow: var(--shadow-md);
 }
 
@@ -612,7 +637,7 @@ p { max-width: 72ch; }
 
 .sidebar-add-btn {
   margin: 10px 14px;
-  background: linear-gradient(180deg, #5a3a8c 0%, #4c2c7b 100%);
+  background: linear-gradient(180deg, var(--accent-500) 0%, var(--accent-600) 100%);
   color: white;
   border: none;
   padding: 10px 14px;
@@ -626,7 +651,7 @@ p { max-width: 72ch; }
 }
 
 .sidebar-add-btn:hover {
-  background: linear-gradient(180deg, #6b4ba0 0%, #5a3a8c 100%);
+  background: linear-gradient(180deg, var(--accent-400) 0%, var(--accent-500) 100%);
   box-shadow: var(--shadow-md);
 }
 
@@ -1381,13 +1406,23 @@ p { max-width: 72ch; }
   margin: 28px auto 16px;
 }
 
+/* The full mark-plus-wordmark lockup, which is what the login/signup/reset
+   pages show above the card. It sits directly on the page — no white tile and
+   no accent shadow, because the artwork is already a finished lockup and the
+   pre-auth pages are exactly where we do NOT want a district colour. */
+.auth-page-lockup {
+  width: 148px;
+  height: auto;
+  display: block;
+}
+
 .auth-page-logo {
   width: 76px;
   height: 76px;
   border-radius: 16px;
   background: white;
   padding: 7px;
-  box-shadow: 0 8px 24px rgba(76, 44, 123, 0.18);
+  box-shadow: 0 8px 24px var(--accent-shadow);
   object-fit: contain;
 }
 
@@ -1548,7 +1583,7 @@ p { max-width: 72ch; }
 }
 
 .card-action {
-  background: linear-gradient(180deg, #5a3a8c 0%, #4c2c7b 100%);
+  background: linear-gradient(180deg, var(--accent-500) 0%, var(--accent-600) 100%);
   color: white;
   border: none;
   padding: 11px 16px;
@@ -1563,7 +1598,7 @@ p { max-width: 72ch; }
 }
 
 .card-action:hover:not(:disabled) {
-  background: linear-gradient(180deg, #6b4ba0 0%, #5a3a8c 100%);
+  background: linear-gradient(180deg, var(--accent-400) 0%, var(--accent-500) 100%);
   box-shadow: var(--shadow-md);
 }
 
@@ -1591,12 +1626,12 @@ p { max-width: 72ch; }
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #5a3a8c 0%, #4c2c7b 100%);
+  background: linear-gradient(180deg, var(--accent-500) 0%, var(--accent-600) 100%);
   color: white;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(76, 44, 123, 0.35);
+  box-shadow: 0 6px 20px var(--accent-shadow-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1605,7 +1640,7 @@ p { max-width: 72ch; }
 
 .notes-fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(76, 44, 123, 0.45);
+  box-shadow: 0 8px 24px var(--accent-shadow-lg);
 }
 
 /* Notes drawer */
@@ -1688,7 +1723,7 @@ p { max-width: 72ch; }
 .notes-textarea:focus {
   outline: none;
   border-color: var(--purple-primary);
-  box-shadow: 0 0 0 4px rgba(76,44,123,0.12);
+  box-shadow: 0 0 0 4px var(--accent-ring-soft);
 }
 
 .notes-overlay {
@@ -1819,7 +1854,7 @@ p { max-width: 72ch; }
 .student-form textarea:focus {
   outline: none;
   border-color: var(--purple-primary);
-  box-shadow: 0 0 0 4px rgba(76,44,123,0.12);
+  box-shadow: 0 0 0 4px var(--accent-ring-soft);
 }
 
 .student-form textarea {
@@ -2903,7 +2938,7 @@ input[type="url"]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--purple-primary) !important;
-  box-shadow: 0 0 0 4px rgba(76, 44, 123, 0.12) !important;
+  box-shadow: 0 0 0 4px var(--accent-ring-soft) !important;
   outline: none !important;
 }
 
