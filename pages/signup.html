@@ -6,7 +6,7 @@
   <title>Sign Up — Ace Manager</title>
   <link rel="icon" type="image/svg+xml" href="../assets/ace-mark.svg" />
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="../css/styles.css?v=20260808002218" />
+  <link rel="stylesheet" href="../css/styles.css?v=20260811184914" />
 </head>
 <body>
   <header class="ace-header">
@@ -56,11 +56,11 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/config.js?v=20260808002218"></script>
-  <script src="../js/utils.js?v=20260808002218"></script>
-  <script src="../js/auth.js?v=20260808002218"></script>
-  <script src="../js/router.js?v=20260808002218"></script>
-  <script src="../js/app.js?v=20260808002218"></script>
+  <script src="../js/config.js?v=20260811184914"></script>
+  <script src="../js/utils.js?v=20260811184914"></script>
+  <script src="../js/auth.js?v=20260811184914"></script>
+  <script src="../js/router.js?v=20260811184914"></script>
+  <script src="../js/app.js?v=20260811184914"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('signupForm');
@@ -80,7 +80,10 @@
           errorMsg.textContent = error.message;
           errorMsg.style.display = 'block';
         } else {
-          successMsg.textContent = 'Account created! Check your email to verify, then log in.';
+          // No verification email is sent — the project runs with autoconfirm on,
+          // so the account is usable immediately. Telling people to "check your
+          // email" left them waiting for a message that never arrives.
+          successMsg.innerHTML = 'Account created — you can log in now. <a href="login.html">Go to log in →</a>';
           successMsg.style.display = 'block';
           form.reset();
         }

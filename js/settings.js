@@ -150,8 +150,8 @@ const aceSettings = {
             <p class="muted settings-note" style="margin-top:0;">
               Permanently deletes <strong>every student record</strong> in
               ${esc(org?.name || 'your organization')} — students, meetings, feedback,
-              assessments, transition plans, goals, progress data, probes, services,
-              and trackers. Team accounts, branding, the calendar, and the course
+              assessments, transition plans, goals, progress data, probes, and
+              services. Team accounts, branding, the calendar, and the course
               catalog remain. <strong>This cannot be undone.</strong> Export first.
             </p>
             <label><span class="label-text">Type the organization name (<strong>${esc(org?.name || '')}</strong>) to confirm</span>

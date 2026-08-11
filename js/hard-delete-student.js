@@ -22,7 +22,8 @@ const aceHardDeleteStudent = {
           <div>
             <strong>This permanently deletes ${esc(expected)} and cannot be undone.</strong>
             <p>All associated records are deleted too — meetings, teacher &amp; parent feedback,
-               transition assessments, feedback links, IEP drafts, and progress trackers.
+               transition assessments, transition plans, feedback links, IEP drafts,
+               goals, progress data, probes, and services.
                This is different from <em>Archive</em>, which only hides the student and is reversible.</p>
           </div>
         </div>
