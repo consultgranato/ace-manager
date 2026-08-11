@@ -29,6 +29,12 @@ const aceAuth = {
     return { data, error };
   },
 
+  // Currently unreachable: pages/reset-password.html no longer offers the
+  // self-serve request form, because the project has no custom SMTP and
+  // Supabase's built-in sender only delivers to members of the Supabase
+  // project. Kept intact — wiring that form back up is the whole change once
+  // SMTP exists. Do NOT call this from new code until then: it resolves
+  // without error and delivers nothing.
   async resetPassword(email) {
     // Derive the path the same way aceRouter does instead of hardcoding the
     // GitHub Pages sub-path, so reset links also work on a custom domain or

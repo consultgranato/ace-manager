@@ -6,7 +6,7 @@
   <title>Log In — Ace Manager</title>
   <link rel="icon" type="image/svg+xml" href="../assets/ace-mark.svg" />
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="../css/styles.css?v=20260811184914" />
+  <link rel="stylesheet" href="../css/styles.css?v=20260811190143" />
 </head>
 <body>
   <header class="ace-header">
@@ -47,11 +47,11 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/config.js?v=20260811184914"></script>
-  <script src="../js/utils.js?v=20260811184914"></script>
-  <script src="../js/auth.js?v=20260811184914"></script>
-  <script src="../js/router.js?v=20260811184914"></script>
-  <script src="../js/app.js?v=20260811184914"></script>
+  <script src="../js/config.js?v=20260811190143"></script>
+  <script src="../js/utils.js?v=20260811190143"></script>
+  <script src="../js/auth.js?v=20260811190143"></script>
+  <script src="../js/router.js?v=20260811190143"></script>
+  <script src="../js/app.js?v=20260811190143"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('loginForm');
@@ -66,7 +66,10 @@
           return 'That email and password don’t match an account. Check for typos, or use “Forgot password?” below.';
         }
         if (m.includes('email not confirmed')) {
-          return 'This account still needs to be confirmed — check your inbox for the confirmation email.';
+          // Accounts are auto-confirmed, so no confirmation email exists to go
+          // looking for. If this ever fires, it means the setting changed —
+          // point at a person rather than at an empty inbox.
+          return 'This account isn’t active yet. Contact your Ace Manager administrator.';
         }
         if (m.includes('failed to fetch') || m.includes('network')) {
           return 'Couldn’t reach the server. Check your connection and try again.';
