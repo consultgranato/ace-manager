@@ -47,3 +47,18 @@
   to = "/"
   status = 404
   force = true
+
+# Same reasoning for the build-time tooling: goal/probe bank builders and
+# tools/recovery-link.js run under Node on a maintainer's machine and are never
+# fetched by the browser (verified — every mention of tools/ in js/ and pages/
+# is a comment). Nothing in there is secret; recovery-link.js reads its
+# credentials at runtime rather than carrying any. This is tidiness, not a
+# patch: server-side scripts should not be reachable on the app's own domain.
+#
+# NOT extended to /data/* — js/lazy-data.js fetches data/goal-bank.js and
+# data/probe-bank.js at runtime, so blocking those would break the goal bank.
+[[redirects]]
+  from = "/tools/*"
+  to = "/"
+  status = 404
+  force = true
